@@ -1,0 +1,519 @@
+.reports-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.reports-skeleton {
+  height: 220px;
+  border-radius: 8px;
+  margin: 1rem 0;
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background-size: 400% 100%;
+  animation: reports-shimmer 1.4s ease infinite;
+}
+
+@keyframes reports-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.reports-load-error {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--color-text-secondary);
+}
+
+.reports-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.reports-retry:hover {
+  background: var(--color-brand-800);
+}
+
+.reports-retry:active {
+  transform: scale(0.97);
+}
+
+/* Summary tiles */
+
+.reports-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.reports-tile {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.reports-tile-icon {
+  color: var(--color-text-muted);
+}
+
+.reports-tile-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.reports-tile-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.reports-tile-active .reports-tile-value {
+  color: var(--color-status-success-text);
+}
+
+.reports-tile-expiring .reports-tile-value {
+  color: var(--color-status-warning-text);
+}
+
+.reports-tile-expired .reports-tile-value {
+  color: var(--color-status-danger);
+}
+
+/* Sections */
+
+.reports-section {
+  margin: 1.5rem 0;
+}
+
+.reports-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+
+.reports-empty-inline {
+  color: var(--color-text-secondary);
+  padding: 1rem;
+  text-align: center;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  margin: 0;
+}
+
+/* Expiring This Week */
+
+.reports-expiring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reports-expiring-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 44px;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+}
+
+.reports-expiring-name {
+  display: block;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.reports-expiring-plan {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.reports-expiring-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-status-warning-border);
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+  white-space: nowrap;
+}
+
+/* Date range form */
+
+.reports-range-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.reports-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reports-range-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.reports-range-field input {
+  background: var(--color-surface-input);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  min-height: 44px;
+}
+
+.reports-range-field input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+}
+
+.reports-apply {
+  min-height: 44px;
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: 8px;
+  padding: 0 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.reports-apply:hover {
+  background: var(--color-brand-800);
+}
+
+.reports-range-error {
+  color: var(--color-status-danger);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+/* Charts */
+
+.reports-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.reports-chart {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.reports-chart-title {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.reports-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  height: 160px;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.reports-chart-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  min-width: 36px;
+  height: 100%;
+}
+
+.reports-chart-bar-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.reports-chart-bar {
+  width: 24px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.2s ease;
+}
+
+.reports-chart-bar-subscription {
+  background: var(--color-brand-600);
+}
+
+.reports-chart-bar-addon {
+  background: var(--color-status-warning);
+}
+
+.reports-chart-bar-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Revenue by Payment Mode — donut chart */
+
+.reports-payment-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1.25rem 1rem;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.reports-donut {
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+}
+
+.reports-donut-segment {
+  transition: stroke-width 0.15s ease, filter 0.15s ease;
+  cursor: pointer;
+}
+
+.reports-donut-segment:hover,
+.reports-donut-segment:focus-visible {
+  filter: brightness(1.08);
+  outline: none;
+}
+
+/* Proportional figures for the standalone total (marks-and-anatomy.md "figures") - never tabular-nums here. */
+.reports-donut-total-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  fill: var(--color-text-primary);
+}
+
+.reports-donut-total-label {
+  font-size: 0.7rem;
+  fill: var(--color-text-muted);
+}
+
+.reports-payment-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 320px;
+  /* Row sibling to the fixed 200px .reports-donut at >= 768px (same shape as AppShell's
+     sidebar+content bug) - low practical risk since the legend's own content (Cash/UPI/Card
+     + short amounts) rarely gets wide enough to matter, but the fix is one line. */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reports-payment-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.reports-payment-legend-row-active {
+  background: var(--color-surface-background);
+}
+
+.reports-payment-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.reports-payment-legend-mode {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.reports-payment-legend-amount {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-payment-legend-pct {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  min-width: 2.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .reports-payment-chart {
+    flex-direction: row;
+    justify-content: center;
+    gap: 2.5rem;
+  }
+}
+
+/* Transaction type badge */
+
+.reports-tx-type-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-brand-tint-border);
+  background: var(--color-brand-tint);
+  color: var(--color-text-on-brand-tint);
+  white-space: nowrap;
+}
+
+.reports-tx-type-addon {
+  border-color: var(--color-status-warning-border);
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+}
+
+/* Transaction cards - mobile default (< 768px) */
+
+.reports-tx-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reports-tx-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.reports-tx-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.reports-tx-name {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.reports-tx-detail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.reports-tx-amount {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Transaction table - desktop only */
+
+.reports-tx-table {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .reports-tiles {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .reports-charts {
+    flex-direction: row;
+  }
+
+  .reports-chart {
+    flex: 1;
+    /* The bar chart's width scales with how many months are in the selected range - without
+       this, a wide range could refuse to shrink and push the two charts' row wider than the
+       page, causing horizontal overflow instead of the bars just getting narrower. */
+    min-width: 0;
+  }
+
+  .reports-tx-cards {
+    display: none;
+  }
+
+  .reports-tx-table {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-border-default);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px var(--color-shadow);
+  }
+
+  .reports-tx-table th,
+  .reports-tx-table td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+
+  .reports-tx-table th {
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+}

@@ -1,0 +1,161 @@
+.invite-user-page {
+  max-width: 480px;
+}
+
+.invite-user-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.5rem;
+  transition: color 0.15s ease, transform 0.1s ease;
+}
+
+.invite-user-back-link:hover {
+  color: var(--color-text-brand);
+}
+
+.invite-user-back-link:active {
+  transform: scale(0.97);
+}
+
+.invite-user-page h1 {
+  margin: 0 0 1rem;
+}
+
+.invite-user-form {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.invite-user-banner-error {
+  background: var(--color-status-danger-bg);
+  border: 1px solid var(--color-status-danger-border);
+  color: var(--color-status-danger);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.invite-user-form label,
+.invite-user-chip-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.invite-user-required {
+  color: var(--color-status-danger);
+  font-weight: 700;
+}
+
+.invite-user-form input {
+  background: var(--color-surface-input);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  min-height: 44px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.invite-user-form input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+}
+
+.invite-user-error {
+  color: var(--color-status-danger);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.invite-user-chip-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.invite-user-chip {
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-card);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.invite-user-chip:active {
+  transform: scale(0.97);
+}
+
+.invite-user-chip-selected {
+  background: var(--color-neutral-900);
+  border-color: var(--color-neutral-900);
+  color: var(--color-text-inverse);
+  font-weight: 700;
+}
+
+.invite-user-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  margin-top: 1rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.invite-user-submit:hover:not(:disabled) {
+  background: var(--color-brand-800);
+}
+
+.invite-user-submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.invite-user-submit:disabled {
+  background: var(--color-interactive-disabled);
+  cursor: not-allowed;
+}
+
+@keyframes invite-user-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.invite-user-spin {
+  animation: invite-user-spin 0.8s linear infinite;
+}

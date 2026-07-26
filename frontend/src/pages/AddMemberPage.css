@@ -1,0 +1,348 @@
+.add-member-page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  /* Wider than the mobile single-column max-width so two paired fields have real room
+     side-by-side instead of squeezing into two half-width columns of a narrow box. */
+  .add-member-page {
+    max-width: 900px;
+  }
+}
+
+.add-member-page h1 {
+  margin-top: 0;
+}
+
+.add-member-skeleton {
+  height: 400px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background-size: 400% 100%;
+  animation: add-member-shimmer 1.4s ease infinite;
+}
+
+@keyframes add-member-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Spinning "saving" indicator (RefreshCw icon on the Save button while a save is in flight). */
+@keyframes add-member-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.add-member-spin {
+  animation: add-member-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-member-spin {
+    animation: none;
+  }
+}
+
+.add-member-load-error {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-secondary);
+}
+
+.add-member-retry,
+.add-member-submit,
+.add-member-cancel,
+.add-member-photo-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.add-member-retry {
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.add-member-retry:hover {
+  background: var(--color-brand-800);
+}
+
+.add-member-retry:active {
+  transform: scale(0.97);
+}
+
+.add-member-banner-error {
+  background: var(--color-status-danger-bg);
+  border: 1px solid var(--color-status-danger-border);
+  color: var(--color-status-danger);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.add-member-section {
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--color-surface-card);
+  box-shadow: 0 1px 3px var(--color-shadow);
+  transition: box-shadow 0.2s ease;
+}
+
+.add-member-section:focus-within {
+  box-shadow: 0 4px 12px var(--color-shadow);
+}
+
+.add-member-section legend {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  padding: 0 0.35rem;
+}
+
+.add-member-section label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+/* Field pairing (mobile: one per row, desktop: two per row) — used by Personal Details
+   and Emergency Contact. Doctor's Care and Photo have nothing worth pairing, so they stay
+   plain flex-column children of .add-member-section instead of using this wrapper. */
+.add-member-field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.add-member-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Spacing comes from the grid's gap now, not each label's own top margin - avoids doubling
+   up on vertical space between a field and the one above it in the same grid row. */
+.add-member-field label {
+  margin-top: 0;
+}
+
+@media (min-width: 768px) {
+  .add-member-field-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.5rem;
+  }
+
+  .add-member-field-span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+.add-member-section input,
+.add-member-section select,
+.add-member-section textarea {
+  background: var(--color-surface-input);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  min-height: 44px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.add-member-section textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.add-member-section input:focus,
+.add-member-section select:focus,
+.add-member-section textarea:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+}
+
+.add-member-error {
+  color: var(--color-status-danger);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.add-member-required {
+  color: var(--color-status-danger);
+  font-weight: 700;
+}
+
+/* Body Metrics: side-by-side pair even on mobile - two short numeric fields fit fine. */
+.add-member-metrics-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.add-member-metrics-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.add-member-chip-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+/* Reset for the Gender field specifically - it's now inside .add-member-field (grid
+   cell), where spacing comes from the grid's gap, same reasoning as the label reset above. */
+.add-member-field .add-member-chip-label {
+  margin-top: 0;
+}
+
+.add-member-chip-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.add-member-chip {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-card);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.add-member-chip:hover {
+  border-color: var(--color-neutral-400);
+}
+
+.add-member-chip:active {
+  transform: scale(0.96);
+}
+
+.add-member-chip-selected {
+  background: var(--color-neutral-900);
+  border-color: var(--color-neutral-900);
+  color: var(--color-text-inverse);
+  font-weight: 700;
+}
+
+.add-member-photo-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 6px var(--color-shadow);
+}
+
+.add-member-photo-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.add-member-photo-actions button {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.add-member-photo-actions button:hover {
+  background: var(--color-neutral-50);
+  border-color: var(--color-neutral-400);
+}
+
+.add-member-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-bottom: 2rem;
+}
+
+.add-member-cancel,
+.add-member-submit {
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.add-member-cancel {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.add-member-cancel:hover:not(:disabled) {
+  background: var(--color-neutral-50);
+}
+
+.add-member-cancel:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.add-member-cancel:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.add-member-submit {
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.add-member-submit:hover:not(:disabled) {
+  background: var(--color-brand-800);
+  box-shadow: 0 4px 10px var(--color-shadow);
+}
+
+.add-member-submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.add-member-submit:disabled {
+  background: var(--color-interactive-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+}

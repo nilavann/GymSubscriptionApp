@@ -1,0 +1,37 @@
+/* tokens.css supplies the @theme block Tailwind needs — must be imported here (not just
+   as a separate side-effect import in main.tsx) so it's part of the same CSS graph
+   @tailwindcss/vite processes. See spec/frontend/styling.md. */
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  /* The design system (colors.md) is light throughout - cards, inputs, tables -
+     with dark used only for chrome surfaces (nav, this login page's background).
+     Declaring `dark` here mismatched that, so browsers (autofill in particular)
+     rendered native form controls with dark-mode heuristics that clashed with
+     our actually-light input styling. No dark variant exists yet to switch to. */
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+/* Global, cross-cutting keyboard-focus ring — belongs here rather than in any
+   per-page CSS file (styling.md's convention is per-page files stay
+   independent) because every button/link in the app should get the same
+   ring, and duplicating it in 15+ files would be the thing that drifts.
+   Reuses the same token every input's own :focus ring already uses, so
+   buttons/links and inputs share one consistent focus treatment. */
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+}

@@ -1,0 +1,481 @@
+.plans-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.plans-add-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: 8px;
+  padding: 0 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px var(--color-shadow);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.plans-add-button:hover {
+  background: var(--color-brand-800);
+}
+
+.plans-add-button:active {
+  transform: scale(0.97);
+}
+
+.plans-skeleton {
+  height: 300px;
+  border-radius: 8px;
+  margin-top: 1rem;
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background-size: 400% 100%;
+  animation: plans-shimmer 1.4s ease infinite;
+}
+
+@keyframes plans-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.plans-load-error,
+.plans-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.plans-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.plans-filter-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.plans-pill {
+  min-height: 44px;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-card);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.plans-pill:hover {
+  border-color: var(--color-neutral-400);
+}
+
+.plans-pill-active {
+  background: var(--color-neutral-900);
+  border-color: var(--color-neutral-900);
+  color: var(--color-text-inverse);
+  font-weight: 700;
+}
+
+.plans-form {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 4px 12px var(--color-shadow);
+  animation: plans-form-in 0.15s ease;
+}
+
+@keyframes plans-form-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plans-form h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.plans-banner-error {
+  background: var(--color-status-danger-bg);
+  border: 1px solid var(--color-status-danger-border);
+  color: var(--color-status-danger);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.plans-form label,
+.plans-field-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.plans-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500 !important;
+}
+
+.plans-checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+
+.plans-required {
+  color: var(--color-status-danger);
+  font-weight: 700;
+}
+
+.plans-form input {
+  background: var(--color-surface-input);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  min-height: 44px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plans-form input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+}
+
+.plans-error {
+  color: var(--color-status-danger);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.plans-chip-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.plans-chip {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-card);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.plans-chip:hover {
+  border-color: var(--color-neutral-400);
+}
+
+.plans-chip-selected {
+  background: var(--color-neutral-900);
+  border-color: var(--color-neutral-900);
+  color: var(--color-text-inverse);
+  font-weight: 700;
+}
+
+.plans-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.plans-cancel,
+.plans-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.plans-cancel {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.plans-cancel:hover:not(:disabled) {
+  background: var(--color-neutral-50);
+}
+
+.plans-cancel:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.plans-submit {
+  background: var(--color-brand-600);
+  color: var(--color-text-inverse);
+  border: none;
+}
+
+.plans-submit:hover:not(:disabled) {
+  background: var(--color-brand-800);
+}
+
+.plans-submit:disabled {
+  background: var(--color-interactive-disabled);
+  cursor: not-allowed;
+}
+
+@keyframes plans-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.plans-spin {
+  animation: plans-spin 0.8s linear infinite;
+}
+
+.plans-category-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.plans-category-membership {
+  background: var(--color-brand-tint);
+  border-color: var(--color-brand-tint-border);
+  color: var(--color-text-on-brand-tint);
+}
+
+.plans-category-addon {
+  background: var(--color-status-neutral-bg);
+  border-color: var(--color-status-neutral-border);
+  color: var(--color-status-neutral);
+}
+
+.plans-edit-button,
+.plans-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  min-width: 44px;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.plans-edit-button:hover {
+  background: var(--color-neutral-50);
+  border-color: var(--color-neutral-400);
+}
+
+.plans-delete-button {
+  color: var(--color-status-danger);
+}
+
+.plans-delete-button:hover {
+  background: var(--color-status-danger-bg);
+  border-color: var(--color-status-danger-border);
+}
+
+.plans-card-actions,
+.plans-table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Delete confirmation dialog */
+
+.plans-delete-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1.5rem;
+}
+
+.plans-delete-dialog {
+  background: var(--color-surface-card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 24px var(--color-shadow);
+  animation: plans-delete-dialog-in 0.15s ease;
+}
+
+@keyframes plans-delete-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.plans-delete-dialog h2 {
+  margin-top: 0;
+}
+
+.plans-delete-dialog p {
+  color: var(--color-text-secondary);
+}
+
+.plans-delete-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-status-danger);
+  color: var(--color-text-inverse);
+  border: none;
+  transition: background-color 0.15s ease;
+}
+
+.plans-delete-confirm:hover:not(:disabled) {
+  background: var(--color-brand-800);
+}
+
+.plans-delete-confirm:disabled {
+  background: var(--color-interactive-disabled);
+  cursor: not-allowed;
+}
+
+/* Mobile cards - default (< 768px) */
+
+.plans-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.plans-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+.plans-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.plans-card-name {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.plans-card-detail {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Desktop table - hidden until >= 768px */
+
+.plans-table {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .plans-cards {
+    display: none;
+  }
+
+  .plans-table {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-border-default);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px var(--color-shadow);
+  }
+
+  .plans-table th,
+  .plans-table td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+
+  .plans-table th {
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+}
