@@ -344,8 +344,8 @@
 }
 
 .users-role-admin {
-  border-color: var(--color-brand-600);
-  color: var(--color-text-brand);
+  border-color: var(--color-brand-tint-border);
+  color: var(--color-text-on-brand-tint);
   background: var(--color-brand-tint);
 }
 
@@ -435,7 +435,7 @@
 }
 
 .users-delete-confirm:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  background: var(--color-status-danger-800);
 }
 
 .users-delete-confirm:disabled {

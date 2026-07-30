@@ -337,6 +337,7 @@ export function MembersListPage() {
                     Name
                   </button>
                 </th>
+                <th>Member #</th>
                 <th>Phone</th>
                 <th>Plan</th>
                 <th>
@@ -359,6 +360,7 @@ export function MembersListPage() {
                         <span>{row.name}</span>
                       </div>
                     </td>
+                    <td className="members-table-number">{row.member_number}</td>
                     <td>{row.phone}</td>
                     <td>{row.current_membership_plan_name ?? 'No plan'}</td>
                     <td>
@@ -447,6 +449,7 @@ function MemberCard({ row, onOpen, onEnlargePhoto }: { row: MemberListRow; onOpe
             Edit
           </button>
         </div>
+        <p className="members-card-number">{row.member_number}</p>
         <p className="members-card-secondary">{secondaryLine}</p>
         <div className="members-card-bottom">
           <span className={`members-card-expiry status-text-${status}`}>{expiryLine}</span>

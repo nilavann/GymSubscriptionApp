@@ -5,8 +5,10 @@ import type { Gender, Member, NewMember, UpdateMember } from '../types/member';
 
 /**
  * Fields shared by both the Add Member form and Member Detail's inline edit form — every
- * Member field except branch_id (create-only, immutable after — REQ-MEM-006) and
- * handled_by_staff (edit-only, not meaningful before the record exists — REQ-MEM-003).
+ * Member field except branch_id (create-only, immutable after — REQ-MEM-006).
+ * handled_by_staff is shared too (settable at creation, defaulting to the logged-in staff
+ * member — AddMemberPage seeds it via useAuth() — and independently editable afterward from
+ * Member Detail, same field either way — REQ-MEM-003).
  */
 interface MemberFieldsDraft {
   name: string;
@@ -26,6 +28,8 @@ interface MemberFieldsDraft {
   residential_address: string;
   aadhaar_number: string;
   occupation: string;
+  /** Profile id, or '' for "not set" — see member-detail.md §12. */
+  handled_by_staff: string;
 }
 
 /**
@@ -37,11 +41,8 @@ export interface NewMemberDraft extends MemberFieldsDraft {
   branch_id: number | '';
 }
 
-/** Member Detail's inline-edit form state (member-detail.md §7/§12) — same fields, plus handled_by_staff. */
-export interface MemberEditDraft extends MemberFieldsDraft {
-  /** Profile id, or '' for "not set" — see member-detail.md §12. */
-  handled_by_staff: string;
-}
+/** Member Detail's inline-edit form state (member-detail.md §7/§12) — same fields as NewMemberDraft, minus branch_id (immutable after creation). */
+export type MemberEditDraft = MemberFieldsDraft;
 
 export type MemberFormErrors = Partial<Record<keyof NewMemberDraft, string>>;
 export type MemberEditFormErrors = Partial<Record<keyof MemberEditDraft, string>>;
@@ -127,6 +128,7 @@ function draftToMemberFieldsUpdate(form: MemberFieldsDraft) {
     residential_address: form.residential_address.trim() || null,
     aadhaar_number: form.aadhaar_number.trim() || null,
     occupation: form.occupation.trim() || null,
+    handled_by_staff: form.handled_by_staff || null,
   };
 }
 
@@ -176,10 +178,7 @@ export const memberService = {
    * draft — e.g. weight_kg goes back to a number here).
    */
   async updateMember(id: number, form: MemberEditDraft): Promise<UpdateMember> {
-    const payload: UpdateMember = {
-      ...draftToMemberFieldsUpdate(form),
-      handled_by_staff: form.handled_by_staff || null,
-    };
+    const payload: UpdateMember = draftToMemberFieldsUpdate(form);
     await memberRepository.update(id, payload);
     return payload;
   },
@@ -217,13 +216,28 @@ export const memberService = {
       supabase.storage.from('member-photos').upload(originalPath, file, { upsert: true }),
       supabase.storage.from('member-photos').upload(thumbnailPath, compressed, { upsert: true }),
     ]);
-    if (originalResult.error) throw originalResult.error;
-    if (thumbnailResult.error) throw thumbnailResult.error;
+    if (originalResult.error || thumbnailResult.error) {
+      // One side may have already landed in storage even though the other failed — clean
+      // it up so a failed upload doesn't leave an orphaned blob nothing ever references.
+      const uploadedPaths = [
+        originalResult.error ? null : originalPath,
+        thumbnailResult.error ? null : thumbnailPath,
+      ].filter((p): p is string => p !== null);
+      if (uploadedPaths.length > 0) {
+        await supabase.storage.from('member-photos').remove(uploadedPaths);
+      }
+      throw originalResult.error ?? thumbnailResult.error;
+    }
 
-    // member-photos is a private bucket — store the bucket-relative path, not a public
-    // URL. Resolved to a short-lived signed URL on read (lib/photo-urls.ts), since a
-    // signed URL itself can't be persisted (it expires).
-    await memberRepository.update(memberId, { photo_url: originalPath, photo_thumbnail_url: thumbnailPath });
+    try {
+      // member-photos is a private bucket — store the bucket-relative path, not a public
+      // URL. Resolved to a short-lived signed URL on read (lib/photo-urls.ts), since a
+      // signed URL itself can't be persisted (it expires).
+      await memberRepository.update(memberId, { photo_url: originalPath, photo_thumbnail_url: thumbnailPath });
+    } catch (err) {
+      await supabase.storage.from('member-photos').remove([originalPath, thumbnailPath]);
+      throw err;
+    }
   },
 };
 

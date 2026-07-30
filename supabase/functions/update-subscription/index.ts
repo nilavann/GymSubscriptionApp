@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     if (!payload.subscription_id) {
       return jsonError('subscription_id is required', 400);
     }
-    if (payload.payment_mode && !['Cash', 'UPI', 'Card'].includes(payload.payment_mode)) {
+    if (payload.payment_mode !== undefined && !['Cash', 'UPI', 'Card'].includes(payload.payment_mode)) {
       return jsonError('payment_mode must be Cash, UPI, or Card', 400);
     }
 

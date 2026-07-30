@@ -2,12 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Upload, RefreshCw, X, Check } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { useAuth } from '../context/auth.context';
 import { todayDate } from '../lib/datetime';
 import { withTimeout } from '../lib/with-timeout';
 import { sanitizeDigits, sanitizeDecimal } from '../lib/input-masks';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import type { Branch } from '../types/branch';
 import type { Gender } from '../types/member';
+import type { Profile } from '../types/profile';
 import type { MemberFormErrors, NewMemberDraft } from '../services/member.service';
 import './AddMemberPage.css';
 
@@ -24,7 +26,9 @@ function Req() {
   );
 }
 
-function emptyDraft(): NewMemberDraft {
+/** handledByStaffId defaults to whoever's creating the record (REQ-MEM-003) — editable
+ * below to reassign credit when one staff member enters data on behalf of another. */
+function emptyDraft(handledByStaffId: string): NewMemberDraft {
   return {
     name: '',
     phone: '',
@@ -43,19 +47,22 @@ function emptyDraft(): NewMemberDraft {
     residential_address: '',
     aadhaar_number: '',
     occupation: '',
+    handled_by_staff: handledByStaffId,
   };
 }
 
 type BranchLoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
 
 export function AddMemberPage() {
-  const { memberService, branchRepository } = useServices();
+  const { memberService, branchRepository, profileRepository } = useServices();
+  const { currentProfile } = useAuth();
   const navigate = useNavigate();
 
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [branchLoadState, setBranchLoadState] = useState<BranchLoadState>('loading');
 
-  const [form, setForm] = useState<NewMemberDraft>(emptyDraft());
+  const [form, setForm] = useState<NewMemberDraft>(() => emptyDraft(currentProfile?.id ?? ''));
   const [errors, setErrors] = useState<MemberFormErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof NewMemberDraft, boolean>>>({});
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -69,21 +76,26 @@ export function AddMemberPage() {
 
   // Loading, error, and retry per rules.md rules 29-30 — the branch list is required
   // (branch_id feeds member_number generation) so the form can't usefully render until
-  // it's loaded.
-  async function loadBranches() {
+  // it's loaded. Profiles (for the "Handled by staff" picker) load alongside it — not
+  // separately required, but there's no reason to show the form in two visual stages.
+  async function loadFormData() {
     setBranchLoadState('loading');
     try {
-      const data = await withTimeout(branchRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('branches-timeout'));
-      setBranches(data);
+      const [branchData, profileData] = await Promise.all([
+        withTimeout(branchRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('branches-timeout')),
+        withTimeout(profileRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('profiles-timeout')),
+      ]);
+      setBranches(branchData);
+      setProfiles(profileData);
       setBranchLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message === 'branches-timeout' || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
       setBranchLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
 
   useEffect(() => {
-    loadBranches();
+    loadFormData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -163,7 +175,7 @@ export function AddMemberPage() {
               ? "Couldn't load this screen — check your connection and try again."
               : 'Something went wrong loading this screen. Please try again.'}
           </p>
-          <button type="button" className="add-member-retry" onClick={loadBranches}>
+          <button type="button" className="add-member-retry" onClick={loadFormData}>
             <RefreshCw size={16} strokeWidth={2} />
             Retry
           </button>
@@ -275,6 +287,22 @@ export function AddMemberPage() {
                 ))}
               </select>
               {showError('branch_id') && <p className="add-member-error">{errors.branch_id}</p>}
+            </div>
+
+            <div className="add-member-field">
+              <label htmlFor="handled_by_staff">Handled by staff</label>
+              <select
+                id="handled_by_staff"
+                value={form.handled_by_staff}
+                onChange={(e) => updateField('handled_by_staff', e.target.value)}
+              >
+                <option value="">Not set</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="add-member-field">

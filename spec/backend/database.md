@@ -73,7 +73,9 @@ create table if not exists branches (
   changed_at  timestamptz,
   changed_by  uuid references profiles(id),
   deleted_at  timestamptz,
-  deleted_by  uuid references profiles(id)
+  deleted_by  uuid references profiles(id),
+  constraint chk_branches_name_not_blank check (trim(name) <> ''),
+  constraint chk_branches_code_not_blank check (trim(code) <> '')
 );
 -- Uniqueness only among live rows — a soft-deleted branch's code can be reused.
 create unique index if not exists idx_branches_code_active on branches(code) where deleted_at is null;
@@ -104,7 +106,8 @@ create table if not exists plans (
   ),
   constraint chk_plan_max_members_only_for_membership check (
     category = 'membership' or max_members = 1
-  )
+  ),
+  constraint chk_plans_name_not_blank check (trim(name) <> '')
 );
 create unique index if not exists idx_plans_name_active on plans(name) where deleted_at is null;
 create index if not exists idx_plans_category on plans(category);
@@ -120,7 +123,8 @@ create table if not exists roles (
   changed_at   timestamptz,
   changed_by   uuid references profiles(id),
   deleted_at   timestamptz,
-  deleted_by   uuid references profiles(id)
+  deleted_by   uuid references profiles(id),
+  constraint chk_roles_name_not_blank check (trim(name) <> '')
 );
 create unique index if not exists idx_roles_name_active on roles(name) where deleted_at is null;
 
@@ -737,9 +741,9 @@ $$;
 create policy "profiles_select_active_users" on profiles
   for select using (is_active_user() and deleted_at is null);
 create policy "profiles_update_admin" on profiles
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 create policy "profiles_update_self_name" on profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+  for update using (auth.uid() = id and deleted_at is null) with check (auth.uid() = id);
 
 revoke update on profiles from authenticated;
 grant update (full_name) on profiles to authenticated;
@@ -750,7 +754,7 @@ create policy "branches_select_active_users" on branches
 create policy "branches_insert_admin" on branches
   for insert with check (is_active_admin());
 create policy "branches_update_admin" on branches
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 
 -- plans: all active users can read; only admins can write. One policy set now covers
 -- both membership plans and add-ons (category is just a column, not a separate table).
@@ -759,7 +763,7 @@ create policy "plans_select_active_users" on plans
 create policy "plans_insert_admin" on plans
   for insert with check (is_active_admin());
 create policy "plans_update_admin" on plans
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 
 -- roles: all active users can read (needed to render the role picker); only admins write.
 create policy "roles_select_active_users" on roles
@@ -767,7 +771,7 @@ create policy "roles_select_active_users" on roles
 create policy "roles_insert_admin" on roles
   for insert with check (is_active_admin());
 create policy "roles_update_admin" on roles
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 
 -- user_roles: readable by any active user, but NO insert/update/delete policy for any
 -- client role at all — every write goes through replace_user_roles() (§Role Assignment,
@@ -797,7 +801,7 @@ create policy "members_select_active_users" on members
 create policy "members_insert_active_users" on members
   for insert with check (is_active_user());
 create policy "members_update_active_users" on members
-  for update using (is_active_user());
+  for update using (is_active_user() and deleted_at is null);
 
 -- subscriptions / subscription_items: read-only for direct client access.
 -- All writes (creating a subscription + its line items together) go through Edge

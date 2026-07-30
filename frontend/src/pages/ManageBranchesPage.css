@@ -306,7 +306,7 @@
 }
 
 .branches-delete-confirm:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  background: var(--color-status-danger-800);
 }
 
 .branches-delete-confirm:disabled {

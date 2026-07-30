@@ -151,7 +151,10 @@
 }
 
 .app-shell-nav-item-active {
-  color: var(--color-text-brand);
+  /* text-brand (#E8430A) only reaches ~3.6:1 on brand-tint, short of AA 4.5:1 at this
+     size - brand-600 (same hue) reaches ~6:1. The border only needs 3:1 so it keeps
+     the brighter text-brand/brand-primary shade. */
+  color: var(--color-brand-600);
   background: var(--color-brand-tint);
   border-left-color: var(--color-text-brand);
 }
@@ -160,7 +163,7 @@
   /* Active item keeps its own tint on hover rather than picking up the plain hover state
      meant for inactive items - otherwise hovering the current page looks like it un-selects. */
   background: var(--color-brand-tint);
-  color: var(--color-text-brand);
+  color: var(--color-brand-600);
 }
 
 @media (min-width: 768px) {

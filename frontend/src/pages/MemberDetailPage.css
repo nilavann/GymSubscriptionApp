@@ -51,7 +51,8 @@
 }
 
 .member-detail-back-link:hover {
-  color: var(--color-text-brand);
+  /* brand-600, not text-brand - small text on a light surface. */
+  color: var(--color-brand-600);
 }
 
 .member-detail-header {
@@ -262,7 +263,8 @@
 .member-detail-inline-retry {
   background: none;
   border: none;
-  color: var(--color-text-brand);
+  /* brand-600, not text-brand - small text on a light surface. */
+  color: var(--color-brand-600);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
@@ -690,7 +692,8 @@
   background: none;
   border: none;
   font-size: 0.8rem;
-  color: var(--color-text-brand);
+  /* brand-600, not text-brand - small text on a light surface. */
+  color: var(--color-brand-600);
   cursor: pointer;
   padding: 0 0.5rem;
 }

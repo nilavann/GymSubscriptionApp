@@ -18,7 +18,9 @@
 }
 
 .invite-user-back-link:hover {
-  color: var(--color-text-brand);
+  /* brand-600, not text-brand - this hover label is small text on a light
+     surface, where text-brand's ~4.0:1 falls short of AA 4.5:1. */
+  color: var(--color-brand-600);
 }
 
 .invite-user-back-link:active {

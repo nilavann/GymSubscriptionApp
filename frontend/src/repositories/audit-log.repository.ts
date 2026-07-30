@@ -58,6 +58,20 @@ function dedupe(ids: (string | null)[]): string[] {
   return Array.from(new Set(ids.filter((id): id is string => id !== null)));
 }
 
+/** `dateStr` (YYYY-MM-DD) interpreted as the START of that day in the caller's LOCAL
+ * timezone, converted to the UTC instant `changed_at` (a timestamptz) is compared against —
+ * a bare `${dateStr}T00:00:00` (no offset) is parsed as local time per the Date spec, unlike
+ * appending `Z`, which would silently use UTC midnight instead and shift the boundary by the
+ * caller's UTC offset. */
+function localDayStartUtc(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toISOString();
+}
+
+/** Same as localDayStartUtc but for the END of the local day (23:59:59.999). */
+function localDayEndUtc(dateStr: string): string {
+  return new Date(`${dateStr}T23:59:59.999`).toISOString();
+}
+
 /**
  * View-only (REQ-ADMIN-005) - admin-only read via `audit_log_select_admin` RLS, no
  * Edge Function needed, same reasoning as reportRepository's direct-read pattern. Flat
@@ -77,8 +91,8 @@ export const auditLogRepository = {
     let query = supabase
       .from('audit_log')
       .select(AUDIT_SELECT)
-      .gte('changed_at', `${filters.startDate}T00:00:00.000Z`)
-      .lte('changed_at', `${filters.endDate}T23:59:59.999Z`)
+      .gte('changed_at', localDayStartUtc(filters.startDate))
+      .lte('changed_at', localDayEndUtc(filters.endDate))
       .order('changed_at', { ascending: false })
       .limit(MAX_ROWS + 1);
 

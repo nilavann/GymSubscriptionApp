@@ -48,7 +48,7 @@
 | aadhaar_number | No | No format validation specified yet |
 | occupation | No | |
 | photo | No | Upload or camera capture (§4) |
-| handled_by_staff | No | Select a staff/admin profile; independently editable, separate from `created_by` |
+| handled_by_staff | No | Select a staff/admin profile; independently editable, separate from `created_by`. On Add Member, pre-filled with the logged-in user and changeable before submit; on Member Detail, editable at any time afterward — same field, same rule, at either point. |
 
 **Never shown as an input, always read-only or absent from the form:** `member_number` (system-generated, REQ-MEM-005), `created_by` (system-set, REQ-MEM-003).
 
@@ -58,7 +58,7 @@
 
 ### 3.1 Add Member — `/members/new`
 
-All-signed-in-users route (screens.md's route map/access table still applies — only the field list here supersedes it). Fields per §2 above, minus `handled_by_staff` (not meaningful before the record exists — set afterward from the detail page) and minus `member_number`/`created_by`.
+All-signed-in-users route (screens.md's route map/access table still applies — only the field list here supersedes it). Fields per §2 above, including `handled_by_staff` (pre-filled with the logged-in user, a plain `<select>` of active staff/admin profiles — REQ-MEM-003 — changeable before submit for the case where someone else actually handled the signup), minus `member_number`/`created_by` (system-generated, never shown as an input at all).
 
 ```
 Save tapped
@@ -68,7 +68,7 @@ Save tapped
       → valid: memberService.create({ name, phone, date_of_birth, date_of_joining, branch_id,
                  gender, weight_kg, height_cm, under_doctor_care, doctor_care_details,
                  emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
-                 email, residential_address, aadhaar_number, occupation })
+                 email, residential_address, aadhaar_number, occupation, handled_by_staff })
           → photo (if selected): compressed client-side (§4), then uploaded, then a follow-up
             update sets photo_url/photo_thumbnail_url - a separate step from the create above,
             so a photo failure never blocks the member record itself (REQ-MEM-004)
@@ -85,14 +85,14 @@ Save tapped
 
 This screen only creates the member row — it does not collect a first subscription (unchanged from the existing screens.md note); that happens from the new member's detail page.
 
-Mobile-friendliness (rules.md rule 16): this form has grown to 19 fields since screens.md's original WSCR-04 (which had 7) — that's a longer scroll on a phone, not a layout problem; every field still stacks in one column below 768px and every input/toggle/chip meets the 44×44px touch-target minimum, same as every other form in this app.
+Mobile-friendliness (rules.md rule 16): this form has grown to 20 fields since screens.md's original WSCR-04 (which had 7) — that's a longer scroll on a phone, not a layout problem; every field still stacks in one column below 768px and every input/toggle/chip meets the 44×44px touch-target minimum, same as every other form in this app.
 
 ### 3.2 Member Detail — `/members/:id`
 
 All fields from §2 are viewable, with an inline edit toggle (matches the existing hero/personal-details/body-metrics/subscription layout in screens.md — only the field set changes, not the layout pattern). Additions to what screens.md currently describes:
 
 - **Member number** shown read-only near the hero section (`member_number`, e.g. `MUM-2026-0001`).
-- **`handled_by_staff`** editable independently of the rest of the personal-details section — its own field, its own save action is not required (can share the personal-details save), but must never overwrite `created_by`.
+- **`handled_by_staff`** editable independently of the rest of the personal-details section — its own field, its own save action is not required (can share the personal-details save), but must never overwrite `created_by`. Already set at registration (§3.1, defaulting to whoever created the record); this is just the same field, reachable again here to reassign it later.
 - **Delete action** (REQ-MEM-007): a destructive action (confirm dialog) that calls a soft-delete update and navigates back to `/` on success. No separate "deactivate" state exists for members.
 - **Photo**: upload or camera-capture control (§4); shows `photo_url` here (the original), not the thumbnail — thumbnails are for list/card surfaces only (REQ-MEM-004).
 
@@ -100,7 +100,7 @@ Member field saves and subscription saves remain **completely independent** (own
 
 ### 3.3 Edit Member — `/members/:id/edit`
 
-Same field set as Add Member (§3.1) plus `handled_by_staff`, pre-filled with the member's current data. `member_number` and `created_by` are displayed read-only, never sent as editable inputs. Cancel returns to `/members/:id` without saving; Save calls `memberService.update(id, data)` — same failure handling as §3.1 (specific message where the cause is known, e.g. a phone conflict; generic fallback otherwise; form stays open with the entered values intact as the retry path, per rules.md rule 30).
+Same field set as Add Member (§3.1) — `handled_by_staff` included, same as it now is there too — pre-filled with the member's current data. `member_number` and `created_by` are displayed read-only, never sent as editable inputs. Cancel returns to `/members/:id` without saving; Save calls `memberService.update(id, data)` — same failure handling as §3.1 (specific message where the cause is known, e.g. a phone conflict; generic fallback otherwise; form stays open with the entered values intact as the retry path, per rules.md rule 30).
 
 (Whether this is a separate route or an inline-edit-on-detail toggle is an implementation choice screens.md already left open — pick one consistently; the field-level rules here apply either way.) Same mobile-friendliness note as §3.1 applies here too (rules.md rule 16).
 
@@ -112,8 +112,10 @@ Same field set as Add Member (§3.1) plus `handled_by_staff`, pre-filled with th
 
 | Breakpoint | Layout |
 |---|---|
-| Mobile | Stacked member cards: avatar, name, plan · phone, expiry line, status badge |
-| Desktop | Data table — Avatar+Name, Phone, Plan, Expiry, Status, Actions; sortable by column header |
+| Mobile | Stacked member cards: avatar, name, member number, plan · phone, expiry line, status badge |
+| Desktop | Data table — Avatar+Name, Member #, Phone, Plan, Expiry, Status, Actions; sortable by column header |
+
+Member number was previously only usable via search (§Search below), not visible in the list itself — added as its own column/line since staff need it to cross-reference a member without opening their detail page (e.g. matching a paper receipt or a phone call asking "what's my member number").
 
 #### Search (REQ-LIST-002)
 
@@ -196,7 +198,7 @@ The Mobile/Desktop breakpoint table above (unchanged from screens.md) already sa
 |---|---|
 | REQ-MEM-001 | Add Member form (§3.1), field table (§2) |
 | REQ-MEM-002 | Camera/upload toggle (§4) |
-| REQ-MEM-003 | `created_by` never in any form payload; `handled_by_staff` field on Member Detail (§3.2) |
+| REQ-MEM-003 | `created_by` never in any form payload; `handled_by_staff` field on both Add Member (§3.1, defaults to the logged-in user) and Member Detail (§3.2) |
 | REQ-MEM-004 | Compression flow (§4) |
 | REQ-MEM-005 | `member_number` shown read-only only, never an input (§2, §3.2) |
 | REQ-MEM-006 | Edit Member (§3.3) |

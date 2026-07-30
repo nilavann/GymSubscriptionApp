@@ -150,9 +150,9 @@ create policy "profiles_select_self" on profiles
   for select using (auth.uid() = id and deleted_at is null);
 
 create policy "profiles_update_admin" on profiles
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 create policy "profiles_update_self_name" on profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+  for update using (auth.uid() = id and deleted_at is null) with check (auth.uid() = id);
 
 -- The self-update policy above only checks row ownership, not which columns change —
 -- RLS alone can't express "this column only." A column-level grant is what actually

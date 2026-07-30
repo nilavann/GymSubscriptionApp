@@ -30,7 +30,9 @@ create table if not exists branches (
   changed_at  timestamptz,
   changed_by  uuid references profiles(id),
   deleted_at  timestamptz,
-  deleted_by  uuid references profiles(id)
+  deleted_by  uuid references profiles(id),
+  constraint chk_branches_name_not_blank check (trim(name) <> ''),
+  constraint chk_branches_code_not_blank check (trim(code) <> '')
 );
 create unique index if not exists idx_branches_code_active on branches(code) where deleted_at is null;
 
@@ -53,7 +55,8 @@ create table if not exists plans (
   ),
   constraint chk_plan_max_members_only_for_membership check (
     category = 'membership' or max_members = 1
-  )
+  ),
+  constraint chk_plans_name_not_blank check (trim(name) <> '')
 );
 create unique index if not exists idx_plans_name_active on plans(name) where deleted_at is null;
 create index if not exists idx_plans_category on plans(category);
@@ -72,7 +75,7 @@ create policy "branches_select_active_users" on branches
 create policy "branches_insert_admin" on branches
   for insert with check (is_active_admin());
 create policy "branches_update_admin" on branches
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 
 -- plans: all active users can read; only admins can write.
 create policy "plans_select_active_users" on plans
@@ -80,7 +83,7 @@ create policy "plans_select_active_users" on plans
 create policy "plans_insert_admin" on plans
   for insert with check (is_active_admin());
 create policy "plans_update_admin" on plans
-  for update using (is_active_admin());
+  for update using (is_active_admin() and deleted_at is null);
 ```
 
 **No Edge Function needed for create/edit** — direct RLS-guarded `supabase-js` insert/update, admin-only by policy. This is a deliberate contrast with `members`/`subscriptions`: there's no cross-table atomicity requirement here (one row, one table, no line items), so RLS alone is sufficient authority, the same reasoning `members` CRUD already uses.

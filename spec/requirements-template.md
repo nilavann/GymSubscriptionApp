@@ -32,7 +32,7 @@ List every distinct type of user/system that interacts with the app, and what th
 |---|---|---|---|
 | REQ-MEM-001 | Staff/admin can register a new member with: name, date of birth (mandatory), phone, date of joining, branch, gender (Male/Female/Other), weight (kg), height (cm), "under doctor's care" flag (+ explanation if yes), and emergency contact (name, mobile, relationship) — all required. Plus optional: email, photo, residential address, aadhaar number, occupation. Phone number must be unique across all (non-deleted) members. | staff, admin | Must |
 | REQ-MEM-002 | Staff/admin can capture a member's photo directly via device camera at registration time, in addition to uploading an existing image file. | staff, admin | Could |
-| REQ-MEM-003 | Every member record stores who created it (system-set, immutable) and a separate, independently editable "handled by" staff field for cases where one staff member enters data on behalf of another. | staff, admin | Must |
+| REQ-MEM-003 | Every member record stores who created it (system-set, immutable) and a separate, independently editable "handled by" staff field for cases where one staff member enters data on behalf of another. Settable at registration (defaulting to the logged-in staff/admin creating the record, changeable before submit) and independently editable afterward from the member's own page — same field either way, always distinct from `created_by`. | staff, admin | Must |
 | REQ-MEM-004 | A member's photo is compressed client-side (in the browser) before upload, targeting ~400px on the longest side and under ~50KB. Both the original file and the compressed version are uploaded and stored. | staff, admin | Should |
 | REQ-MEM-005 | Every member is assigned a unique, system-generated member number at creation, formatted `<branch code>-<year>-<sequence>` (e.g. `MUM-2026-0001`). The sequence increments continuously per branch and **never resets** — `<year>` reflects the member's actual registration year, not a counter-reset boundary (e.g. a branch's second-ever member might be `MUM-2025-0002`, and its next member the following year `MUM-2026-0003`, not `MUM-2026-0001`). **Revised** from an earlier "resets to 0001 each year" design — see [backend/member-management.md §3](./backend/member-management.md#3-member-number-generation-req-mem-005). | system (staff/admin never enter it) | Must |
 | REQ-MEM-006 | Staff/admin can edit an existing member's details — every field is editable except `member_number` (system-generated, immutable), `created_by` (system-set, immutable, see REQ-MEM-003), and `branch_id` (set once at registration, immutable — REQ-MEM-005's branch code is baked into `member_number` at creation and never revisited). | staff, admin | Must |
@@ -54,7 +54,8 @@ List every distinct type of user/system that interacts with the app, and what th
 
 **REQ-MEM-003**
 - Given a member is created, when saved, then `created_by` is set automatically from the logged-in session and can never be edited afterward, by anyone.
-- Given a different staff member should get credit for handling the signup, when any staff or admin (not admin-only) edits the "handled by" field, then it updates independently of `created_by`.
+- Given staff/admin opens the new member form, when the form loads, then "handled by staff" is pre-filled with the logged-in user, editable via a dropdown of active staff/admin before submit — same non-required-but-defaulted treatment as `date_of_joining`.
+- Given a different staff member should get credit for handling the signup, when any staff or admin (not admin-only) edits the "handled by" field — at registration or afterward from the member's own page — then it updates independently of `created_by`.
 
 **REQ-MEM-004**
 - Given staff selects or captures a photo, when it is ready to upload, then the browser compresses it client-side to ~400px on the longest side, targeting under ~50KB, before the upload request is made.
@@ -83,7 +84,7 @@ List every distinct type of user/system that interacts with the app, and what th
 ### 2.4 Business rules specific to this area
 
 - `created_by` / `changed_by` remain system-set via the existing audit trigger and are never client-editable — unchanged from the current spec.
-- `handled_by_staff` is a new, separately editable field — it does not affect or overwrite `created_by`.
+- `handled_by_staff` is a separately editable field — it does not affect or overwrite `created_by`. Settable at registration (defaults to the logged-in user, changeable before submit) and independently editable afterward from the member's page — same column, same rule, at either point in time.
 - Photo capture supports both live camera capture and file upload; either path feeds the same compression step (REQ-MEM-004) before storage.
 - Compression happens client-side, before upload; both the original (`photo_url`) and compressed (`photo_thumbnail_url`) files are stored — never only one.
 - Display surfaces (member list, cards, thumbnails) use `photo_thumbnail_url` by default for load speed.

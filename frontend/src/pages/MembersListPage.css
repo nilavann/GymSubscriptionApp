@@ -462,6 +462,13 @@
   white-space: nowrap;
 }
 
+.members-card-number {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0.1rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .members-card-secondary {
   color: var(--color-text-secondary);
   font-size: 0.85rem;
@@ -518,6 +525,11 @@
     text-transform: uppercase;
   }
 
+  .members-table-number {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
   .members-sort-header {
     background: none;
     border: none;
@@ -531,7 +543,8 @@
   }
 
   .members-sort-header:hover {
-    color: var(--color-text-brand);
+    /* brand-600, not text-brand - small text on a light surface. */
+    color: var(--color-brand-600);
   }
 
   .members-table-row {

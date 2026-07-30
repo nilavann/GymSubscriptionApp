@@ -49,7 +49,11 @@
   --color-status-warning-text: #B45309;
   --color-status-warning-bg: #FEF3E2;
   --color-status-warning-border: #F9D08B;
-  --color-status-danger: #C0230A;
+  /* A genuinely separate crimson from brand-600, not a repaint of it — previously identical
+     hex to --color-brand-600 (#C0230A), so a primary Save button and a destructive Delete
+     button rendered in the exact same color with nothing but the label to tell them apart. */
+  --color-status-danger: #C81E3A;
+  --color-status-danger-800: #9A1730;
   --color-status-danger-bg: #FDECEA;
   --color-status-danger-border: #F4B2AA;
   --color-status-neutral: #6B6B6B;

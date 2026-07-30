@@ -65,6 +65,7 @@ export function MemberDetailPage() {
   const [historyItems, setHistoryItems] = useState<SubscriptionItem[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [memberRows, setMemberRows] = useState<MemberListRow[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -101,7 +102,7 @@ export function MemberDetailPage() {
     setLoadError(null);
     setLoadErrorKind(null);
     try {
-      const [memberData, items, historyData, planRows, profileRows, listRows] = await Promise.all([
+      const [memberData, items, historyData, planRows, profileRows, allProfileRows, listRows] = await Promise.all([
         withTimeout(memberRepository.getById(memberId), FETCH_TIMEOUT_MS, new Error('member-fetch-timeout')),
         withTimeout(
           subscriptionRepository.getCurrentItemsForMember(memberId),
@@ -111,6 +112,7 @@ export function MemberDetailPage() {
         withTimeout(subscriptionRepository.getHistoryForMember(memberId), FETCH_TIMEOUT_MS, new Error('history-fetch-timeout')),
         withTimeout(planRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('plans-fetch-timeout')),
         withTimeout(profileRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('profiles-fetch-timeout')),
+        withTimeout(profileRepository.getAllNonDeleted(), FETCH_TIMEOUT_MS, new Error('all-profiles-fetch-timeout')),
         withTimeout(memberListRepository.getAll(), FETCH_TIMEOUT_MS, new Error('members-fetch-timeout')),
       ]);
       if (!memberData) {
@@ -130,6 +132,7 @@ export function MemberDetailPage() {
       setHistoryItems(items2);
       setPlans(planRows);
       setProfiles(profileRows);
+      setAllProfiles(allProfileRows);
       setMemberRows(listRows);
       if (startInEditMode) {
         setMemberForm(memberService.editDraftFromMember(memberData));
@@ -329,7 +332,7 @@ export function MemberDetailPage() {
   const currentAddonItems = currentItems.filter((i) => i.category === 'addon');
 
   const planById = new Map(plans.map((p) => [p.id, p]));
-  const profileById = new Map(profiles.map((p) => [p.id, p]));
+  const profileById = new Map(allProfiles.map((p) => [p.id, p]));
   const memberNameById = new Map(memberRows.map((m) => [m.id, m.name]));
   const historyItemsBySubscription = new Map<number, SubscriptionItem[]>();
   for (const item of historyItems) {

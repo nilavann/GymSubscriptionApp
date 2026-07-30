@@ -72,15 +72,21 @@ export interface NewMember {
   residential_address: string | null;
   aadhaar_number: string | null;
   occupation: string | null;
+  /**
+   * Settable at creation, defaulting to whoever's creating the record (AddMemberPage
+   * seeds it from the logged-in session) — editable to reassign credit when one staff
+   * member enters data on behalf of another (REQ-MEM-003). Independently editable
+   * afterward too, from the member's detail page; unrelated to created_by, which is
+   * always the logged-in session regardless of what this is set to.
+   */
+  handled_by_staff?: string | null;
 }
 
-// photo_url/photo_thumbnail_url and handled_by_staff are deliberately absent from
-// NewMember, not just optional — see spec/frontend/member-management.md §3.1/§4:
-// - Photo: compression/upload is a separate step from the create call, so a photo
-//   failure never blocks the member record itself (REQ-MEM-004). Set via a follow-up
-//   UpdateMember once the Storage upload completes.
-// - handled_by_staff: not meaningful before the record exists — set afterward from the
-//   member's detail page (REQ-MEM-003).
+// photo_url/photo_thumbnail_url are deliberately absent from NewMember, not just
+// optional — see spec/frontend/member-management.md §3.1: compression/upload is a
+// separate step from the create call, so a photo failure never blocks the member
+// record itself (REQ-MEM-004). Set via a follow-up UpdateMember once the Storage
+// upload completes.
 
 /**
  * Payload for memberService.update() — every field optional, EXCEPT `member_number`,

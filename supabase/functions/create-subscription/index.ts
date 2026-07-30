@@ -176,27 +176,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 3f: indefinite-item hard block (REQ-SUB-007) — no override for this one.
-      if (isIndefinite) {
-        const memberIdsToCheck = [item.member_id, ...(item.shared_member_id ? [item.shared_member_id] : [])];
-        const orClause = memberIdsToCheck
-          .flatMap((id) => [`member_id.eq.${id}`, `shared_member_id.eq.${id}`])
-          .join(',');
-        const { data: existing, error: existingError } = await supabaseAdmin
-          .from('subscription_items')
-          .select('id')
-          .eq('plan_id', item.plan_id)
-          .is('deleted_at', null)
-          .or(orClause)
-          .limit(1);
-        if (existingError) throw existingError;
-        if (existing && existing.length > 0) {
-          return jsonError(
-            `This member already has an active indefinite item for plan "${plan.name}" — it cannot be attached again`,
-            409,
-          );
-        }
-      }
+      // 3f: indefinite-item hard block (REQ-SUB-007) — enforced atomically inside
+      // create_subscription_with_items() (20260801000000 migration), not here. A pre-check
+      // SELECT in this function would run outside that RPC's transaction, leaving a race
+      // window between the check and the insert; the RPC is the single source of truth.
 
       itemsToInsert.push({
         plan_id: item.plan_id,
@@ -219,7 +202,10 @@ Deno.serve(async (req) => {
       p_notes: payload.notes ?? null,
       p_items: itemsToInsert,
     });
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      const isDuplicateIndefiniteItem = rpcError.message?.toLowerCase().includes('already has an active indefinite item');
+      return jsonError(rpcError.message, isDuplicateIndefiniteItem ? 409 : 500);
+    }
 
     // Step 5: return the created subscription and its items.
     return jsonResponse(result, 201);

@@ -105,8 +105,7 @@ Responsibilities, in order (see [edge-functions.md §3](./edge-functions.md#3-su
    c. Compute `end_date` (§3 above).
    d. Compute default `amount_paid = plan.price × quantity` if the client didn't override it; persist whatever the client submits either way.
    e. **Shared member (REQ-SUB-004):** if `shared_member_id` is supplied, validate `plan.category = 'membership'`, `plan.max_members = 2`, and `shared_member_id <> member_id` (also enforced by `chk_subscription_item_shared_member_distinct`); reject otherwise. An add-on item must never set `shared_member_id`.
-   f. **Indefinite-item hard block (REQ-SUB-007):** if `plan.duration_days is null`, query whether `member_id` (and `shared_member_id`, if set) already has *any* non-deleted `subscription_items` row for this `plan_id`, across any subscription. If yes → reject with a clear error; there is no override for this case.
-4. Insert the `subscriptions` header row, then all validated `subscription_items` rows, via the service-role client, in one transaction — either all rows land or none do.
+4. Insert the `subscriptions` header row, then all validated `subscription_items` rows, via the `create_subscription_with_items()` RPC (service role), in one transaction — either all rows land or none do. **Indefinite-item hard block (REQ-SUB-007)** is enforced *inside* this same transaction, immediately before each item's insert: if `plan.duration_days is null`, it checks whether `member_id` (and `shared_member_id`, if set) already has *any* non-deleted `subscription_items` row for this `plan_id`, across any subscription, and raises (→ mapped to a 409 by the Edge Function) if so — there is no override for this case. This check deliberately lives in the RPC, not as a pre-check `SELECT` in the Edge Function before the RPC call: a pre-check outside the transaction would leave a race window where two concurrent checkouts for the same member+plan could both pass the check and then both insert.
 5. Return the created subscription and its items.
 
 **Deliberately not implemented here:** the warn-then-allow overlap check (REQ-SUB-005/008) — this function has no knowledge of it, doesn't accept an override flag, and doesn't reject or warn on an overlapping date range itself. It's resolved as a client-side-only check that runs in the checkout form *before* this function is ever called — see [frontend/subscription-management.md §5](../frontend/subscription-management.md#5-overlap-warning-req-sub-005008). A direct call here saves an overlapping item with no resistance at all, by design.
@@ -162,7 +161,7 @@ No admin/staff distinction on read — any active user can view every subscripti
 | REQ-SUB-004 | `subscription_items.shared_member_id` + `chk_subscription_item_shared_member_distinct` (§2); `create-subscription` step 3e (§4) |
 | REQ-SUB-005 | Frontend-only — see [frontend/subscription-management.md §5](../frontend/subscription-management.md#5-overlap-warning-req-sub-005008); no backend implementation |
 | REQ-SUB-006 | `plans.duration_days` nullable CHECK (master-data migration); `end_date` formula (§3) |
-| REQ-SUB-007 | `create-subscription` step 3f (§4) |
+| REQ-SUB-007 | `create_subscription_with_items()` RPC, checked atomically per-item inside the insert transaction (§4) |
 | REQ-SUB-008 | Frontend-only — see [frontend/subscription-management.md §5](../frontend/subscription-management.md#5-overlap-warning-req-sub-005008); no backend implementation |
 | REQ-SUB-009 | `create-subscription` step 3b/3c/3d (§4); `end_date`/`amount_paid` formulas (§3) |
 | REQ-SUB-010 | Deferred — no implementation |

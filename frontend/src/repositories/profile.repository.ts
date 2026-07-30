@@ -35,12 +35,29 @@ export const profileRepository = {
     return data;
   },
 
-  /** Every active user — feeds the handled_by_staff picker and created_by/handled_by_staff name display (member-detail.md §12). */
+  /** Every active user — feeds the handled_by_staff *picker* specifically (you shouldn't be
+   * able to newly assign a deactivated staffer). For resolving an already-stored
+   * created_by/handled_by_staff id to a display name, use getAllNonDeleted() instead — a
+   * deactivated (but not deleted) staffer's past attributions shouldn't render as "Unknown"
+   * just because they can no longer be picked for a new one (member-detail.md §12). */
   async getAllActive(): Promise<Profile[]> {
     const { data, error } = await supabase
       .from('profiles_with_roles')
       .select('id, full_name, roles, is_active')
       .eq('is_active', true)
+      .order('full_name');
+    if (error) throw error;
+    return (data ?? []) as unknown as Profile[];
+  },
+
+  /** Every non-deleted user regardless of is_active — for resolving created_by/handled_by_staff
+   * ids to display names without a deactivated staffer's history looking like "Unknown".
+   * `profiles_select_active_users` RLS only requires the CALLER to be active; it doesn't filter
+   * the target row on is_active, only deleted_at, so this is already reachable without a new grant. */
+  async getAllNonDeleted(): Promise<Profile[]> {
+    const { data, error } = await supabase
+      .from('profiles_with_roles')
+      .select('id, full_name, roles, is_active')
       .order('full_name');
     if (error) throw error;
     return (data ?? []) as unknown as Profile[];
