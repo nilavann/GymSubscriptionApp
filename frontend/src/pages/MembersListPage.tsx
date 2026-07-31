@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, SlidersHorizontal, Pencil, RefreshCw } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, Pencil, RefreshCw, X, WifiOff } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { formatDate } from '../lib/datetime';
 import { deriveStatus, STATUS_LABEL, STATUS_BADGE_CLASS } from '../lib/status';
 import { getAvatarColor, getInitials } from '../lib/avatar';
 import { PhotoLightbox } from '../components/PhotoLightbox';
+import { FilterDrawer } from '../components/FilterDrawer';
 import type { MemberListRow, MemberStatus } from '../types/member-list';
 import type { Gender } from '../types/member';
 import type { Plan } from '../types/plan';
@@ -156,9 +157,13 @@ export function MembersListPage() {
     return (
       <div className="members-page">
         <div className="members-load-error">
-          <p>
+          <span className="members-load-error-icon" aria-hidden="true">
+            <WifiOff size={26} strokeWidth={2} />
+          </span>
+          <p className="members-load-error-title">Couldn't load members</p>
+          <p className="members-load-error-body">
             {loadState === 'network-error'
-              ? "Couldn't load members — check your connection and try again."
+              ? 'Check your internet connection. Your search and filters are kept — nothing is lost.'
               : 'Something went wrong loading members. Please try again.'}
           </p>
           <button type="button" className="members-retry" onClick={load}>
@@ -224,67 +229,104 @@ export function MembersListPage() {
                 <option value="expiry">Sort: Expiry date</option>
               </select>
 
-              <button type="button" className="members-filter-toggle" onClick={() => setFiltersOpen((v) => !v)}>
+              <button
+                type="button"
+                className={`members-filter-toggle${activeFilterCount > 0 ? ' members-filter-toggle-active' : ''}`}
+                onClick={() => setFiltersOpen(true)}
+              >
                 <SlidersHorizontal size={16} strokeWidth={2} />
-                Filters{activeFilterCount > 0 && !filtersOpen ? ` (${activeFilterCount})` : ''}
+                Filters
+                {activeFilterCount > 0 && <span className="members-filter-toggle-count">{activeFilterCount}</span>}
               </button>
             </div>
 
-            {filtersOpen && (
-              <div className="members-filter-panel">
-                <div className="members-filter-group">
-                  <span className="members-filter-label">Gender</span>
-                  <div className="members-chip-row">
-                    {GENDERS.map((gender) => (
-                      <button
-                        key={gender}
-                        type="button"
-                        className={`members-chip${selectedGenders.includes(gender) ? ' members-chip-selected' : ''}`}
-                        onClick={() => toggleInArray(selectedGenders, gender, setSelectedGenders)}
-                      >
-                        {gender}
+            {(selectedGenders.length > 0 || selectedPlanIds.length > 0 || selectedAddonPlanIds.length > 0) && (
+              <div className="members-applied-chips">
+                {selectedGenders.map((gender) => (
+                  <span key={`gender-${gender}`} className="members-applied-chip">
+                    Gender: {gender}
+                    <button type="button" onClick={() => toggleInArray(selectedGenders, gender, setSelectedGenders)} aria-label={`Remove gender filter ${gender}`}>
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
+                  </span>
+                ))}
+                {selectedPlanIds.map((id) => {
+                  const plan = membershipPlans.find((p) => p.id === id);
+                  if (!plan) return null;
+                  return (
+                    <span key={`plan-${id}`} className="members-applied-chip">
+                      Plan: {plan.name}
+                      <button type="button" onClick={() => toggleInArray(selectedPlanIds, id, setSelectedPlanIds)} aria-label={`Remove plan filter ${plan.name}`}>
+                        <X size={13} strokeWidth={2.5} />
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                {membershipPlans.length > 0 && (
-                  <div className="members-filter-group">
-                    <span className="members-filter-label">Plan</span>
-                    <div className="members-chip-row">
-                      {membershipPlans.map((plan) => (
-                        <button
-                          key={plan.id}
-                          type="button"
-                          className={`members-chip${selectedPlanIds.includes(plan.id) ? ' members-chip-selected' : ''}`}
-                          onClick={() => toggleInArray(selectedPlanIds, plan.id, setSelectedPlanIds)}
-                        >
-                          {plan.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {addonPlans.length > 0 && (
-                  <div className="members-filter-group">
-                    <span className="members-filter-label">Add-on</span>
-                    <div className="members-chip-row">
-                      {addonPlans.map((plan) => (
-                        <button
-                          key={plan.id}
-                          type="button"
-                          className={`members-chip${selectedAddonPlanIds.includes(plan.id) ? ' members-chip-selected' : ''}`}
-                          onClick={() => toggleInArray(selectedAddonPlanIds, plan.id, setSelectedAddonPlanIds)}
-                        >
-                          {plan.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    </span>
+                  );
+                })}
+                {selectedAddonPlanIds.map((id) => {
+                  const plan = addonPlans.find((p) => p.id === id);
+                  if (!plan) return null;
+                  return (
+                    <span key={`addon-${id}`} className="members-applied-chip">
+                      Add-on: {plan.name}
+                      <button type="button" onClick={() => toggleInArray(selectedAddonPlanIds, id, setSelectedAddonPlanIds)} aria-label={`Remove add-on filter ${plan.name}`}>
+                        <X size={13} strokeWidth={2.5} />
+                      </button>
+                    </span>
+                  );
+                })}
+                <button type="button" className="members-clear-link" onClick={clearFilters}>
+                  Clear all
+                </button>
               </div>
             )}
+
+            <FilterDrawer open={filtersOpen} onClose={() => setFiltersOpen(false)} onClear={clearFilters}>
+              <div className="members-filter-group">
+                <span className="members-filter-label">Gender</span>
+                {GENDERS.map((gender) => (
+                  <label key={gender} className="members-filter-checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedGenders.includes(gender)}
+                      onChange={() => toggleInArray(selectedGenders, gender, setSelectedGenders)}
+                    />
+                    {gender}
+                  </label>
+                ))}
+              </div>
+
+              {membershipPlans.length > 0 && (
+                <div className="members-filter-group">
+                  <span className="members-filter-label">Plan</span>
+                  {membershipPlans.map((plan) => (
+                    <label key={plan.id} className="members-filter-checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedPlanIds.includes(plan.id)}
+                        onChange={() => toggleInArray(selectedPlanIds, plan.id, setSelectedPlanIds)}
+                      />
+                      {plan.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {addonPlans.length > 0 && (
+                <div className="members-filter-group">
+                  <span className="members-filter-label">Add-on</span>
+                  {addonPlans.map((plan) => (
+                    <label key={plan.id} className="members-filter-checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedAddonPlanIds.includes(plan.id)}
+                        onChange={() => toggleInArray(selectedAddonPlanIds, plan.id, setSelectedAddonPlanIds)}
+                      />
+                      {plan.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </FilterDrawer>
           </div>
 
           <p className="members-result-count">{resultCountLine()}</p>
@@ -380,7 +422,6 @@ export function MembersListPage() {
                         aria-label={`Edit ${row.name}`}
                       >
                         <Pencil size={14} strokeWidth={2} />
-                        Edit
                       </button>
                     </td>
                   </tr>
@@ -446,7 +487,6 @@ function MemberCard({ row, onOpen, onEnlargePhoto }: { row: MemberListRow; onOpe
             aria-label={`Edit ${row.name}`}
           >
             <Pencil size={14} strokeWidth={2} />
-            Edit
           </button>
         </div>
         <p className="members-card-number">{row.member_number}</p>

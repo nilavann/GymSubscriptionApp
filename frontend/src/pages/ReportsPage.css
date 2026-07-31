@@ -6,11 +6,40 @@
   flex-wrap: wrap;
 }
 
+.reports-range-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reports-range-chip {
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.reports-range-chip:hover {
+  border-color: var(--tint-accent);
+}
+
+.reports-range-chip-active {
+  background: var(--tint-accent);
+  border-color: var(--tint-accent);
+  color: var(--color-text-inverse);
+}
+
 .reports-skeleton {
   height: 220px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin: 1rem 0;
-  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
   animation: reports-shimmer 1.4s ease infinite;
 }
@@ -35,19 +64,19 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .reports-retry:hover {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .reports-retry:active {
@@ -64,14 +93,13 @@
 }
 
 .reports-tile {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .reports-tile-icon {
@@ -85,20 +113,20 @@
 }
 
 .reports-tile-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
 }
 
-.reports-tile-active .reports-tile-value {
+.reports-tile-active .reports-tile-label {
   color: var(--color-status-success-text);
 }
 
-.reports-tile-expiring .reports-tile-value {
+.reports-tile-expiring .reports-tile-label {
   color: var(--color-status-warning-text);
 }
 
-.reports-tile-expired .reports-tile-value {
-  color: var(--color-status-danger);
+.reports-tile-expired .reports-tile-label {
+  color: var(--color-status-danger-text);
 }
 
 /* Sections */
@@ -111,7 +139,11 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
   margin: 0 0 0.75rem;
 }
 
@@ -119,10 +151,11 @@
   color: var(--color-text-secondary);
   padding: 1rem;
   text-align: center;
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-el);
   margin: 0;
+  font-size: 0.85rem;
 }
 
 /* Expiring This Week */
@@ -139,31 +172,31 @@
   justify-content: space-between;
   gap: 0.75rem;
   min-height: 44px;
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-el);
   padding: 0.6rem 0.9rem;
 }
 
 .reports-expiring-name {
   display: block;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
 }
 
 .reports-expiring-plan {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
 }
 
 .reports-expiring-badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
   font-weight: 700;
-  border: 1px solid var(--color-status-warning-border);
   background: var(--color-status-warning-bg);
   color: var(--color-status-warning-text);
   white-space: nowrap;
@@ -185,45 +218,46 @@
 }
 
 .reports-range-field label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
 
 .reports-range-field input {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   min-height: 44px;
 }
 
 .reports-range-field input:focus {
   outline: none;
-  border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
 }
 
 .reports-apply {
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0 1.5rem;
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .reports-apply:hover {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .reports-range-error {
-  color: var(--color-status-danger);
-  font-size: 0.85rem;
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.8rem;
   margin: 0.5rem 0 0;
 }
 
@@ -237,23 +271,26 @@
 }
 
 .reports-chart {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .reports-chart-title {
   margin: 0 0 1rem;
-  font-size: 0.95rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
 }
 
 .reports-chart-bars {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
-  height: 160px;
+  height: 150px;
   overflow-x: auto;
   padding-bottom: 0.25rem;
 }
@@ -269,7 +306,7 @@
 }
 
 .reports-chart-bar-count {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--color-text-secondary);
 }
@@ -278,19 +315,20 @@
   width: 24px;
   min-height: 2px;
   border-radius: 4px 4px 0 0;
+  background: var(--tint-pill-bg);
   transition: height 0.2s ease;
 }
 
 .reports-chart-bar-subscription {
-  background: var(--color-brand-600);
+  background: var(--tint-accent);
 }
 
 .reports-chart-bar-addon {
-  background: var(--color-status-warning);
+  background: var(--color-status-warning-text);
 }
 
 .reports-chart-bar-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--color-text-muted);
   white-space: nowrap;
 }
@@ -302,16 +340,15 @@
   flex-direction: column;
   align-items: center;
   gap: 1.25rem;
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
   padding: 1.25rem 1rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .reports-donut {
-  width: 200px;
-  height: 200px;
+  width: 190px;
+  height: 190px;
   flex-shrink: 0;
 }
 
@@ -326,15 +363,15 @@
   outline: none;
 }
 
-/* Proportional figures for the standalone total (marks-and-anatomy.md "figures") - never tabular-nums here. */
+/* Proportional figures for the standalone total - never tabular-nums here. */
 .reports-donut-total-value {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
   fill: var(--color-text-primary);
 }
 
 .reports-donut-total-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   fill: var(--color-text-muted);
 }
 
@@ -344,9 +381,6 @@
   padding: 0;
   width: 100%;
   max-width: 320px;
-  /* Row sibling to the fixed 200px .reports-donut at >= 768px (same shape as AppShell's
-     sidebar+content bug) - low practical risk since the legend's own content (Cash/UPI/Card
-     + short amounts) rarely gets wide enough to matter, but the fix is one line. */
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -358,38 +392,38 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-el);
   transition: background-color 0.15s ease;
 }
 
 .reports-payment-legend-row-active {
-  background: var(--color-surface-background);
+  background: var(--color-surface-page);
 }
 
 .reports-payment-legend-swatch {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
 .reports-payment-legend-mode {
   color: var(--color-text-primary);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   flex: 1;
 }
 
 .reports-payment-legend-amount {
   color: var(--color-text-primary);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
 }
 
 .reports-payment-legend-pct {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   min-width: 2.5rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -408,17 +442,15 @@
 .reports-tx-type-badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
   font-weight: 700;
-  border: 1px solid var(--color-brand-tint-border);
-  background: var(--color-brand-tint);
-  color: var(--color-text-on-brand-tint);
+  background: var(--tint-pill-bg);
+  color: var(--tint-accent);
   white-space: nowrap;
 }
 
 .reports-tx-type-addon {
-  border-color: var(--color-status-warning-border);
   background: var(--color-status-warning-bg);
   color: var(--color-status-warning-text);
 }
@@ -432,14 +464,13 @@
 }
 
 .reports-tx-card {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .reports-tx-card-top {
@@ -450,19 +481,21 @@
 }
 
 .reports-tx-name {
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
 }
 
 .reports-tx-detail {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
 }
 
 .reports-tx-amount {
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
 }
 
@@ -496,24 +529,45 @@
   .reports-tx-table {
     display: table;
     width: 100%;
-    border-collapse: collapse;
-    background: var(--color-surface-card);
-    border: 1px solid var(--color-border-default);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px var(--color-shadow);
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
   }
 
   .reports-tx-table th,
   .reports-tx-table td {
     text-align: left;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border-default);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
   }
 
   .reports-tx-table th {
-    color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 0;
+  }
+
+  .reports-tx-table tbody tr {
+    background: var(--color-neutral-0);
+  }
+
+  .reports-tx-table tbody tr td:first-child {
+    border-top-left-radius: var(--radius-el);
+    border-bottom-left-radius: var(--radius-el);
+    border-left: 1px solid var(--color-border-card);
+  }
+
+  .reports-tx-table tbody tr td:last-child {
+    border-top-right-radius: var(--radius-el);
+    border-bottom-right-radius: var(--radius-el);
+    border-right: 1px solid var(--color-border-card);
+  }
+
+  .reports-tx-table tbody tr td {
+    border-top: 1px solid var(--color-border-card);
+    border-bottom: 1px solid var(--color-border-card);
   }
 }

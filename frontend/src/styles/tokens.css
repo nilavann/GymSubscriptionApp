@@ -1,96 +1,175 @@
-/* Design tokens — see spec/frontend/colors.md and spec/frontend/styling.md.
-   Wrapped in Tailwind's `@theme` (not plain `:root`) so every token below both stays
-   usable as `var(--color-brand-600)` in existing plain CSS/CSS Modules AND generates a
-   matching Tailwind utility (`bg-brand-600`, `text-brand-600`, `border-brand-600`, ...) —
-   one source of truth, nothing hex-coded twice. Never hardcode a hex value in a
-   component file; use these tokens (or their Tailwind utility) instead. */
+/* Design tokens — FlexHub visual redesign (see frontend/mockups/README.md, the design
+   handoff this file implements). Wrapped in Tailwind's `@theme` (not plain `:root`) so
+   every fixed token below both stays usable as `var(--color-text-primary)` in plain CSS
+   AND generates a matching Tailwind utility. Never hardcode a hex value in a component
+   file; use these tokens (or their Tailwind utility) instead.
+
+   Theme-axis tokens (tint / cta / radius) live in a separate plain `:root` block below —
+   Tailwind's `@theme` only ever emits *default* values as real CSS custom properties, so
+   putting the axis tokens there too still lets `:root[data-tint="violet"]` etc. override
+   them at runtime via the normal CSS cascade (see ThemeProvider, context/theme.context.tsx). */
 @theme {
   /* Tailwind's stock red/blue/gray/etc. palette is reset to nothing — this app has its
-     own brand palette below, and leaving the defaults available would let a utility
-     class quietly bypass the token system the same way a hardcoded hex would (rules.md
-     rule 14). `bg-white`/`text-black`/etc. are gone too — use `bg-neutral-0`/
-     `text-neutral-900` instead. */
+     own palette below, and leaving the defaults available would let a utility class
+     quietly bypass the token system. `bg-white`/`text-black`/etc. are gone too — use
+     `bg-neutral-0`/`text-neutral-900` instead. */
   --color-*: initial;
 
-  /* Tailwind's default breakpoint scale (`sm`/`md`/`lg`/`xl`/`2xl`) is reset too, and
-     replaced with this project's own 3-tier scale (rules.md rule 16 / styling.md) — so
-     there is exactly one documented breakpoint system, not two running in parallel.
-     Mobile is the unprefixed default (no breakpoint needed); `tablet:`/`desktop:` are
-     the only responsive variants that exist in this codebase. */
+  /* Tailwind's default breakpoint scale (`sm`/`md`/`lg`/`xl`/`2xl`) is reset too, replaced
+     with this project's own 2-tier scale. Mobile is the unprefixed default; `tablet:` is
+     the mockup's ≤860px cut aligned to the codebase's existing 768px convention. */
   --breakpoint-*: initial;
-  --breakpoint-tablet: 48rem; /* 768px — the existing mobile/desktop cutover */
-  --breakpoint-desktop: 64rem; /* 1024px — new tier, see spec/frontend/styling.md */
+  --breakpoint-tablet: 48rem; /* 768px */
+  --breakpoint-desktop: 64rem; /* 1024px */
 
-  --color-brand-100: #FF9B70;
-  --color-brand-200: #FF6B35;
-  --color-brand-primary: #E8430A;
-  --color-brand-600: #C0230A;
-  --color-brand-800: #8C1505;
-  --color-brand-tint: #FFF0EA;
-  --color-brand-tint-border: #FFDCCC;
+  /* Neutral/gray ramp — exact hexes from the mockup's Design Tokens section. */
+  --color-neutral-900: #111827; /* primary text */
+  --color-neutral-600: #475569;
+  --color-neutral-500: #6b7280; /* secondary text */
+  --color-neutral-400: #9ca3af; /* muted text */
+  --color-neutral-300: #d1d5db; /* disabled text */
+  --color-neutral-200: #e5e7eb; /* control borders */
+  --color-neutral-150: #f1f1f3; /* card borders */
+  --color-neutral-100: #f5f5f6; /* row dividers */
+  --color-neutral-75: #f9fafb; /* input bg */
+  --color-neutral-50: #f3f4f6; /* page bg */
+  --color-neutral-0: #ffffff;
 
-  --color-neutral-900: #0D0D0D;
-  --color-neutral-800: #1E1E1E;
-  --color-neutral-600: #3A3A3A;
-  --color-neutral-400: #6B6B6B;
-  --color-neutral-200: #BBBBBB;
-  --color-neutral-100: #E0E0E0;
-  --color-neutral-50: #F5F5F5;
-  --color-neutral-0: #FFFFFF;
+  /* Categorical/secondary palette — member avatars (lib/avatar.ts), deterministically
+     hashed by member id. Carries no brand or status meaning. */
+  --color-data-1: #2563eb;
+  --color-data-2: #7c3aed;
+  --color-data-3: #059669;
+  --color-data-4: #b45309;
+  --color-data-5: #be123c;
+  --color-data-6: #0891b2;
 
-  --color-status-success: #1A8C4E;
-  --color-status-success-bg: #E8F5EE;
-  --color-status-success-border: #A8D8BC;
-  /* Deeper shade of --color-status-success, for text sitting directly on
-     --color-status-success-bg at normal/small sizes - the base success color
-     only reaches ~3.8:1 there, short of AA 4.5:1; this reaches ~5.9:1. */
-  --color-status-success-text: #146B3B;
-  --color-status-warning: #D97706;
-  --color-status-warning-text: #B45309;
-  --color-status-warning-bg: #FEF3E2;
-  --color-status-warning-border: #F9D08B;
-  /* A genuinely separate crimson from brand-600, not a repaint of it — previously identical
-     hex to --color-brand-600 (#C0230A), so a primary Save button and a destructive Delete
-     button rendered in the exact same color with nothing but the label to tell them apart. */
-  --color-status-danger: #C81E3A;
-  --color-status-danger-800: #9A1730;
-  --color-status-danger-bg: #FDECEA;
-  --color-status-danger-border: #F4B2AA;
-  --color-status-neutral: #6B6B6B;
-  --color-status-neutral-bg: #F5F5F5;
-  --color-status-neutral-border: #BBBBBB;
+  /* Status — badge strength (chips/pills) and a lighter "subtle" strength (banners),
+     both from the mockup's per-screen banner specs. */
+  --color-status-success-bg: #dcfce7;
+  --color-status-success-bg-subtle: #ecfdf5;
+  --color-status-success-border: #a7f3d0;
+  --color-status-success-text: #15803d;
+  --color-status-success-text-deep: #047857;
 
-  --color-surface-background: #F5F5F5;
-  --color-surface-card: #FFFFFF;
-  --color-surface-elevated: #FFFFFF;
-  --color-surface-dark: #0D0D0D;
-  --color-surface-input: #F5F5F5;
-  --color-surface-brand-tint: #FFF0EA;
+  --color-status-warning-bg: #fef3c7;
+  --color-status-warning-bg-subtle: #fffbeb;
+  --color-status-warning-border: #fde68a;
+  --color-status-warning-text: #b45309;
+  --color-status-warning-text-deep: #92400e;
 
-  --color-text-primary: #0D0D0D;
-  --color-text-secondary: #3A3A3A;
-  --color-text-muted: #6B6B6B;
-  --color-text-disabled: #BBBBBB;
-  --color-text-inverse: #FFFFFF;
-  --color-text-brand: #E8430A;
-  --color-text-on-brand-tint: #8C1505;
+  --color-status-danger-bg: #fee2e2;
+  --color-status-danger-bg-subtle: #fef2f2;
+  --color-status-danger-border: #fecaca;
+  --color-status-danger-text: #b91c1c;
+  --color-status-danger-text-deep: #dc2626;
 
-  --color-border-default: #E0E0E0;
-  --color-border-strong: #BBBBBB;
-  --color-border-focus: #E8430A;
-  --color-border-brand-tint: #FFDCCC;
-  --color-border-on-dark: #3A3A3A;
+  --color-status-neutral-bg: #f3f4f6;
+  --color-status-neutral-text: #6b7280;
 
-  --color-interactive-default: #E8430A;
-  --color-interactive-pressed: #C0230A;
-  --color-interactive-disabled: #BBBBBB;
-  --color-interactive-focus-ring: rgba(232, 67, 10, 0.18);
+  --color-surface-page: #f3f4f6;
+  --color-surface-card: #ffffff;
+  --color-surface-input: #f9fafb;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-disabled: #d1d5db;
+  --color-text-inverse: #ffffff;
+
+  --color-border-default: #e5e7eb;
+  --color-border-card: #f1f1f3;
+  --color-border-divider: #f5f5f6;
+
+  --color-interactive-disabled-bg: #e5e7eb;
+  --color-interactive-disabled-text: #9ca3af;
 }
 
-/* Excluded from @theme on purpose: Tailwind would generate a `text-shadow` utility from
-   any `--color-*` token, which collides in NAME (not behavior) with the real CSS
-   `text-shadow` property and would mislead readers. This token is only ever consumed via
-   `var(--color-shadow)` inside a `box-shadow` declaration, so it doesn't need a utility. */
+/* Theme-axis tokens — tint (5) x cta (3) x radius (3), matching the mockup's "small theme
+   config" (README §Theming). Plain :root, not @theme, since these are meant to be
+   overridden at runtime by attribute selectors (see below), not just Tailwind-generated
+   defaults. Defaults = sky + charcoal + soft, the mockup's stated default combo.
+   ThemeProvider (context/theme.context.tsx) sets data-tint/data-cta/data-radius on
+   <html> and persists the choice to localStorage. */
 :root {
-  --color-shadow: rgba(13, 13, 13, 0.35);
+  /* tint: sky (default) */
+  --tint-card-from: #eff6ff;
+  --tint-card-to: #ffffff;
+  --tint-border: #dbeafe;
+  --tint-accent: #2563eb;
+  --tint-pill-bg: #dbeafe;
+  --tint-focus-ring: rgba(37, 99, 235, 0.18);
+
+  /* cta: charcoal (default) */
+  --cta-from: #374151;
+  --cta-to: #111827;
+
+  /* radius: soft (default) */
+  --radius-card: 28px;
+  --radius-el: 12px; /* inputs/buttons */
+  --radius-tile: 16px; /* tiles/icon buttons */
+  --radius-pill: 999px; /* chips/badges/avatars — constant across every radius option */
+
+  /* Ambient card/overlay shadow and modal/drawer backdrop — exact rgba from the mockup's
+     Design Tokens / Filter-drawer specs, both derived from neutral-900 (#111827). */
+  --color-shadow: rgba(17, 24, 39, 0.08);
+  --color-backdrop: rgba(17, 24, 39, 0.35);
+}
+
+:root[data-tint='violet'] {
+  --tint-card-from: #f5f3ff;
+  --tint-card-to: #ffffff;
+  --tint-border: #ede9fe;
+  --tint-accent: #7c3aed;
+  --tint-pill-bg: #ede9fe;
+  --tint-focus-ring: rgba(124, 58, 237, 0.18);
+}
+
+:root[data-tint='emerald'] {
+  --tint-card-from: #ecfdf5;
+  --tint-card-to: #ffffff;
+  --tint-border: #d1fae5;
+  --tint-accent: #059669;
+  --tint-pill-bg: #d1fae5;
+  --tint-focus-ring: rgba(5, 150, 105, 0.18);
+}
+
+:root[data-tint='amber'] {
+  --tint-card-from: #fffbeb;
+  --tint-card-to: #ffffff;
+  --tint-border: #fef3c7;
+  --tint-accent: #b45309;
+  --tint-pill-bg: #fef3c7;
+  --tint-focus-ring: rgba(180, 83, 9, 0.18);
+}
+
+:root[data-tint='rose'] {
+  --tint-card-from: #fff1f2;
+  --tint-card-to: #ffffff;
+  --tint-border: #ffe4e6;
+  --tint-accent: #be123c;
+  --tint-pill-bg: #ffe4e6;
+  --tint-focus-ring: rgba(190, 18, 60, 0.18);
+}
+
+:root[data-cta='orange'] {
+  --cta-from: #f97316;
+  --cta-to: #c2410c;
+}
+
+:root[data-cta='blue'] {
+  --cta-from: #3b82f6;
+  --cta-to: #1d4ed8;
+}
+
+:root[data-radius='pill'] {
+  --radius-card: 40px;
+  --radius-el: 999px;
+  --radius-tile: 999px;
+}
+
+:root[data-radius='sharp'] {
+  --radius-card: 10px;
+  --radius-el: 6px;
+  --radius-tile: 6px;
 }

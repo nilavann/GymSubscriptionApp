@@ -4,6 +4,7 @@ import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { todayDate, firstOfCurrentMonth, toLocalDisplay } from '../lib/datetime';
 import { AUDITED_TABLES } from '../repositories/audit-log.repository';
+import { AdminTabs } from '../components/AdminTabs';
 import type { AuditLogEntry, AuditOperation } from '../types/audit-log';
 import type { ManagedUser } from '../types/profile';
 import './AuditLogPage.css';
@@ -100,6 +101,8 @@ export function AuditLogPage() {
         <h1>Audit Log</h1>
       </div>
 
+      <AdminTabs />
+
       <form className="audit-log-filters" onSubmit={handleApply}>
         <div className="audit-log-filter-field">
           <label htmlFor="audit-start">Start date</label>
@@ -185,10 +188,12 @@ export function AuditLogPage() {
                       <span className="audit-log-card-when">{toLocalDisplay(entry.changed_at)}</span>
                     </div>
                     <p className="audit-log-card-target">
-                      {entry.table_name} #{entry.record_id} · {entry.field_name}
+                      <strong>{entry.field_name}</strong> on {entry.table_name} #{entry.record_id}
                     </p>
                     <p className="audit-log-card-diff">
-                      {displayValue(entry.old_value)} → {displayValue(entry.new_value)}
+                      <span className="audit-log-diff-old">{displayValue(entry.old_value)}</span>
+                      <span className="audit-log-diff-arrow">→</span>
+                      <span className="audit-log-diff-new">{displayValue(entry.new_value)}</span>
                     </p>
                     <p className="audit-log-card-who">{entry.changed_by_name}</p>
                   </div>
@@ -220,8 +225,12 @@ export function AuditLogPage() {
                           {OPERATION_LABEL[entry.operation]}
                         </span>
                       </td>
-                      <td>{displayValue(entry.old_value)}</td>
-                      <td>{displayValue(entry.new_value)}</td>
+                      <td>
+                        <span className="audit-log-diff-old">{displayValue(entry.old_value)}</span>
+                      </td>
+                      <td>
+                        <span className="audit-log-diff-new">{displayValue(entry.new_value)}</span>
+                      </td>
                       <td>{entry.changed_by_name}</td>
                     </tr>
                   ))}

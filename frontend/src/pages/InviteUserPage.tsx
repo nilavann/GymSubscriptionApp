@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Send } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { AdminTabs } from '../components/AdminTabs';
 import type { InviteUserDraft, InviteUserFormErrors } from '../services/user.service';
 import type { Role } from '../types/role';
 import './InviteUserPage.css';
@@ -68,6 +69,8 @@ export function InviteUserPage() {
 
       <h1>Invite User</h1>
 
+      <AdminTabs />
+
       <form className="invite-user-form" onSubmit={handleSubmit} noValidate>
         {submitError && <div className="invite-user-banner-error">{submitError}</div>}
 
@@ -110,6 +113,7 @@ export function InviteUserPage() {
           ))}
         </div>
         {touched && errors.roles && <p className="invite-user-error">{errors.roles}</p>}
+        <p className="invite-user-helper">An invite email is sent — no temporary password is shown.</p>
 
         <button type="submit" className="invite-user-submit" disabled={isSubmitting}>
           {isSubmitting ? <RefreshCw size={18} strokeWidth={2} className="invite-user-spin" /> : <Send size={18} strokeWidth={2} />}

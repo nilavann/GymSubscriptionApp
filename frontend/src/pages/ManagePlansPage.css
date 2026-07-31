@@ -11,19 +11,19 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0 1.25rem;
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
-  box-shadow: 0 1px 3px var(--color-shadow);
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .plans-add-button:hover {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .plans-add-button:active {
@@ -32,9 +32,9 @@
 
 .plans-skeleton {
   height: 300px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin-top: 1rem;
-  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
   animation: plans-shimmer 1.4s ease infinite;
 }
@@ -64,10 +64,10 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
@@ -84,36 +84,35 @@
 .plans-pill {
   min-height: 44px;
   padding: 0.4rem 1rem;
-  border-radius: 20px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-default);
-  background: var(--color-surface-card);
+  background: var(--color-neutral-0);
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .plans-pill:hover {
-  border-color: var(--color-neutral-400);
+  border-color: var(--tint-accent);
 }
 
 .plans-pill-active {
-  background: var(--color-neutral-900);
-  border-color: var(--color-neutral-900);
+  background: var(--tint-accent);
+  border-color: var(--tint-accent);
   color: var(--color-text-inverse);
   font-weight: 700;
 }
 
 .plans-form {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  padding: 1rem;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
   margin: 1rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  box-shadow: 0 4px 12px var(--color-shadow);
   animation: plans-form-in 0.15s ease;
 }
 
@@ -130,22 +129,23 @@
 
 .plans-form h2 {
   margin: 0 0 0.5rem;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .plans-banner-error {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
   border: 1px solid var(--color-status-danger-border);
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin-bottom: 0.5rem;
+  font-size: 0.85rem;
 }
 
 .plans-form label,
 .plans-field-label {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   margin-top: 0.5rem;
 }
@@ -160,19 +160,20 @@
 .plans-checkbox-label input[type='checkbox'] {
   width: 18px;
   height: 18px;
+  accent-color: var(--tint-accent);
 }
 
 .plans-required {
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text-deep);
   font-weight: 700;
 }
 
 .plans-form input {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.6rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
   min-height: 44px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -180,13 +181,13 @@
 
 .plans-form input:focus {
   outline: none;
-  border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
 }
 
 .plans-error {
-  color: var(--color-status-danger);
-  font-size: 0.8rem;
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.75rem;
   margin: 0;
 }
 
@@ -199,23 +200,23 @@
 .plans-chip {
   min-height: 44px;
   padding: 0.5rem 1rem;
-  border-radius: 20px;
+  border-radius: var(--radius-el);
   border: 1px solid var(--color-border-default);
-  background: var(--color-surface-card);
+  background: var(--color-neutral-0);
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .plans-chip:hover {
-  border-color: var(--color-neutral-400);
+  border-color: var(--tint-accent);
 }
 
 .plans-chip-selected {
-  background: var(--color-neutral-900);
-  border-color: var(--color-neutral-900);
-  color: var(--color-text-inverse);
+  background: var(--tint-pill-bg);
+  border-color: var(--tint-border);
+  color: var(--tint-accent);
   font-weight: 700;
 }
 
@@ -232,22 +233,22 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.5rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
 }
 
 .plans-cancel {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
 }
 
 .plans-cancel:hover:not(:disabled) {
-  background: var(--color-neutral-50);
+  background: var(--color-surface-page);
 }
 
 .plans-cancel:disabled {
@@ -256,17 +257,18 @@
 }
 
 .plans-submit {
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
 }
 
 .plans-submit:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .plans-submit:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
 }
 
@@ -286,22 +288,19 @@
 .plans-category-badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
   font-weight: 700;
-  border: 1px solid transparent;
 }
 
 .plans-category-membership {
-  background: var(--color-brand-tint);
-  border-color: var(--color-brand-tint-border);
-  color: var(--color-text-on-brand-tint);
+  background: var(--tint-pill-bg);
+  color: var(--tint-accent);
 }
 
 .plans-category-addon {
-  background: var(--color-status-neutral-bg);
-  border-color: var(--color-status-neutral-border);
-  color: var(--color-status-neutral);
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
 }
 
 .plans-edit-button,
@@ -311,26 +310,26 @@
   gap: 0.3rem;
   min-height: 44px;
   min-width: 44px;
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.3rem 0.75rem;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .plans-edit-button:hover {
-  background: var(--color-neutral-50);
-  border-color: var(--color-neutral-400);
+  background: var(--color-surface-page);
+  border-color: var(--color-neutral-300);
 }
 
 .plans-delete-button {
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
 }
 
 .plans-delete-button:hover {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
   border-color: var(--color-status-danger-border);
 }
 
@@ -345,7 +344,7 @@
 .plans-delete-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.5);
+  background: var(--color-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,12 +353,12 @@
 }
 
 .plans-delete-dialog {
-  background: var(--color-surface-card);
-  border-radius: 12px;
+  background: var(--color-neutral-0);
+  border-radius: var(--radius-card);
   padding: 1.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 8px 24px var(--color-shadow);
+  box-shadow: 0 20px 40px var(--color-shadow);
   animation: plans-delete-dialog-in 0.15s ease;
 }
 
@@ -387,23 +386,24 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.5rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  background: var(--color-status-danger);
+  background: var(--color-status-danger-text);
   color: var(--color-text-inverse);
   border: none;
-  transition: background-color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .plans-delete-confirm:hover:not(:disabled) {
-  background: var(--color-status-danger-800);
+  opacity: 0.9;
 }
 
 .plans-delete-confirm:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
 }
 
@@ -416,14 +416,13 @@
 }
 
 .plans-card {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .plans-card-top {
@@ -434,13 +433,14 @@
 }
 
 .plans-card-name {
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
 }
 
 .plans-card-detail {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   margin: 0;
 }
 
@@ -458,24 +458,45 @@
   .plans-table {
     display: table;
     width: 100%;
-    border-collapse: collapse;
-    background: var(--color-surface-card);
-    border: 1px solid var(--color-border-default);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px var(--color-shadow);
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
   }
 
   .plans-table th,
   .plans-table td {
     text-align: left;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border-default);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
   }
 
   .plans-table th {
-    color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 0;
+  }
+
+  .plans-table tbody tr {
+    background: var(--color-neutral-0);
+  }
+
+  .plans-table tbody tr td:first-child {
+    border-top-left-radius: var(--radius-el);
+    border-bottom-left-radius: var(--radius-el);
+    border-left: 1px solid var(--color-border-card);
+  }
+
+  .plans-table tbody tr td:last-child {
+    border-top-right-radius: var(--radius-el);
+    border-bottom-right-radius: var(--radius-el);
+    border-right: 1px solid var(--color-border-card);
+  }
+
+  .plans-table tbody tr td {
+    border-top: 1px solid var(--color-border-card);
+    border-bottom: 1px solid var(--color-border-card);
   }
 }

@@ -3,6 +3,7 @@ import { Pencil, Check, X, RefreshCw } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { sanitizeDigits } from '../lib/input-masks';
+import { AdminTabs } from '../components/AdminTabs';
 import type { ConfigDraft, ConfigFormErrors } from '../services/member-numbering.service';
 import type { MemberNumberConfig, BranchSequence } from '../types/member-numbering';
 import './MemberNumberingPage.css';
@@ -168,61 +169,7 @@ export function MemberNumberingPage() {
         <h1>Member Numbering</h1>
       </div>
 
-      <section className="member-numbering-section">
-        <h2 className="member-numbering-section-title">Global Settings</h2>
-        <p className="member-numbering-hint">
-          Applies to every branch's counter. Changing these affects only future member numbers — existing numbers are
-          never recalculated.
-        </p>
-
-        <form className="member-numbering-config-form" onSubmit={handleConfigSubmit} noValidate>
-          <div className="member-numbering-config-field">
-            <label htmlFor="config-start">Start sequence</label>
-            <input
-              id="config-start"
-              inputMode="numeric"
-              value={configDraft.start_sequence}
-              onChange={(e) => setConfigDraft({ ...configDraft, start_sequence: sanitizeDigits(e.target.value, 8) })}
-              onBlur={() => setConfigTouched(true)}
-            />
-            {configTouched && configErrors.start_sequence && <p className="member-numbering-field-error">{configErrors.start_sequence}</p>}
-          </div>
-
-          <div className="member-numbering-config-field">
-            <label htmlFor="config-increment">Increment</label>
-            <input
-              id="config-increment"
-              inputMode="numeric"
-              value={configDraft.increment}
-              onChange={(e) => setConfigDraft({ ...configDraft, increment: sanitizeDigits(e.target.value, 6) })}
-              onBlur={() => setConfigTouched(true)}
-            />
-            {configTouched && configErrors.increment && <p className="member-numbering-field-error">{configErrors.increment}</p>}
-          </div>
-
-          <div className="member-numbering-config-field">
-            <label htmlFor="config-width">Padding width</label>
-            <input
-              id="config-width"
-              inputMode="numeric"
-              value={configDraft.padding_width}
-              onChange={(e) => setConfigDraft({ ...configDraft, padding_width: sanitizeDigits(e.target.value, 2) })}
-              onBlur={() => setConfigTouched(true)}
-            />
-            {configTouched && configErrors.padding_width && (
-              <p className="member-numbering-field-error">{configErrors.padding_width}</p>
-            )}
-          </div>
-
-          <button type="submit" className="member-numbering-save" disabled={isSavingConfig}>
-            {isSavingConfig ? <RefreshCw size={16} strokeWidth={2} className="member-numbering-spin" /> : <Check size={16} strokeWidth={2} />}
-            {isSavingConfig ? 'Saving…' : 'Save Settings'}
-          </button>
-        </form>
-
-        {configSaveError && <div className="member-numbering-banner-error">{configSaveError}</div>}
-        {configSaved && !configSaveError && <div className="member-numbering-banner-success">Settings saved.</div>}
-      </section>
+      <AdminTabs />
 
       <section className="member-numbering-section">
         <h2 className="member-numbering-section-title">Per-Branch Sequences</h2>
@@ -360,6 +307,62 @@ export function MemberNumberingPage() {
             </table>
           </>
         )}
+      </section>
+
+      <section className="member-numbering-section">
+        <h2 className="member-numbering-section-title">Global Settings</h2>
+        <p className="member-numbering-hint">
+          Applies to every branch's counter. Changing these affects only future member numbers — existing numbers are
+          never recalculated.
+        </p>
+
+        <form className="member-numbering-config-form" onSubmit={handleConfigSubmit} noValidate>
+          <div className="member-numbering-config-field">
+            <label htmlFor="config-start">Start sequence</label>
+            <input
+              id="config-start"
+              inputMode="numeric"
+              value={configDraft.start_sequence}
+              onChange={(e) => setConfigDraft({ ...configDraft, start_sequence: sanitizeDigits(e.target.value, 8) })}
+              onBlur={() => setConfigTouched(true)}
+            />
+            {configTouched && configErrors.start_sequence && <p className="member-numbering-field-error">{configErrors.start_sequence}</p>}
+          </div>
+
+          <div className="member-numbering-config-field">
+            <label htmlFor="config-increment">Increment</label>
+            <input
+              id="config-increment"
+              inputMode="numeric"
+              value={configDraft.increment}
+              onChange={(e) => setConfigDraft({ ...configDraft, increment: sanitizeDigits(e.target.value, 6) })}
+              onBlur={() => setConfigTouched(true)}
+            />
+            {configTouched && configErrors.increment && <p className="member-numbering-field-error">{configErrors.increment}</p>}
+          </div>
+
+          <div className="member-numbering-config-field">
+            <label htmlFor="config-width">Padding width</label>
+            <input
+              id="config-width"
+              inputMode="numeric"
+              value={configDraft.padding_width}
+              onChange={(e) => setConfigDraft({ ...configDraft, padding_width: sanitizeDigits(e.target.value, 2) })}
+              onBlur={() => setConfigTouched(true)}
+            />
+            {configTouched && configErrors.padding_width && (
+              <p className="member-numbering-field-error">{configErrors.padding_width}</p>
+            )}
+          </div>
+
+          <button type="submit" className="member-numbering-save" disabled={isSavingConfig}>
+            {isSavingConfig ? <RefreshCw size={16} strokeWidth={2} className="member-numbering-spin" /> : <Check size={16} strokeWidth={2} />}
+            {isSavingConfig ? 'Saving…' : 'Save Settings'}
+          </button>
+        </form>
+
+        {configSaveError && <div className="member-numbering-banner-error">{configSaveError}</div>}
+        {configSaved && !configSaveError && <div className="member-numbering-banner-success">Settings saved.</div>}
       </section>
     </div>
   );

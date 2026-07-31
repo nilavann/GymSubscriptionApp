@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { X, Check, RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, X, Check, RefreshCw, Plus, Trash2, Calendar } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { formatDate } from '../lib/datetime';
@@ -230,13 +230,42 @@ export function RenewSubscriptionPage() {
     );
   }
 
+  const totalThisVisit = items.reduce((sum, item) => sum + (typeof item.amount_paid === 'number' ? item.amount_paid : 0), 0);
+
   return (
     <div className="renew-page">
-      <h1>Add Subscription{member ? ` — ${member.name}` : ''}</h1>
+      <Link to={`/members/${memberId}`} className="renew-back-link">
+        <ArrowLeft size={16} strokeWidth={2} />
+      </Link>
+      <h1>Renew / Add Subscription</h1>
+      <p className="renew-subtitle">
+        {member ? `${member.name} · ${member.member_number} · ` : ''}one checkout, one or more items
+      </p>
 
       {saveError && <div className="renew-banner-error">{saveError}</div>}
 
       <form onSubmit={handleSubmit} noValidate>
+        <fieldset className="renew-header-fields">
+          <legend>Payment</legend>
+
+          <span className="renew-field-label">Payment mode</span>
+          <div className="renew-chip-row" role="group" aria-label="Payment mode">
+            {(['Cash', 'UPI', 'Card'] as PaymentMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={`renew-chip${paymentMode === mode ? ' renew-chip-selected' : ''}`}
+                onClick={() => setPaymentMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+
+          <label htmlFor="notes">Notes (optional, ≤ 200 chars)</label>
+          <textarea id="notes" rows={3} maxLength={200} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </fieldset>
+
         <div className="renew-items">
           {items.map((item, index) => {
             const plan = item.plan_id === '' ? undefined : planById.get(item.plan_id);
@@ -249,7 +278,13 @@ export function RenewSubscriptionPage() {
             return (
               <div key={item.key} className="renew-item-card">
                 <div className="renew-item-header">
-                  <span className="renew-item-title">Item {index + 1}</span>
+                  {plan ? (
+                    <span className={`renew-category-tag renew-category-tag-${plan.category}`}>
+                      {plan.category === 'addon' ? 'Add-on' : 'Membership'}
+                    </span>
+                  ) : (
+                    <span className="renew-item-title">Item {index + 1}</span>
+                  )}
                   {items.length > 1 && (
                     <button
                       type="button"
@@ -360,9 +395,12 @@ export function RenewSubscriptionPage() {
                 />
                 {showErrors && errors.amount_paid && <p className="renew-error">{errors.amount_paid}</p>}
 
-                <p className="renew-end-date-preview">
-                  {endDatePreview ? `Ends ${formatDate(endDatePreview)}` : plan ? 'Never expires' : ''}
-                </p>
+                {(endDatePreview || plan) && (
+                  <p className="renew-end-date-preview">
+                    <Calendar size={14} strokeWidth={2} />
+                    {endDatePreview ? `Ends ${formatDate(endDatePreview)} (computed on save)` : 'Never expires'}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -373,42 +411,26 @@ export function RenewSubscriptionPage() {
           Add Item
         </button>
 
-        {membershipItemCount !== 1 && (
-          <p className="renew-error renew-membership-gate">
-            A checkout must include exactly one membership-category item ({membershipItemCount} selected).
-          </p>
-        )}
-
-        <fieldset className="renew-header-fields">
-          <legend>Checkout Details</legend>
-
-          <span className="renew-field-label">Payment mode</span>
-          <div className="renew-chip-row" role="group" aria-label="Payment mode">
-            {(['Cash', 'UPI', 'Card'] as PaymentMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={`renew-chip${paymentMode === mode ? ' renew-chip-selected' : ''}`}
-                onClick={() => setPaymentMode(mode)}
-              >
-                {mode}
-              </button>
-            ))}
+        <div className="renew-footer-card">
+          <div className="renew-footer-total">
+            <span>Total this visit</span>
+            <span className="renew-footer-total-amount">₹{totalThisVisit}</span>
           </div>
-
-          <label htmlFor="notes">Notes (optional)</label>
-          <textarea id="notes" rows={3} maxLength={200} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </fieldset>
-
-        <div className="renew-actions">
-          <button type="button" className="renew-cancel" disabled={isSaving} onClick={() => navigate(`/members/${memberId}`)}>
-            <X size={18} strokeWidth={2} />
-            Cancel
-          </button>
-          <button type="submit" className="renew-submit" disabled={!canSubmit}>
-            {isSaving ? <RefreshCw size={18} strokeWidth={2} className="renew-spin" /> : <Check size={18} strokeWidth={2} />}
-            {isSaving ? 'Saving…' : 'Save'}
-          </button>
+          <p className={`renew-footer-gate${membershipItemCount === 1 ? ' renew-footer-gate-ok' : ''}`}>
+            {membershipItemCount === 1
+              ? '✓ Contains exactly one membership item'
+              : `A checkout must include exactly one membership-category item (${membershipItemCount} selected).`}
+          </p>
+          <div className="renew-actions">
+            <button type="button" className="renew-cancel" disabled={isSaving} onClick={() => navigate(`/members/${memberId}`)}>
+              <X size={18} strokeWidth={2} />
+              Cancel
+            </button>
+            <button type="submit" className="renew-submit" disabled={!canSubmit}>
+              {isSaving ? <RefreshCw size={18} strokeWidth={2} className="renew-spin" /> : <Check size={18} strokeWidth={2} />}
+              {isSaving ? 'Saving…' : 'Save checkout'}
+            </button>
+          </div>
         </div>
       </form>
 

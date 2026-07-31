@@ -1,13 +1,37 @@
 .renew-page {
-  max-width: 900px;
+  max-width: 720px;
   margin: 0 auto;
+}
+
+.renew-back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-el);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+  transition: background-color 0.15s ease;
+}
+
+.renew-back-link:hover {
+  background: var(--color-surface-page);
+}
+
+.renew-subtitle {
+  margin: 0.25rem 0 1.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
 }
 
 .renew-skeleton {
   height: 400px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin-top: 1rem;
-  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
   animation: renew-shimmer 1.4s ease infinite;
 }
@@ -33,10 +57,10 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
@@ -44,17 +68,18 @@
 }
 
 .renew-cancel-link {
-  color: var(--color-brand-600);
+  color: var(--tint-accent);
   font-weight: 600;
 }
 
 .renew-banner-error {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
   border: 1px solid var(--color-status-danger-border);
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
 
 .renew-items {
@@ -65,14 +90,13 @@
 }
 
 .renew-item-card {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  padding: 1rem;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .renew-item-header {
@@ -83,10 +107,29 @@
 
 .renew-item-title {
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
+}
+
+.renew-category-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.renew-category-tag-membership {
+  background: var(--tint-pill-bg);
+  color: var(--tint-accent);
+}
+
+.renew-category-tag-addon {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
 }
 
 .renew-remove-item {
@@ -96,21 +139,21 @@
   align-items: center;
   justify-content: center;
   background: none;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
-  color: var(--color-status-danger);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
+  color: var(--color-status-danger-text);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .renew-remove-item:hover {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
 }
 
 .renew-item-card label,
 .renew-field-label {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   margin-top: 0.5rem;
 }
@@ -120,10 +163,10 @@
 .renew-item-card textarea,
 .renew-header-fields textarea {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.6rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
   min-height: 44px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -134,24 +177,26 @@
 .renew-item-card textarea:focus,
 .renew-header-fields textarea:focus {
   outline: none;
-  border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
 }
 
 .renew-error {
-  color: var(--color-status-danger);
-  font-size: 0.8rem;
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.75rem;
   margin: 0;
 }
 
-.renew-membership-gate {
-  margin-bottom: 0.75rem;
-}
-
 .renew-end-date-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   margin: 0.5rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-el);
 }
 
 .renew-quantity-row {
@@ -174,17 +219,17 @@
 .renew-chip {
   min-height: 44px;
   padding: 0.4rem 0.9rem;
-  border-radius: 20px;
+  border-radius: var(--radius-el);
   border: 1px solid var(--color-border-default);
-  background: var(--color-surface-card);
+  background: var(--color-neutral-0);
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .renew-chip:hover {
-  border-color: var(--color-neutral-400);
+  border-color: var(--tint-accent);
 }
 
 .renew-chip:active {
@@ -192,9 +237,9 @@
 }
 
 .renew-chip-selected {
-  background: var(--color-neutral-900);
-  border-color: var(--color-neutral-900);
-  color: var(--color-text-inverse);
+  background: var(--tint-pill-bg);
+  border-color: var(--tint-border);
+  color: var(--tint-accent);
   font-weight: 700;
 }
 
@@ -205,11 +250,12 @@
   min-height: 44px;
   width: 100%;
   justify-content: center;
-  background: var(--color-surface-card);
-  border: 1.5px dashed var(--color-border-strong);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1.5px dashed var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.6rem;
   font-weight: 600;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   margin-bottom: 1rem;
@@ -217,27 +263,27 @@
 }
 
 .renew-add-item:hover {
-  border-color: var(--color-brand-600);
-  color: var(--color-brand-600);
+  border-color: var(--tint-accent);
+  color: var(--tint-accent);
 }
 
 .renew-header-fields {
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  padding: 1rem;
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  background: var(--color-surface-card);
+  background: var(--color-neutral-0);
 }
 
 .renew-header-fields legend {
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   padding: 0 0.35rem;
 }
 
@@ -245,11 +291,43 @@
   resize: vertical;
 }
 
+/* Footer total card */
+
+.renew-footer-card {
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.renew-footer-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.renew-footer-total-amount {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.renew-footer-gate {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-status-danger-text-deep);
+}
+
+.renew-footer-gate-ok {
+  color: var(--color-status-success-text);
+}
+
 .renew-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding-bottom: 2rem;
+  margin-top: 1rem;
 }
 
 .renew-cancel,
@@ -258,22 +336,22 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  border-radius: 8px;
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
+  border-radius: var(--radius-el);
+  padding: 0.75rem 1.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .renew-cancel {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
 }
 
 .renew-cancel:hover:not(:disabled) {
-  background: var(--color-neutral-50);
+  background: var(--color-surface-page);
 }
 
 .renew-cancel:disabled {
@@ -282,18 +360,19 @@
 }
 
 .renew-submit {
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
   box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .renew-submit:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .renew-submit:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -322,7 +401,7 @@
 .renew-overlap-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.5);
+  background: var(--color-backdrop);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -331,11 +410,11 @@
 }
 
 .renew-overlap-dialog {
-  background: var(--color-surface-card);
-  border-radius: 12px 12px 0 0;
+  background: var(--color-neutral-0);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   padding: 1.5rem;
   width: 100%;
-  max-width: 900px;
+  max-width: 720px;
   box-shadow: 0 -8px 24px var(--color-shadow);
   animation: renew-overlap-in 0.2s ease;
 }
@@ -392,6 +471,6 @@
   }
 
   .renew-overlap-dialog {
-    border-radius: 12px;
+    border-radius: var(--radius-card);
   }
 }

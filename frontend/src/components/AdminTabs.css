@@ -1,0 +1,31 @@
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.admin-tab {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-tab:hover {
+  border-color: var(--tint-accent);
+}
+
+.admin-tab-active {
+  background: var(--tint-accent);
+  border-color: var(--tint-accent);
+  color: var(--color-text-inverse);
+}

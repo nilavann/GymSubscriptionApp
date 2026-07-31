@@ -4,10 +4,16 @@ import { KeyRound, LogOut, Users, Layers, Building2, UserCog, ShieldCheck, Repea
 import { useAuth } from '../context/auth.context';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
+import { AdminTabs } from '../components/AdminTabs';
+import { useTheme, TINT_OPTIONS, CTA_OPTIONS, RADIUS_OPTIONS, type Tint, type Cta, type Radius } from '../context/theme.context';
 import './SettingsPage.css';
 
 const FETCH_TIMEOUT_MS = 10000;
 type PasswordResetState = 'idle' | 'sending' | 'sent' | 'error';
+
+const TINT_LABEL: Record<Tint, string> = { sky: 'Sky', violet: 'Violet', emerald: 'Emerald', amber: 'Amber', rose: 'Rose' };
+const CTA_LABEL: Record<Cta, string> = { charcoal: 'Charcoal', orange: 'Orange', blue: 'Blue' };
+const RADIUS_LABEL: Record<Radius, string> = { soft: 'Soft', pill: 'Pill', sharp: 'Sharp' };
 
 /**
  * Settings hub (screens.md WSCR-11) — the one place admins reach Manage Plans, Manage
@@ -15,6 +21,7 @@ type PasswordResetState = 'idle' | 'sending' | 'sent' | 'error';
  */
 export function SettingsPage() {
   const { currentProfile, session, signOut, resetPasswordForEmail } = useAuth();
+  const { tint, cta, radius, setTint, setCta, setRadius } = useTheme();
   const {
     memberRepository,
     planRepository,
@@ -44,34 +51,35 @@ export function SettingsPage() {
         <h1>Settings</h1>
       </div>
 
+      <AdminTabs />
+
       <section className="settings-profile-card">
-        <div>
+        <span className="settings-profile-avatar" aria-hidden="true">
+          {currentProfile?.full_name?.slice(0, 2).toUpperCase()}
+        </span>
+        <div className="settings-profile-info">
           <span className="settings-profile-name">{currentProfile?.full_name}</span>
           <span className="settings-profile-email">{session?.user.email}</span>
+          <span className="settings-role-badges">
+            {currentProfile?.roles.map((role) => (
+              <span key={role} className={`settings-role-badge${role === 'admin' ? ' settings-role-admin' : ' settings-role-staff'}`}>
+                {role}
+              </span>
+            ))}
+          </span>
         </div>
-        <span className="settings-role-badges">
-          {currentProfile?.roles.map((role) => (
-            <span key={role} className={`settings-role-badge${role === 'admin' ? ' settings-role-admin' : ' settings-role-staff'}`}>
-              {role}
-            </span>
-          ))}
-        </span>
-      </section>
-
-      <section className="settings-section">
-        <h2 className="settings-section-title">Account</h2>
-        <div className="settings-account-actions">
+        <div className="settings-profile-actions">
           <button
             type="button"
             className="settings-account-button"
             onClick={handleChangePassword}
             disabled={passwordResetState === 'sending'}
           >
-            <KeyRound size={18} strokeWidth={2} />
+            <KeyRound size={16} strokeWidth={2} />
             Change Password
           </button>
           <button type="button" className="settings-account-button settings-signout-button" onClick={() => signOut()}>
-            <LogOut size={18} strokeWidth={2} />
+            <LogOut size={16} strokeWidth={2} />
             Sign Out
           </button>
         </div>
@@ -83,6 +91,62 @@ export function SettingsPage() {
             Something went wrong sending the reset email. Please try again.
           </p>
         )}
+      </section>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">Appearance</h2>
+        <div className="settings-theme-picker">
+          <div className="settings-theme-group">
+            <span className="settings-theme-label">Tint</span>
+            <div className="settings-theme-swatch-row">
+              {TINT_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`settings-theme-swatch${tint === option ? ' settings-theme-swatch-active' : ''}`}
+                  data-tint-preview={option}
+                  onClick={() => setTint(option)}
+                  aria-pressed={tint === option}
+                >
+                  {TINT_LABEL[option]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="settings-theme-group">
+            <span className="settings-theme-label">CTA color</span>
+            <div className="settings-theme-swatch-row">
+              {CTA_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`settings-theme-swatch${cta === option ? ' settings-theme-swatch-active' : ''}`}
+                  data-cta-preview={option}
+                  onClick={() => setCta(option)}
+                  aria-pressed={cta === option}
+                >
+                  {CTA_LABEL[option]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="settings-theme-group">
+            <span className="settings-theme-label">Radius</span>
+            <div className="settings-theme-swatch-row">
+              {RADIUS_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`settings-theme-swatch${radius === option ? ' settings-theme-swatch-active' : ''}`}
+                  onClick={() => setRadius(option)}
+                  aria-pressed={radius === option}
+                >
+                  {RADIUS_LABEL[option]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="settings-section">

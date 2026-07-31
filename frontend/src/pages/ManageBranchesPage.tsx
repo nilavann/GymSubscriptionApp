@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Plus, Pencil, Trash2, RefreshCw, X, Check } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
+import { AdminTabs } from '../components/AdminTabs';
 import type { Branch } from '../types/branch';
 import type { BranchDraft, BranchFormErrors } from '../services/branch.service';
 import './ManageBranchesPage.css';
@@ -166,6 +167,8 @@ export function ManageBranchesPage() {
         </button>
       </div>
 
+      <AdminTabs />
+
       {isFormOpen && (
         <form className="branches-form" onSubmit={handleSubmit} noValidate>
           <h2>{editingId === null ? 'Add Branch' : 'Edit Branch'}</h2>
@@ -193,6 +196,7 @@ export function ManageBranchesPage() {
             onBlur={() => setTouched(true)}
           />
           {touched && errors.code && <p className="branches-error">{errors.code}</p>}
+          <p className="branches-helper">Branches scope member numbering and all member records.</p>
 
           <div className="branches-form-actions">
             <button type="button" className="branches-cancel" disabled={isSaving} onClick={closeForm}>

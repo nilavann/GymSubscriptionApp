@@ -1,8 +1,13 @@
+.member-detail-page {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
 .member-detail-skeleton {
   height: 500px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin-top: 1rem;
-  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
   animation: member-detail-shimmer 1.4s ease infinite;
 }
@@ -31,10 +36,10 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
@@ -48,11 +53,11 @@
   color: var(--color-text-secondary);
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .member-detail-back-link:hover {
-  /* brand-600, not text-brand - small text on a light surface. */
-  color: var(--color-brand-600);
+  color: var(--tint-accent);
 }
 
 .member-detail-header {
@@ -63,11 +68,6 @@
   flex-wrap: wrap;
 }
 
-.member-detail-header-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
 .member-detail-edit-button,
 .member-detail-cancel,
 .member-detail-save,
@@ -76,31 +76,32 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  border-radius: 8px;
-  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-el);
+  padding: 0.5rem 1.1rem;
   font-weight: 600;
+  font-size: 0.82rem;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .member-detail-edit-button {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-primary);
 }
 
 .member-detail-edit-button:hover {
-  background: var(--color-neutral-50);
+  background: var(--color-surface-page);
 }
 
 .member-detail-cancel {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
 }
 
 .member-detail-cancel:hover:not(:disabled) {
-  background: var(--color-neutral-50);
+  background: var(--color-surface-page);
 }
 
 .member-detail-cancel:disabled {
@@ -109,28 +110,30 @@
 }
 
 .member-detail-save {
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
 }
 
 .member-detail-save:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .member-detail-save:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
 }
 
 .member-detail-delete-confirm {
-  background: var(--color-status-danger);
+  background: var(--color-status-danger-text);
   color: var(--color-text-inverse);
   border: none;
 }
 
 .member-detail-delete-confirm:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
 }
 
@@ -148,12 +151,13 @@
 }
 
 .member-detail-banner-error {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
   border: 1px solid var(--color-status-danger-border);
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin: 0.75rem 0;
+  font-size: 0.85rem;
 }
 
 /* Hero */
@@ -163,6 +167,10 @@
   align-items: center;
   gap: 1rem;
   margin: 1rem 0 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-card);
   flex-wrap: wrap;
 }
 
@@ -174,15 +182,15 @@
 
 .member-detail-avatar,
 .member-detail-avatar-img {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-tile);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   color: var(--color-text-inverse);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   object-fit: cover;
 }
 
@@ -205,11 +213,12 @@
   height: 26px;
   padding: 0;
   border-radius: 50%;
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
   font: inherit;
   cursor: pointer;
+  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 /* Explicit position classes rather than :first-of-type/:last-of-type — the camera
@@ -229,10 +238,11 @@
   flex-direction: column;
   gap: 0.3rem;
   min-width: 0;
+  flex: 1;
 }
 
 .member-detail-name {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
@@ -245,30 +255,36 @@
 
 .member-detail-number {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .member-detail-photo-status {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
 }
 
 .member-detail-photo-error {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--color-status-danger);
+  font-size: 0.78rem;
+  color: var(--color-status-danger-text);
 }
 
 .member-detail-inline-retry {
   background: none;
   border: none;
-  /* brand-600, not text-brand - small text on a light surface. */
-  color: var(--color-brand-600);
+  color: var(--tint-accent);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+}
+
+.member-detail-hero-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 /* Status badge - shared shape with Members List */
@@ -276,28 +292,25 @@
 .status-badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid transparent;
 }
 
 .status-badge-active {
   background: var(--color-status-success-bg);
-  border-color: var(--color-status-success-border);
   color: var(--color-status-success-text);
 }
 
 .status-badge-expiring {
   background: var(--color-status-warning-bg);
-  border-color: var(--color-status-warning-border);
   color: var(--color-status-warning-text);
 }
 
 .status-badge-expired {
   background: var(--color-status-danger-bg);
-  border-color: var(--color-status-danger-border);
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
 }
 
 /* Layout columns */
@@ -316,20 +329,14 @@
   min-width: 0;
 }
 
-/* Two columns only from the desktop tier (>= 1024px), not the tablet tier (768-1023px)
-   this project also has now — see member-detail.md §4.4 and styling.md §4 for the
-   768px-viewport math (AppShell's 240px sidebar + this column's 360px left almost
-   fully consumed the width, leaving ~88px for the right column) that made this page
-   read as "overlapping" at tablet widths before this fix. Below 1024px this page keeps
-   the single-column mobile layout instead. */
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .member-detail-columns {
     flex-direction: row;
     align-items: flex-start;
   }
 
   .member-detail-column-left {
-    width: 360px;
+    width: 380px;
     flex-shrink: 0;
   }
 
@@ -341,21 +348,28 @@
 /* Sections */
 
 .member-detail-section {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
   margin: 0;
 }
 
 .member-detail-section legend {
   font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
   padding: 0 0.25rem;
 }
 
 .member-detail-section-title {
-  font-size: 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tint-accent);
   margin: 0 0 0.75rem;
 }
 
@@ -376,33 +390,44 @@
 
 .member-detail-view-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1rem;
+  grid-template-columns: 1fr;
+  gap: 0;
   margin: 0;
 }
 
 .member-detail-view-field {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border-divider);
+}
+
+.member-detail-view-field:last-child {
+  border-bottom: none;
 }
 
 .member-detail-view-field dt {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
 .member-detail-view-field dd {
   margin: 0;
   color: var(--color-text-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: right;
   word-break: break-word;
 }
 
 /* Edit mode fields */
 
 .member-detail-required {
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text-deep);
   font-weight: 700;
 }
 
@@ -430,7 +455,7 @@
 
 .member-detail-field label,
 .member-detail-chip-label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -441,10 +466,10 @@
 .member-detail-section select,
 .member-detail-section textarea {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.6rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
   min-height: 44px;
 }
@@ -453,8 +478,8 @@
 .member-detail-field select:focus,
 .member-detail-field textarea:focus {
   outline: none;
-  border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
 }
 
 .member-detail-metrics-row {
@@ -464,17 +489,17 @@
 }
 
 .member-detail-metrics-row label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
 
 .member-detail-metrics-row input {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.6rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   min-height: 44px;
   width: 100%;
 }
@@ -489,24 +514,66 @@
 .member-detail-chip {
   min-height: 44px;
   padding: 0.5rem 1rem;
-  border-radius: 20px;
+  border-radius: var(--radius-el);
   border: 1px solid var(--color-border-default);
-  background: var(--color-surface-card);
+  background: var(--color-neutral-0);
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
 .member-detail-chip-selected {
-  background: var(--color-neutral-900);
-  border-color: var(--color-neutral-900);
-  color: var(--color-text-inverse);
+  background: var(--tint-pill-bg);
+  border-color: var(--tint-border);
+  color: var(--tint-accent);
   font-weight: 700;
 }
 
+/* Doctor's-care toggle switch — same pattern as AddMemberPage */
+.member-detail-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.member-detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--color-neutral-200);
+  padding: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.member-detail-toggle-on {
+  background: var(--tint-accent);
+}
+
+.member-detail-toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-neutral-0);
+  box-shadow: 0 1px 3px var(--color-shadow);
+  transition: transform 0.15s ease;
+}
+
+.member-detail-toggle-on .member-detail-toggle-knob {
+  transform: translateX(20px);
+}
+
 .member-detail-error {
-  color: var(--color-status-danger);
-  font-size: 0.8rem;
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.75rem;
   margin: 0;
 }
 
@@ -524,15 +591,16 @@
   min-height: 44px;
   background: none;
   border: 1px solid var(--color-status-danger-border);
-  color: var(--color-status-danger);
-  border-radius: 8px;
-  padding: 0.5rem 1.25rem;
+  color: var(--color-status-danger-text);
+  border-radius: var(--radius-el);
+  padding: 0.5rem 1.1rem;
   font-weight: 600;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
 .member-detail-delete-link:hover {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
 }
 
 /* Current Membership / Add-ons */
@@ -559,35 +627,49 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
-  color: var(--color-text-inverse);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-el);
   padding: 0 1rem;
   font-weight: 600;
+  font-size: 0.82rem;
   text-decoration: none;
 }
 
 .member-detail-add-sub-link:hover {
-  background: var(--color-brand-800);
+  background: var(--color-surface-page);
+}
+
+/* Current-membership card sits on the tint gradient with an accent section title
+   (frontend/mockups/README.md's Member Detail spec). */
+.member-detail-column-right > .member-detail-section:first-child {
+  background: linear-gradient(to bottom, var(--tint-card-from), var(--tint-card-to));
+  border-color: var(--tint-border);
 }
 
 .member-detail-item-card {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  background: var(--color-surface-background);
-  border-radius: 8px;
-  padding: 0.9rem;
+}
+
+.member-detail-item-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .member-detail-item-name {
   font-weight: 700;
+  font-size: 1.05rem;
   color: var(--color-text-primary);
 }
 
 .member-detail-item-detail {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--color-text-secondary);
   display: flex;
   align-items: center;
@@ -598,24 +680,46 @@
 .member-detail-item-amount {
   margin: 0;
   font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.member-detail-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.member-detail-progress-fill {
+  height: 100%;
+  background: var(--tint-accent);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.member-detail-progress-label {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 .member-detail-renew-button {
-  align-self: flex-start;
-  min-height: 44px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
-  border-radius: 8px;
-  padding: 0 1.25rem;
+  border-radius: var(--radius-el);
+  padding: 0 1rem;
   font-weight: 600;
+  font-size: 0.8rem;
   text-decoration: none;
-  margin-top: 0.25rem;
 }
 
 .member-detail-renew-button:hover {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .member-detail-addon-list {
@@ -630,15 +734,15 @@
   justify-content: space-between;
   gap: 0.75rem;
   min-height: 44px;
-  background: var(--color-surface-background);
-  border-radius: 8px;
+  background: var(--color-surface-page);
+  border-radius: var(--radius-el);
   padding: 0.5rem 0.9rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .member-detail-addon-dates {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 
 /* Subscription History */
@@ -650,8 +754,8 @@
 }
 
 .member-detail-history-row {
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-el);
   overflow: hidden;
 }
 
@@ -660,7 +764,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--color-surface-background);
+  background: var(--color-surface-page);
   padding: 0 0.9rem;
 }
 
@@ -679,7 +783,7 @@
   border: none;
   padding: 0.6rem 0;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
   text-align: left;
 }
@@ -691,30 +795,29 @@
   min-height: 44px;
   background: none;
   border: none;
-  font-size: 0.8rem;
-  /* brand-600, not text-brand - small text on a light surface. */
-  color: var(--color-brand-600);
+  font-size: 0.78rem;
+  color: var(--tint-accent);
   cursor: pointer;
   padding: 0 0.5rem;
 }
 
 .member-detail-history-edit-form {
   padding: 0.75rem 0.9rem;
-  border-top: 1px solid var(--color-border-default);
+  border-top: 1px solid var(--color-border-card);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
 .member-detail-history-edit-form label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
 
 .member-detail-history-items {
   padding: 0.6rem 0.9rem 0.9rem 2.2rem;
-  border-top: 1px solid var(--color-border-default);
+  border-top: 1px solid var(--color-border-card);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -722,7 +825,7 @@
 
 .member-detail-history-item {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--color-text-secondary);
 }
 
@@ -736,7 +839,7 @@
 .member-detail-delete-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.5);
+  background: var(--color-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -745,12 +848,12 @@
 }
 
 .member-detail-delete-dialog {
-  background: var(--color-surface-card);
-  border-radius: 12px;
+  background: var(--color-neutral-0);
+  border-radius: var(--radius-card);
   padding: 1.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 8px 24px var(--color-shadow);
+  box-shadow: 0 20px 40px var(--color-shadow);
 }
 
 .member-detail-delete-dialog h2 {

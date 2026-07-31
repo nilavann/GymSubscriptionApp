@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<style>
+  body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Nunito,sans-serif}
+  ::placeholder{color:#9ca3af}
+  a{color:#6b7280;text-decoration:none}
+  a:hover{color:#111827}
+  .gm-scroll{scrollbar-width:thin;scrollbar-color:#e5e7eb transparent}
+  .gm-scroll::-webkit-scrollbar{width:5px}
+  .gm-scroll::-webkit-scrollbar-track{background:transparent}
+  .gm-scroll::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:999px}
+  .gm-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  .gm-detail-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:0 16px}
+  .gm-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .gm-admin-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:14px 16px;align-items:start}
+  .gm-hub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width: 980px){ .gm-admin-grid{grid-template-columns:1fr} .gm-hub-grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width: 640px){ .gm-hub-grid{grid-template-columns:1fr} }
+  .gm-report-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:14px 16px;align-items:start}
+  @media (max-width: 980px){ .gm-tiles{grid-template-columns:repeat(2,1fr)} .gm-report-grid{grid-template-columns:1fr} }
+  @media (max-width: 760px){ .gm-detail-grid{grid-template-columns:1fr} }
+  @media (max-width: 640px){ .gm-form-grid{grid-template-columns:1fr} }
+  @media (max-width: 860px){
+    .gm-table-head, .gm-row-desktop{display:none !important}
+    .gm-row-mobile{display:flex !important}
+    .gm-sidebar{display:none !important}
+    .gm-bottombar{display:flex !important}
+  }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#f3f4f6">
+
+  <div style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;padding:10px 16px;background:#111827;color:#fff;font-size:13px">
+    <span style="opacity:.6">Preview:</span>
+    <button style="{{ screenBtnStyleLogin }}" onclick="{{ goLogin }}">Login</button>
+    <button style="{{ screenBtnStyleMembers }}" onclick="{{ goMembers }}">Members (Admin)</button>
+    <button style="{{ screenBtnStyleAdd }}" onclick="{{ goAdd }}">Add Member</button>
+    <button style="{{ screenBtnStyleEdit }}" onclick="{{ goEdit }}">Edit Member (errors)</button>
+    <button style="{{ screenBtnStyleDetail }}" onclick="{{ goDetail }}">Member Detail</button>
+    <button style="{{ screenBtnStyleRenew }}" onclick="{{ goRenew }}">Renew / Checkout</button>
+    <button style="{{ screenBtnStyleReports }}" onclick="{{ goReports }}">Reports</button>
+    <button style="{{ screenBtnStyleAdmin }}" onclick="{{ goAdmin }}">Settings / Admin</button>
+    <span style="flex:1"></span>
+    <button style="{{ netToggleStyle }}" onclick="{{ toggleNet }}">{{ netToggleLabel }}</button>
+  </div>
+
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:calc(100vh - 41px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <sc-for list="{{ loginVariantChips }}" as="lv" hint-placeholder-count="5">
+          <button style="{{ lv.style }}" onclick="{{ lv.pick }}">{{ lv.label }}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ isSignedOut }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ loginCardStyle }}">
+          <div style="width:56px;height:56px;border-radius:999px;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin-bottom:18px">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <h2 style="margin:0 0 4px;font-size:20px;font-weight:600;color:#111827;text-align:center">You're signed out</h2>
+          <p style="margin:0 0 20px;font-size:13.5px;color:#6b7280;text-align:center;line-height:1.5">Your session has ended safely. Redirecting to sign in…</p>
+          <div style="width:100%;height:4px;border-radius:999px;background:#e5e7eb;overflow:hidden;margin-bottom:20px">
+            <div style="{{ redirectBarStyle }}"></div>
+          </div>
+          <button style="{{ ctaButtonStyle }}" onclick="{{ pickDefaultLogin }}">Sign in again</button>
+          <p style="margin:4px 0 0;font-size:11px;color:#9ca3af;text-align:center">Fit &amp; Fine Gym &middot; v1.0.0</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ notSignedOut }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ loginCardStyle }}">
+        <div style="{{ logoTileStyle }}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11M4 9l3-3M20 15l-3 3M2 11l2-2M22 13l-2 2M6.5 6.5L9 4M17.5 17.5L15 20"/></svg>
+        </div>
+        <h2 style="margin:0 0 4px;font-size:22px;font-weight:600;color:#111827;text-align:center">Welcome to Fit &amp; Fine</h2>
+        <p style="margin:0 0 22px;font-size:13.5px;color:#6b7280;text-align:center;line-height:1.5">Staff portal. Sign in with your username and 4-digit PIN to manage members.</p>
+
+        <sc-if value="{{ netErr }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ netLoginBannerStyle }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M1 1l22 22M16.7 11.6A6.5 6.5 0 0119 16M5 12.5a10 10 0 012.9-2.1M8.5 16a4.5 4.5 0 015.7-.6M12 20h.01M2 8.8A15 15 0 0112 5c2.5 0 4.9.6 7 1.8"/></svg>
+            <span style="flex:1;line-height:1.45">Can't reach the server. Check your internet connection and try again.</span>
+            <button style="{{ netRetrySmallStyle }}" onclick="{{ toggleNet }}">Retry</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ loginBannerShow }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ loginBannerStyle }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <span style="flex:1;line-height:1.45">{{ loginBannerText }}</span>
+          </div>
+        </sc-if>
+
+        <div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-bottom:8px">
+          <div style="position:relative">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af;display:flex">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+            </span>
+            <input placeholder="Username" style="{{ inputStyle }}" />
+          </div>
+          <div style="position:relative">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af;display:flex">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </span>
+            <input placeholder="4-digit PIN" type="password" style="{{ pinInputStyle }}" />
+            <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:11px">0/4</span>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <a href="#" style="font-size:12px;color:#6b7280;font-weight:500;text-decoration:none">Forgot PIN?</a>
+          </div>
+        </div>
+
+        <button style="{{ ctaButtonStyle }}">Sign in</button>
+
+        <div style="display:flex;align-items:center;width:100%;margin:6px 0">
+          <div style="flex:1;border-top:1px dashed #e5e7eb"></div>
+          <span style="margin:0 10px;font-size:11.5px;color:#9ca3af">Or sign in with</span>
+          <div style="flex:1;border-top:1px dashed #e5e7eb"></div>
+        </div>
+        <button style="{{ googleButtonStyle }}">
+          <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.86c2.26-2.09 3.56-5.17 3.56-8.87z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          Sign in with Google
+        </button>
+        <p style="margin:20px 0 0;font-size:11px;color:#9ca3af;text-align:center">Fit &amp; Fine Gym &middot; v1.0.0</p>
+      </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isMembers }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;min-height:calc(100vh - 41px)">
+
+      <div class="gm-sidebar" style="width:220px;flex-shrink:0;background:#fff;border-right:1px solid #e5e7eb;padding:20px 14px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:10px;padding:0 8px 20px">
+          <div style="{{ smallLogoTileStyle }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11M4 9l3-3M20 15l-3 3"/></svg>
+          </div>
+          <span style="font-weight:700;font-size:14.5px;color:#111827">FlexHub</span>
+        </div>
+        <div style="{{ navItemActiveStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="8" r="2.3"/><path d="M15 20c.3-2.6 2-4.4 4.5-4.9"/></svg>
+          Members
+        </div>
+        <div style="{{ navItemStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M10 20V4M17 20v-7"/></svg>
+          Reports
+        </div>
+        <div style="{{ navItemStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0A1.65 1.65 0 009 3.09V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <div style="padding:22px 28px 0">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+            <h1 style="margin:0;font-size:22px;font-weight:700;color:#111827">Members</h1>
+            <button style="{{ ctaSmallButtonStyle }}">+ Add Member</button>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+            <div style="position:relative;flex:1;min-width:220px;max-width:340px">
+              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9ca3af;display:flex">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              </span>
+              <input placeholder="Search by name, member #, or phone" style="width:100%;box-sizing:border-box;padding:8px 10px 8px 32px;border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;font-size:13px;color:#111827" />
+            </div>
+            <button style="{{ filterButtonStyle }}" onclick="{{ openFilters }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></svg>
+              Filters <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}"><span style="{{ filterCountBadgeStyle }}">{{ filterCount }}</span></sc-if>
+            </button>
+            <button style="{{ ghostButtonStyle }}">Sort: Join date ▾</button>
+          </div>
+
+          <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+              <span style="font-size:12px;color:#9ca3af;font-weight:500">Applied:</span>
+              <sc-for list="{{ appliedFilters }}" as="f" hint-placeholder-count="2">
+                <span style="{{ appliedChipStyle }}">
+                  <span style="opacity:.6">{{ f.group }}:</span> {{ f.label }}
+                  <button style="{{ chipRemoveStyle }}" onclick="{{ f.remove }}">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </span>
+              </sc-for>
+              <button style="border:none;background:none;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:0" onclick="{{ clearFilters }}">Clear all</button>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+            <sc-for list="{{ statusPills }}" as="p" hint-placeholder-count="4">
+              <button style="{{ p.style }}">{{ p.label }} <span style="opacity:.65">{{ p.count }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ netErr }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 28px">
+            <div style="{{ netIconTileStyle }}">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8"><path d="M1 1l22 22M16.7 11.6A6.5 6.5 0 0119 16M5 12.5a10 10 0 012.9-2.1M8.5 16a4.5 4.5 0 015.7-.6M12 20h.01M2 8.8A15 15 0 0112 5c2.5 0 4.9.6 7 1.8"/></svg>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:#111827">Couldn't load members</div>
+            <div style="font-size:13px;color:#6b7280;text-align:center;max-width:320px;line-height:1.5">Check your internet connection. Your search and filters are kept — nothing is lost.</div>
+            <button style="{{ ctaSmallButtonStyle }}" onclick="{{ toggleNet }}">Retry</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ netOk }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;overflow:auto;padding:0 28px 28px">
+          <div class="gm-table-head" style="display:grid;grid-template-columns:2fr 1fr 1.1fr 1.1fr 1fr 0.9fr 60px;gap:12px;padding:10px 16px;font-size:11.5px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em">
+            <div>Member</div><div>Member #</div><div>Phone</div><div>Plan</div><div>Expiry</div><div>Status</div><div></div>
+          </div>
+
+          <div style="{{ listContainerStyle }}">
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="6">
+              <div class="gm-row-desktop" style="display:grid;grid-template-columns:2fr 1fr 1.1fr 1.1fr 1fr 0.9fr 60px;gap:12px;align-items:center;padding:12px 16px;background:#fff;border-radius:12px;margin-bottom:8px;border:1px solid #f1f1f3">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                  <div style="{{ m.avatarStyle }}">{{ m.initials }}</div>
+                  <span style="font-weight:600;font-size:13.5px;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.name }}</span>
+                </div>
+                <div style="font-size:13px;color:#6b7280">{{ m.memberNumber }}</div>
+                <div style="font-size:13px;color:#6b7280">{{ m.phone }}</div>
+                <div style="font-size:13px;color:#6b7280">{{ m.plan }}</div>
+                <div style="font-size:13px;color:#6b7280">{{ m.expiryText }}</div>
+                <div><span style="{{ m.statusStyle }}">{{ m.statusLabel }}</span></div>
+                <div style="display:flex;justify-content:flex-end">
+                  <button style="width:30px;height:30px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="gm-row-mobile" style="display:none;gap:12px;align-items:flex-start;padding:14px;background:#fff;border-radius:14px;margin-bottom:10px;border:1px solid #f1f1f3">
+                <div style="{{ m.avatarStyle }}">{{ m.initials }}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <span style="font-weight:600;font-size:14.5px;color:#111827">{{ m.name }}</span>
+                    <span style="{{ m.statusStyle }}">{{ m.statusLabel }}</span>
+                  </div>
+                  <div style="font-size:12.5px;color:#9ca3af;margin-top:2px">{{ m.memberNumber }}</div>
+                  <div style="font-size:13px;color:#6b7280;margin-top:4px">{{ m.plan }} &middot; {{ m.phone }}</div>
+                  <div style="font-size:12.5px;color:#9ca3af;margin-top:3px">{{ m.expiryText }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ filtersOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed;inset:0;background:rgba(17,24,39,0.35);z-index:90" onclick="{{ closeFilters }}"></div>
+        <div style="position:fixed;top:0;right:0;bottom:0;width:320px;max-width:85vw;background:#fff;z-index:95;box-shadow:-12px 0 30px rgba(17,24,39,0.12);display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f1f3">
+            <span style="font-size:15px;font-weight:700;color:#111827">Filters</span>
+            <button style="width:30px;height:30px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="{{ closeFilters }}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:22px">
+            <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="3">
+              <div>
+                <div style="font-size:11.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">{{ g.name }}</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ g.options }}" as="o" hint-placeholder-count="3">
+                    <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:#374151;cursor:pointer" onclick="{{ o.toggle }}">
+                      <span style="{{ o.checkboxStyle }}">
+                        <sc-if value="{{ o.checked }}" hint-placeholder-val="{{ false }}">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                        </sc-if>
+                      </span>
+                      {{ o.label }}
+                    </label>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:10px;padding:16px 20px;border-top:1px solid #f1f1f3">
+            <button style="flex:1;padding:10px 0;border-radius:10px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer" onclick="{{ clearFilters }}">Clear all</button>
+            <button style="{{ applyButtonStyle }}" onclick="{{ closeFilters }}">Apply filters</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div class="gm-bottombar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:8px 0;justify-content:space-around">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:{{ accentColor }};font-size:11px;font-weight:600">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+          Members
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#9ca3af;font-size:11px;font-weight:600">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M10 20V4M17 20v-7"/></svg>
+          Reports
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#9ca3af;font-size:11px;font-weight:600">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;min-height:calc(100vh - 41px)">
+      <div class="gm-sidebar" style="width:220px;flex-shrink:0;background:#fff;border-right:1px solid #e5e7eb;padding:20px 14px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:10px;padding:0 8px 20px">
+          <div style="{{ smallLogoTileStyle }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11M4 9l3-3M20 15l-3 3"/></svg>
+          </div>
+          <span style="font-weight:700;font-size:14.5px;color:#111827">FlexHub</span>
+        </div>
+        <div style="{{ navItemStyle }}" onclick="{{ goMembers }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+          Members
+        </div>
+        <div style="{{ navItemStyle }}" onclick="{{ goReports }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M10 20V4M17 20v-7"/></svg>
+          Reports
+        </div>
+        <div style="{{ navItemActiveStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8L7 17M17 7l2.8-2.8"/></svg>
+          Settings
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;padding:22px 28px 60px;overflow:auto">
+        <div style="max-width:1080px">
+          <h1 style="margin:0 0 14px;font-size:22px;font-weight:700;color:#111827">Settings</h1>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+            <sc-for list="{{ adminTabs }}" as="at" hint-placeholder-count="7">
+              <button style="{{ at.style }}" onclick="{{ at.pick }}">{{ at.label }}</button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ tabHub }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ formCardStyle }}">
+              <div style="{{ sectionTitleStyle }}">Profile</div>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <div style="{{ hubAvatarStyle }}">AU</div>
+                <div style="flex:1;min-width:180px">
+                  <div style="font-size:15px;font-weight:700;color:#111827">Admin User</div>
+                  <div style="font-size:12.5px;color:#6b7280;margin-top:2px">admin@fitandfine.in</div>
+                  <div style="display:flex;gap:6px;margin-top:7px">
+                    <span style="{{ roleBadgeStyle }}">Admin</span>
+                    <span style="{{ roleBadgeMutedStyle }}">Staff</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button style="{{ ghostButtonStyle }}">Change Password</button>
+                  <button style="{{ dangerGhostStyle }}">Sign Out</button>
+                </div>
+              </div>
+            </div>
+            <div style="{{ sectionTitleStyle }}">Data management</div>
+            <div class="gm-hub-grid">
+              <sc-for list="{{ hubCards }}" as="hc" hint-placeholder-count="6">
+                <div style="{{ hc.style }}" onclick="{{ hc.open }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:14px;font-weight:700;color:#111827">{{ hc.title }}</span>
+                    <span style="{{ hc.countStyle }}">{{ hc.count }}</span>
+                  </div>
+                  <div style="font-size:12px;color:#9ca3af;margin-top:5px;line-height:1.45">{{ hc.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabPlans }}" hint-placeholder-val="{{ false }}">
+            <div class="gm-admin-grid">
+              <div style="{{ formCardStyle }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <div style="{{ sectionTitleNoMbStyle }}">Membership plans · 6</div>
+                  <button style="{{ ghostButtonStyle }}">+ Add plan</button>
+                </div>
+                <sc-for list="{{ planRows }}" as="pl" hint-placeholder-count="5">
+                  <div style="{{ pl.rowStyle }}">
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:13.5px;font-weight:600;color:#111827">{{ pl.name }}</span>
+                        <span style="{{ pl.catStyle }}">{{ pl.category }}</span>
+                      </div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px">{{ pl.meta }}</div>
+                    </div>
+                    <span style="font-size:13.5px;font-weight:700;color:#111827;flex-shrink:0">{{ pl.price }}</span>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                    </button>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
+                  </div>
+                </sc-for>
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;margin-top:12px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <span style="font-size:12.5px;color:#b91c1c;line-height:1.45">Can't delete <strong>Gold Plan</strong> — currently used by 34 subscriptions.</span>
+                </div>
+              </div>
+              <div style="{{ formCardStyle }}">
+                <div style="{{ sectionTitleStyle }}">Edit plan</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div>
+                    <label style="{{ labelStyle }}">Name <span style="color:#dc2626">*</span></label>
+                    <input style="{{ errInputStyle }}" defaultValue="Gold Plan " />
+                    <div style="{{ errTextStyle }}">A plan named "Gold Plan" already exists.</div>
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Category <span style="color:#dc2626">*</span></label>
+                    <select style="{{ formInputStyle }}"><option>Membership</option><option>Add-on</option></select>
+                  </div>
+                  <div class="gm-form-grid">
+                    <div>
+                      <label style="{{ labelStyle }}">Duration (months) <span style="color:#dc2626">*</span></label>
+                      <input style="{{ formInputStyle }}" defaultValue="6" />
+                    </div>
+                    <div>
+                      <label style="{{ labelStyle }}">Price (₹) <span style="color:#dc2626">*</span></label>
+                      <input style="{{ errInputStyle }}" defaultValue="0" />
+                      <div style="{{ errTextStyle }}">Price must be greater than 0.</div>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Max members</label>
+                    <select style="{{ formInputStyle }}"><option>1</option><option>2 (shared)</option></select>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+                    <button style="{{ cancelButtonStyle }}">Cancel</button>
+                    <button style="{{ ctaSmallButtonStyle }}">Save plan</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabBranches }}" hint-placeholder-val="{{ false }}">
+            <div class="gm-admin-grid">
+              <div style="{{ formCardStyle }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <div style="{{ sectionTitleNoMbStyle }}">Branches · 3</div>
+                  <button style="{{ ghostButtonStyle }}">+ Add branch</button>
+                </div>
+                <sc-for list="{{ branchRows }}" as="br" hint-placeholder-count="3">
+                  <div style="{{ br.rowStyle }}">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;color:#111827">{{ br.name }}</div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px">{{ br.meta }}</div>
+                    </div>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                    </button>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="{{ formCardStyle }}">
+                <div style="{{ sectionTitleStyle }}">Add branch</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div>
+                    <label style="{{ labelStyle }}">Branch name <span style="color:#dc2626">*</span></label>
+                    <input style="{{ errInputStyle }}" placeholder="e.g. East Branch" />
+                    <div style="{{ errTextStyle }}">Branch name is required.</div>
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Address</label>
+                    <input style="{{ formInputStyle }}" placeholder="Street, city" />
+                  </div>
+                  <div style="font-size:11.5px;color:#9ca3af">Branches scope member numbering and all member records.</div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+                    <button style="{{ cancelButtonStyle }}">Cancel</button>
+                    <button style="{{ ctaSmallButtonStyle }}">Add branch</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabUsers }}" hint-placeholder-val="{{ false }}">
+            <div class="gm-admin-grid">
+              <div style="{{ formCardStyle }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <div style="{{ sectionTitleNoMbStyle }}">Staff &amp; admin accounts · 5</div>
+                  <button style="{{ ghostButtonStyle }}">Invite user</button>
+                </div>
+                <sc-for list="{{ userRows }}" as="u" hint-placeholder-count="5">
+                  <div style="{{ u.rowStyle }}">
+                    <div style="{{ u.avatarStyle }}">{{ u.initials }}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <span style="font-size:13.5px;font-weight:600;color:#111827">{{ u.name }}</span>
+                        <sc-for list="{{ u.roles }}" as="rb" hint-placeholder-count="1">
+                          <span style="{{ rb.style }}">{{ rb.label }}</span>
+                        </sc-for>
+                      </div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px">{{ u.email }}</div>
+                    </div>
+                    <span style="{{ u.stateStyle }}">{{ u.state }}</span>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                    </button>
+                  </div>
+                </sc-for>
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:10px">You can't change your own role or deactivate yourself.</div>
+              </div>
+              <div style="{{ formCardStyle }}">
+                <div style="{{ sectionTitleStyle }}">Invite user</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div>
+                    <label style="{{ labelStyle }}">Email <span style="color:#dc2626">*</span></label>
+                    <input style="{{ errInputStyle }}" defaultValue="meena.fitfine" />
+                    <div style="{{ errTextStyle }}">Enter a valid email address.</div>
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Full name <span style="color:#dc2626">*</span></label>
+                    <input style="{{ formInputStyle }}" defaultValue="Meena Joshi" />
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Roles <span style="color:#dc2626">*</span></label>
+                    <div style="display:flex;gap:8px">
+                      <sc-for list="{{ inviteRoleChips }}" as="irc" hint-placeholder-count="2">
+                        <button style="{{ irc.style }}">{{ irc.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="font-size:11.5px;color:#9ca3af">An invite email is sent — no temporary password is shown.</div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+                    <button style="{{ cancelButtonStyle }}">Cancel</button>
+                    <button style="{{ ctaSmallButtonStyle }}">Send invite</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabRoles }}" hint-placeholder-val="{{ false }}">
+            <div class="gm-admin-grid">
+              <div style="{{ formCardStyle }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <div style="{{ sectionTitleNoMbStyle }}">Roles · 3</div>
+                  <button style="{{ ghostButtonStyle }}">+ Add role</button>
+                </div>
+                <sc-for list="{{ roleRows }}" as="ro" hint-placeholder-count="3">
+                  <div style="{{ ro.rowStyle }}">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;color:#111827">{{ ro.name }}</div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px">{{ ro.desc }}</div>
+                    </div>
+                    <span style="font-size:11.5px;color:#9ca3af;flex-shrink:0">{{ ro.holders }}</span>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+                    </button>
+                    <button style="{{ iconBtnStyle }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
+                  </div>
+                </sc-for>
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;margin-top:12px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  <span style="font-size:12.5px;color:#b91c1c;line-height:1.45">Can't delete <strong>Staff</strong> — held by 3 users.</span>
+                </div>
+              </div>
+              <div style="{{ formCardStyle }}">
+                <div style="{{ sectionTitleStyle }}">Add role</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div>
+                    <label style="{{ labelStyle }}">Role name <span style="color:#dc2626">*</span></label>
+                    <input style="{{ errInputStyle }}" placeholder="e.g. Trainer" />
+                    <div style="{{ errTextStyle }}">Role name is required.</div>
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Description</label>
+                    <textarea rows="3" style="{{ textareaStyle }}" placeholder="What can this role do?"></textarea>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+                    <button style="{{ cancelButtonStyle }}">Cancel</button>
+                    <button style="{{ ctaSmallButtonStyle }}">Add role</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabAudit }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ formCardStyle }}">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+                <button style="{{ ghostButtonStyle }}">Date: last 7 days ▾</button>
+                <button style="{{ ghostButtonStyle }}">Table: all ▾</button>
+                <button style="{{ ghostButtonStyle }}">Actor: anyone ▾</button>
+                <input style="{{ auditSearchStyle }}" placeholder="Record id…" />
+              </div>
+              <sc-for list="{{ auditRows }}" as="au" hint-placeholder-count="5">
+                <div style="{{ au.rowStyle }}">
+                  <span style="{{ au.tableStyle }}">{{ au.table }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;color:#111827"><strong>{{ au.field }}</strong> on {{ au.record }}</div>
+                    <div style="font-size:12px;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                      <span style="{{ au.oldStyle }}">{{ au.oldVal }}</span>
+                      <span style="color:#9ca3af">→</span>
+                      <span style="{{ au.newStyle }}">{{ au.newVal }}</span>
+                    </div>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0">
+                    <div style="font-size:12px;font-weight:600;color:#374151">{{ au.actor }}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px">{{ au.when }}</div>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="font-size:11.5px;color:#9ca3af;margin-top:10px;text-align:center">Append-only — nothing here can be edited or deleted.</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabNumbering }}" hint-placeholder-val="{{ false }}">
+            <div class="gm-admin-grid">
+              <div style="{{ formCardStyle }}">
+                <div style="{{ sectionTitleStyle }}">Per-branch sequences</div>
+                <sc-for list="{{ numberingRows }}" as="nb" hint-placeholder-count="3">
+                  <div style="{{ nb.rowStyle }}">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;color:#111827">{{ nb.branch }}</div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px">Last issued: {{ nb.last }}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">Next</div>
+                      <input style="{{ nb.inputStyle }}" defaultValue="{{ nb.next }}" />
+                      <sc-if value="{{ nb.err }}" hint-placeholder-val="{{ false }}"><div style="{{ errTextStyle }}">Must be greater than last issued (0231).</div></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="{{ formCardStyle }}">
+                <div style="{{ sectionTitleStyle }}">Global settings</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div class="gm-form-grid">
+                    <div>
+                      <label style="{{ labelStyle }}">Start number</label>
+                      <input style="{{ formInputStyle }}" defaultValue="1" />
+                    </div>
+                    <div>
+                      <label style="{{ labelStyle }}">Increment</label>
+                      <input style="{{ formInputStyle }}" defaultValue="1" />
+                    </div>
+                  </div>
+                  <div>
+                    <label style="{{ labelStyle }}">Zero-padding width</label>
+                    <select style="{{ formInputStyle }}"><option>4 (FF-0001)</option><option>3 (FF-001)</option><option>5 (FF-00001)</option></select>
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+                    <button style="{{ cancelButtonStyle }}">Reset</button>
+                    <button style="{{ ctaSmallButtonStyle }}">Save settings</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;min-height:calc(100vh - 41px)">
+      <div class="gm-sidebar" style="width:220px;flex-shrink:0;background:#fff;border-right:1px solid #e5e7eb;padding:20px 14px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:10px;padding:0 8px 20px">
+          <div style="{{ smallLogoTileStyle }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11M4 9l3-3M20 15l-3 3"/></svg>
+          </div>
+          <span style="font-weight:700;font-size:14.5px;color:#111827">FlexHub</span>
+        </div>
+        <div style="{{ navItemStyle }}" onclick="{{ goMembers }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="8" r="2.3"/><path d="M15 20c.3-2.6 2-4.4 4.5-4.9"/></svg>
+          Members
+        </div>
+        <div style="{{ navItemActiveStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M10 20V4M17 20v-7"/></svg>
+          Reports
+        </div>
+        <div style="{{ navItemStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0A1.65 1.65 0 009 3.09V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;padding:22px 28px 60px;overflow:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;max-width:1080px">
+          <h1 style="margin:0;font-size:22px;font-weight:700;color:#111827">Reports</h1>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <sc-for list="{{ rangeChips }}" as="rc" hint-placeholder-count="4">
+              <button style="{{ rc.style }}" onclick="{{ rc.pick }}">{{ rc.label }}</button>
+            </sc-for>
+            <span style="width:1px;height:20px;background:#e5e7eb;margin:0 4px"></span>
+            <button style="{{ emptyToggleStyle }}" onclick="{{ toggleReportsEmpty }}">{{ emptyToggleLabel }}</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ netErr }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:1080px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:80px 28px">
+            <div style="{{ netIconTileStyle }}">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8"><path d="M1 1l22 22M16.7 11.6A6.5 6.5 0 0119 16M5 12.5a10 10 0 012.9-2.1M8.5 16a4.5 4.5 0 015.7-.6M12 20h.01M2 8.8A15 15 0 0112 5c2.5 0 4.9.6 7 1.8"/></svg>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:#111827">Couldn't load reports</div>
+            <div style="font-size:13px;color:#6b7280;text-align:center;max-width:320px;line-height:1.5">The dashboard needs a connection. Retry when you're back online.</div>
+            <button style="{{ ctaSmallButtonStyle }}" onclick="{{ toggleNet }}">Retry</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ netOk }}" hint-placeholder-val="{{ true }}">
+        <div class="gm-tiles" style="max-width:1080px">
+          <sc-for list="{{ reportTiles }}" as="t" hint-placeholder-count="4">
+            <div style="{{ t.style }}">
+              <div style="font-size:12px;font-weight:600;color:{{ t.labelColor }}">{{ t.label }}</div>
+              <div style="font-size:26px;font-weight:700;color:#111827;margin-top:6px">{{ t.value }}</div>
+              <div style="font-size:11.5px;color:#9ca3af;margin-top:3px">{{ t.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="gm-report-grid" style="max-width:1080px">
+          <div style="order:3;{{ formCardStyle }}">
+            <div style="{{ sectionTitleStyle }}">New registrations · last 6 months</div>
+            <sc-if value="{{ reportsFilled }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:flex-end;gap:14px;height:150px;padding-top:8px">
+                <sc-for list="{{ barData }}" as="b" hint-placeholder-count="6">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+                    <span style="font-size:11px;font-weight:600;color:#374151">{{ b.value }}</span>
+                    <div style="{{ b.barStyle }}"></div>
+                    <span style="font-size:11px;color:#9ca3af">{{ b.month }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ reportsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.6"><path d="M3 20V10M10 20V4M17 20v-7"/></svg>
+                <div style="font-size:13px;color:#6b7280;font-weight:500">No registrations yet</div>
+                <div style="font-size:12px;color:#9ca3af;text-align:center">The chart fills in as members join.</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="order:1;height:340px;box-sizing:border-box;display:flex;flex-direction:column;{{ formCardStyle }}">
+            <div style="{{ sectionTitleStyle }}">Payment modes · {{ rangeLabel }}</div>
+            <sc-if value="{{ reportsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+                <div style="width:150px;height:150px;border-radius:999px;background:#f3f4f6;display:flex;align-items:center;justify-content:center">
+                  <div style="width:86px;height:86px;border-radius:999px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <span style="font-size:18px;font-weight:700;color:#d1d5db">₹0</span>
+                    <span style="font-size:11px;color:#9ca3af">collected</span>
+                  </div>
+                </div>
+                <div style="font-size:12.5px;color:#9ca3af;text-align:center">No payments in this range — try a wider date range.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ reportsFilled }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;display:flex;align-items:center;justify-content:space-around;gap:24px;flex-wrap:wrap;padding:10px 0">
+              <div style="{{ donutStyle }}">
+                <div style="width:108px;height:108px;border-radius:999px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <span style="font-size:21px;font-weight:700;color:#111827">₹86.4k</span>
+                  <span style="font-size:11.5px;color:#9ca3af">collected</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <sc-for list="{{ donutLegend }}" as="d" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="{{ d.dotStyle }}"></span>
+                    <span style="font-size:12.5px;color:#374151;font-weight:500">{{ d.label }}</span>
+                    <span style="font-size:12.5px;color:#9ca3af">{{ d.value }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+          </div>
+
+          <div style="order:4;{{ formCardStyle }}">
+            <div style="{{ sectionTitleStyle }}">Expiring this week</div>
+            <sc-if value="{{ reportsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:28px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+                <div style="font-size:13px;color:#6b7280;font-weight:500">Nothing expiring this week</div>
+                <div style="font-size:12px;color:#9ca3af">All current memberships run past 9 Aug.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ reportsFilled }}" hint-placeholder-val="{{ true }}">
+            <div class="gm-scroll" style="max-height:230px;overflow:auto;padding-right:4px">
+            <sc-for list="{{ expiringList }}" as="e" hint-placeholder-count="4">
+              <div style="{{ e.rowStyle }}">
+                <div style="{{ e.avatarStyle }}">{{ e.initials }}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;color:#111827">{{ e.name }}</div>
+                  <div style="font-size:11.5px;color:#9ca3af;margin-top:1px">{{ e.plan }}</div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:#b45309;flex-shrink:0">{{ e.expires }}</span>
+              </div>
+            </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;padding-top:10px;border-top:1px solid #f5f5f6;font-size:11.5px;color:#9ca3af">
+              Showing 6 of 12 &middot; scroll to load more
+            </div>
+            </sc-if>
+          </div>
+
+          <div style="order:2;height:340px;box-sizing:border-box;display:flex;flex-direction:column;{{ formCardStyle }}">
+            <div style="{{ sectionTitleStyle }}">Transactions · {{ rangeLabel }}</div>
+            <sc-if value="{{ reportsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.6"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                <div style="font-size:13px;color:#6b7280;font-weight:500">No transactions in this range</div>
+                <button style="{{ ghostButtonStyle }}">Change date range</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ reportsFilled }}" hint-placeholder-val="{{ true }}">
+            <div class="gm-scroll" style="flex:1;overflow:auto;min-height:0;padding-right:4px">
+            <sc-for list="{{ txns }}" as="tx" hint-placeholder-count="5">
+              <div style="{{ tx.rowStyle }}">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;color:#111827">{{ tx.member }}</div>
+                  <div style="font-size:11.5px;color:#9ca3af;margin-top:1px">{{ tx.meta }}</div>
+                </div>
+                <span style="{{ tx.modeStyle }}">{{ tx.mode }}</span>
+                <span style="font-size:13px;font-weight:700;color:#111827;flex-shrink:0;min-width:70px;text-align:right">{{ tx.amount }}</span>
+              </div>
+            </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding-top:10px;border-top:1px solid #f5f5f6;font-size:11.5px;color:#9ca3af">
+              Showing 9 of 42 &middot; scroll to load more
+            </div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+
+      <div class="gm-bottombar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:8px 0;justify-content:space-around">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#9ca3af;font-size:11px;font-weight:600" onclick="{{ goMembers }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+          Members
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:{{ accentColor }};font-size:11px;font-weight:600">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M10 20V4M17 20v-7"/></svg>
+          Reports
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#9ca3af;font-size:11px;font-weight:600">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:calc(100vh - 41px);padding:26px 20px 60px">
+      <div style="max-width:920px;margin:0 auto">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+          <button style="width:32px;height:32px;border-radius:9px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="{{ goMembers }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <h1 style="margin:0;font-size:21px;font-weight:700;color:#111827">Member Detail</h1>
+        </div>
+
+        <div style="{{ heroCardStyle }}">
+          <div style="{{ heroAvatarStyle }}">AS</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:19px;font-weight:700;color:#111827">Aditi Sharma</span>
+              <span style="{{ activeBadgeStyle }}">Active</span>
+            </div>
+            <div style="font-size:13px;color:#6b7280;margin-top:4px">FF-0231 &middot; 98765 43210 &middot; Female &middot; joined 14 Feb 2026</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:3px">Handled by: Ravi Kumar (editable)</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button style="{{ ghostButtonStyle }}" onclick="{{ goEdit }}">Edit</button>
+            <button style="{{ dangerGhostStyle }}">Delete</button>
+          </div>
+        </div>
+
+        <div class="gm-detail-grid">
+          <div style="display:flex;flex-direction:column">
+            <div style="{{ formCardStyle }}">
+              <div style="{{ sectionTitleStyle }}">Personal</div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Date of birth</span><span style="{{ kvValStyle }}">21 Jun 1996 (30 yrs)</span></div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Weight / Height</span><span style="{{ kvValStyle }}">61 kg &middot; 164 cm</span></div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Email</span><span style="{{ kvValStyle }}">aditi.s@example.com</span></div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Occupation</span><span style="{{ kvValStyle }}">Architect</span></div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Address</span><span style="{{ kvValStyle }}">7 Rose Garden Ln, Pune</span></div>
+              <div style="{{ kvRowLastStyle }}"><span style="{{ kvKeyStyle }}">Branch</span><span style="{{ kvValStyle }}">City Center Branch</span></div>
+            </div>
+            <div style="{{ formCardStyle }}">
+              <div style="{{ sectionTitleStyle }}">Medical</div>
+              <div style="{{ kvRowLastStyle }}"><span style="{{ kvKeyStyle }}">Under doctor's care</span><span style="{{ kvValStyle }}">No</span></div>
+            </div>
+            <div style="{{ formCardStyle }}">
+              <div style="{{ sectionTitleStyle }}">Emergency contact</div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Name</span><span style="{{ kvValStyle }}">Suresh Sharma</span></div>
+              <div style="{{ kvRowStyle }}"><span style="{{ kvKeyStyle }}">Phone</span><span style="{{ kvValStyle }}">98220 11223</span></div>
+              <div style="{{ kvRowLastStyle }}"><span style="{{ kvKeyStyle }}">Relationship</span><span style="{{ kvValStyle }}">Parent</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column">
+            <div style="{{ membershipCardStyle }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="{{ sectionTitleOnTintStyle }}">Current membership</div>
+                <button style="{{ ctaSmallButtonStyle }}" onclick="{{ goRenew }}">Renew</button>
+              </div>
+              <div style="font-size:17px;font-weight:700;color:#111827">Gold Plan</div>
+              <div style="font-size:13px;color:#6b7280;margin-top:3px">1 Mar 2026 → 12 Aug 2026 &middot; ₹12,000 paid (UPI)</div>
+              <div style="height:6px;border-radius:999px;background:rgba(17,24,39,0.08);margin-top:14px;overflow:hidden">
+                <div style="{{ progressFillStyle }}"></div>
+              </div>
+              <div style="font-size:11.5px;color:#9ca3af;margin-top:6px">12 days remaining</div>
+            </div>
+
+            <div style="{{ formCardStyle }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="{{ sectionTitleNoMbStyle }}">Add-ons</div>
+                <button style="{{ ghostButtonStyle }}" onclick="{{ goRenew }}">+ Add</button>
+              </div>
+              <div style="{{ addonRowStyle }}">
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#111827">Personal Training</div>
+                  <div style="font-size:12px;color:#9ca3af;margin-top:2px">till 5 Aug 2026</div>
+                </div>
+                <span style="{{ expiringBadgeStyle }}">Expiring Soon</span>
+              </div>
+              <div style="{{ addonRowLastStyle }}">
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#111827">Steam &amp; Sauna</div>
+                  <div style="font-size:12px;color:#9ca3af;margin-top:2px">till 30 Sep 2026</div>
+                </div>
+                <span style="{{ activeBadgeStyle }}">Active</span>
+              </div>
+            </div>
+
+            <div style="{{ formCardStyle }}">
+              <div style="{{ sectionTitleStyle }}">Subscription history</div>
+              <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+                <div style="{{ h.rowStyle }}">
+                  <div style="{{ h.dotStyle }}"></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;font-weight:600;color:#111827">{{ h.title }}</div>
+                    <div style="font-size:11.5px;color:#9ca3af;margin-top:1px">{{ h.meta }}</div>
+                  </div>
+                  <div style="font-size:12.5px;font-weight:600;color:#374151;flex-shrink:0">{{ h.amount }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isRenew }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:calc(100vh - 41px);padding:26px 20px 60px">
+      <div style="max-width:720px;margin:0 auto">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <button style="width:32px;height:32px;border-radius:9px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="{{ goDetail }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <h1 style="margin:0;font-size:21px;font-weight:700;color:#111827">Renew / Add Subscription</h1>
+        </div>
+        <p style="margin:0 0 18px 42px;font-size:13px;color:#9ca3af">Aditi Sharma &middot; FF-0231 &middot; one checkout, one or more items</p>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Payment</div>
+          <div class="gm-form-grid">
+            <div>
+              <label style="{{ labelStyle }}">Payment mode <span style="color:#dc2626">*</span></label>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ payChips }}" as="p" hint-placeholder-count="3">
+                  <button style="{{ p.style }}" onclick="{{ p.pick }}">{{ p.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Notes <span style="font-weight:400;color:#9ca3af">(optional, ≤ 200 chars)</span></label>
+              <input style="{{ formInputStyle }}" placeholder="e.g. paid partially, balance next week" />
+            </div>
+          </div>
+        </div>
+
+        <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+          <div style="{{ it.cardStyle }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <span style="{{ it.tagStyle }}">{{ it.category }}</span>
+              <button style="width:28px;height:28px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#9ca3af;display:flex;align-items:center;justify-content:center;cursor:pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+              </button>
+            </div>
+            <div class="gm-form-grid">
+              <div>
+                <label style="{{ labelStyle }}">Plan <span style="color:#dc2626">*</span></label>
+                <select style="{{ formInputStyle }}"><option>{{ it.plan }}</option></select>
+              </div>
+              <div>
+                <label style="{{ labelStyle }}">Start date</label>
+                <input type="date" style="{{ formInputStyle }}" defaultValue="{{ it.start }}" />
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:4px">{{ it.startHint }}</div>
+              </div>
+              <div>
+                <label style="{{ labelStyle }}">Quantity</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ it.qtyChips }}" as="q" hint-placeholder-count="5">
+                    <button style="{{ q.style }}">{{ q.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <label style="{{ labelStyle }}">Amount paid (₹)</label>
+                <input style="{{ formInputStyle }}" defaultValue="{{ it.amount }}" />
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:4px">Defaults to price × quantity, editable.</div>
+              </div>
+            </div>
+            <div style="{{ endPreviewStyle }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Ends <strong style="margin-left:4px">{{ it.end }}</strong><span style="margin-left:6px;opacity:.6">(computed on save)</span>
+            </div>
+            <sc-if value="{{ it.warn }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;margin-top:12px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+                <div style="flex:1">
+                  <div style="font-size:12.5px;color:#92400e;line-height:1.45">Overlaps with current <strong>Personal Training</strong> (till 5 Aug 2026).</div>
+                  <div style="display:flex;gap:8px;margin-top:8px">
+                    <button style="padding:5px 12px;border-radius:8px;border:1px solid #fde68a;background:#fff;color:#92400e;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>
+                    <button style="padding:5px 12px;border-radius:8px;border:none;background:#b45309;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Save anyway</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+
+        <button style="{{ addItemButtonStyle }}">+ Add another item</button>
+
+        <sc-if value="{{ netErr }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;margin-bottom:14px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M1 1l22 22M16.7 11.6A6.5 6.5 0 0119 16M5 12.5a10 10 0 012.9-2.1M8.5 16a4.5 4.5 0 015.7-.6M12 20h.01M2 8.8A15 15 0 0112 5c2.5 0 4.9.6 7 1.8"/></svg>
+            <span style="flex:1;font-size:13px;color:#92400e;line-height:1.45">Checkout couldn't be saved — network error. No payment was recorded; your items are kept.</span>
+            <button style="{{ netRetrySmallStyle }}" onclick="{{ toggleNet }}">Retry save</button>
+          </div>
+        </sc-if>
+        <div style="{{ checkoutFooterStyle }}">
+          <div>
+            <div style="font-size:12px;color:#9ca3af">Total this visit</div>
+            <div style="font-size:19px;font-weight:700;color:#111827">₹14,500</div>
+            <div style="font-size:11.5px;color:#15803d;margin-top:2px">✓ Contains exactly one membership item</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button style="{{ cancelButtonStyle }}" onclick="{{ goDetail }}">Cancel</button>
+            <button style="{{ ctaSmallButtonStyle }}">Save checkout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isForm }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:calc(100vh - 41px);padding:26px 20px 60px">
+      <div style="max-width:720px;margin:0 auto">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <button style="width:32px;height:32px;border-radius:9px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="{{ goMembers }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <h1 style="margin:0;font-size:21px;font-weight:700;color:#111827">{{ formTitle }}</h1>
+        </div>
+        <p style="margin:0 0 18px 42px;font-size:13px;color:#9ca3af">{{ formSubtitle }}</p>
+
+        <sc-if value="{{ netErr }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;margin-bottom:18px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M1 1l22 22M16.7 11.6A6.5 6.5 0 0119 16M5 12.5a10 10 0 012.9-2.1M8.5 16a4.5 4.5 0 015.7-.6M12 20h.01M2 8.8A15 15 0 0112 5c2.5 0 4.9.6 7 1.8"/></svg>
+            <span style="flex:1;font-size:13px;color:#92400e;line-height:1.45">Couldn't save — network error. Everything you entered is kept; retry when you're back online.</span>
+            <button style="{{ netRetrySmallStyle }}" onclick="{{ toggleNet }}">Retry save</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;margin-bottom:18px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <span style="font-size:13px;color:#b91c1c;line-height:1.45">Please fix 2 errors below before saving.</span>
+          </div>
+        </sc-if>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Identity</div>
+          <div class="gm-form-grid">
+            <div>
+              <label style="{{ labelStyle }}">Name <span style="color:#dc2626">*</span></label>
+              <input style="{{ formInputStyle }}" placeholder="Full name" defaultValue="{{ v.name }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Phone <span style="color:#dc2626">*</span></label>
+              <input style="{{ phoneInputStyle }}" placeholder="10-digit mobile number" defaultValue="{{ v.phone }}" />
+              <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}"><div style="{{ errTextStyle }}">This phone number is already registered to FF-0198.</div></sc-if>
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Date of birth <span style="color:#dc2626">*</span></label>
+              <input type="date" style="{{ formInputStyle }}" defaultValue="{{ v.dob }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Date of joining <span style="color:#dc2626">*</span></label>
+              <input type="date" style="{{ formInputStyle }}" defaultValue="{{ v.doj }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Branch <span style="color:#dc2626">*</span></label>
+              <select style="{{ formInputStyle }}"><option>{{ v.branch }}</option><option>Main Branch</option><option>West Branch</option></select>
+              <div style="font-size:11.5px;color:#9ca3af;margin-top:4px">Drives member-number generation.</div>
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Gender <span style="color:#dc2626">*</span></label>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ genderChips }}" as="g" hint-placeholder-count="3">
+                  <button style="{{ g.style }}" onclick="{{ g.pick }}">{{ g.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+            <div class="gm-form-grid" style="margin-top:14px">
+              <div>
+                <label style="{{ labelStyle }}">Member number</label>
+                <div style="{{ readonlyStyle }}">FF-0198
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                </div>
+              </div>
+              <div>
+                <label style="{{ labelStyle }}">Created by</label>
+                <div style="{{ readonlyStyle }}">Admin User
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Body metrics</div>
+          <div class="gm-form-grid">
+            <div>
+              <label style="{{ labelStyle }}">Weight (kg) <span style="color:#dc2626">*</span></label>
+              <input style="{{ formInputStyle }}" placeholder="e.g. 72" defaultValue="{{ v.weight }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Height (cm) <span style="color:#dc2626">*</span></label>
+              <input style="{{ formInputStyle }}" placeholder="e.g. 175" defaultValue="{{ v.height }}" />
+            </div>
+          </div>
+        </div>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Medical</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-size:13.5px;font-weight:600;color:#111827">Under doctor's care? <span style="color:#dc2626">*</span></div>
+              <div style="font-size:12px;color:#9ca3af;margin-top:2px">Details are required when Yes.</div>
+            </div>
+            <button style="{{ docToggleStyle }}" onclick="{{ toggleDoctor }}">
+              <span style="{{ docKnobStyle }}"></span>
+            </button>
+          </div>
+          <sc-if value="{{ doctorCare }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px">
+              <label style="{{ labelStyle }}">Doctor care details <span style="color:#dc2626">*</span></label>
+              <textarea rows="3" style="{{ textareaStyle }}" placeholder="Condition, doctor's advice, restrictions…" defaultValue="{{ v.doctorDetails }}"></textarea>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Emergency contact</div>
+          <div class="gm-form-grid">
+            <div>
+              <label style="{{ labelStyle }}">Contact name <span style="color:#dc2626">*</span></label>
+              <input style="{{ formInputStyle }}" placeholder="Full name" defaultValue="{{ v.emName }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Contact phone <span style="color:#dc2626">*</span></label>
+              <input style="{{ emPhoneInputStyle }}" placeholder="10-digit mobile number" defaultValue="{{ v.emPhone }}" />
+              <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}"><div style="{{ errTextStyle }}">Must be exactly 10 digits.</div></sc-if>
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Relationship <span style="color:#dc2626">*</span></label>
+              <select style="{{ formInputStyle }}"><option>{{ v.emRel }}</option><option>Parent</option><option>Spouse</option><option>Sibling</option><option>Friend</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Optional details</div>
+          <div class="gm-form-grid">
+            <div>
+              <label style="{{ labelStyle }}">Email</label>
+              <input style="{{ formInputStyle }}" placeholder="name@example.com" defaultValue="{{ v.email }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Occupation</label>
+              <input style="{{ formInputStyle }}" placeholder="e.g. Teacher" defaultValue="{{ v.occupation }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Aadhaar number</label>
+              <input style="{{ formInputStyle }}" placeholder="XXXX XXXX XXXX" defaultValue="{{ v.aadhaar }}" />
+            </div>
+            <div>
+              <label style="{{ labelStyle }}">Residential address</label>
+              <input style="{{ formInputStyle }}" placeholder="Street, city" defaultValue="{{ v.address }}" />
+            </div>
+          </div>
+        </div>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Staff record</div>
+          <label style="{{ labelStyle }}">Handled by staff</label>
+          <select style="{{ formInputStyle }}"><option>Ravi Kumar (you)</option><option>Meena Joshi</option><option>Arjun Patel</option></select>
+          <div style="font-size:11.5px;color:#9ca3af;margin-top:4px">Pre-filled with you — change if a colleague handled this signup.</div>
+        </div>
+
+        <div style="{{ formCardStyle }}">
+          <div style="{{ sectionTitleStyle }}">Photo <span style="font-weight:400;color:#9ca3af;text-transform:none;letter-spacing:0">(optional)</span></div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+            <div style="{{ photoPreviewStyle }}">
+              <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;font-weight:700;color:#fff">RM</span></sc-if>
+              <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+              </sc-if>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:0">
+              <button style="{{ ghostButtonStyle }}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button>
+              <button style="{{ ghostButtonStyle }}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload Photo</button>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:#9ca3af;margin-top:10px">Compressed automatically. A photo failure never blocks saving the member.</div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px">
+          <button style="{{ cancelButtonStyle }}" onclick="{{ goMembers }}">Cancel</button>
+          <button style="{{ ctaSmallButtonStyle }}">{{ formSaveLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <footer style="background:#fff;border-top:1px solid #e5e7eb;padding:22px 28px 26px">
+    <div style="max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="{{ smallLogoTileStyle }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11M4 9l3-3M20 15l-3 3"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#111827">FlexHub</div>
+          <div style="font-size:11px;color:#9ca3af">Fit &amp; Fine Gym member management &middot; v1.0.0</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;font-weight:500">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Use</a>
+        <a href="#">Refund Policy</a>
+        <a href="#">Support</a>
+      </div>
+      <div style="font-size:11.5px;color:#9ca3af">© 2026 Fit &amp; Fine Gym. All rights reserved.</div>
+    </div>
+  </footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 860}, &quot;tint&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;sky&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;sky&quot;, &quot;violet&quot;, &quot;emerald&quot;, &quot;amber&quot;, &quot;rose&quot;], &quot;section&quot;: &quot;Color scheme&quot;}, &quot;cta&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;charcoal&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;charcoal&quot;, &quot;orange&quot;, &quot;blue&quot;], &quot;section&quot;: &quot;Color scheme&quot;}, &quot;radius&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;soft&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;soft&quot;, &quot;pill&quot;, &quot;sharp&quot;], &quot;section&quot;: &quot;Color scheme&quot;}}">
+const TINTS = {
+  sky:     { bg: "#eff6ff", border: "#dbeafe", accent: "#2563eb", pillBg: "#dbeafe" },
+  violet:  { bg: "#f5f3ff", border: "#ede9fe", accent: "#7c3aed", pillBg: "#ede9fe" },
+  emerald: { bg: "#ecfdf5", border: "#d1fae5", accent: "#059669", pillBg: "#d1fae5" },
+  amber:   { bg: "#fffbeb", border: "#fef3c7", accent: "#b45309", pillBg: "#fef3c7" },
+  rose:    { bg: "#fff1f2", border: "#ffe4e6", accent: "#be123c", pillBg: "#ffe4e6" },
+};
+const CTAS = {
+  charcoal: "linear-gradient(to bottom, #374151, #111827)",
+  orange:   "linear-gradient(to bottom, #f97316, #c2410c)",
+  blue:     "linear-gradient(to bottom, #3b82f6, #1d4ed8)",
+};
+const RADII = {
+  soft:  { card: 28, el: 12, tile: 16, pill: 999 },
+  pill:  { card: 40, el: 999, tile: 999, pill: 999 },
+  sharp: { card: 10, el: 6, tile: 10, pill: 6 },
+};
+const MEMBERS = [
+  { name: "Aditi Sharma", memberNumber: "FF-0231", phone: "98765 43210", plan: "Gold Plan", expiryText: "Expires 12 Aug 2026", status: "active" },
+  { name: "Rohan Mehta", memberNumber: "FF-0198", phone: "91234 56780", plan: "Silver Plan", expiryText: "Expires 3 Aug 2026", status: "expiring" },
+  { name: "Priya Nair", memberNumber: "FF-0301", phone: "99887 66554", plan: "Platinum Plan", expiryText: "Expired 20 Jul 2026", status: "expired" },
+  { name: "Karan Verma", memberNumber: "FF-0287", phone: "90011 22334", plan: "Gold Plan", expiryText: "Expires 30 Sep 2026", status: "active" },
+  { name: "Sneha Iyer", memberNumber: "FF-0142", phone: "97766 55443", plan: "Silver Plan", expiryText: "Expires 5 Aug 2026", status: "expiring" },
+  { name: "Vikram Rao", memberNumber: "FF-0355", phone: "96655 44332", plan: "Gold Plan", expiryText: "Expires 15 Nov 2026", status: "active" },
+  { name: "Ananya Gupta", memberNumber: "FF-0089", phone: "93344 55667", plan: "No plan", expiryText: "—", status: "none" },
+  { name: "Farhan Ali", memberNumber: "FF-0410", phone: "98123 45098", plan: "Platinum Plan", expiryText: "Expired 8 Jul 2026", status: "expired" },
+];
+const STATUS_META = {
+  active:   { label: "Active",  bg: "#dcfce7", fg: "#15803d" },
+  expiring: { label: "Expiring Soon", bg: "#fef3c7", fg: "#b45309" },
+  expired:  { label: "Expired", bg: "#fee2e2", fg: "#b91c1c" },
+  none:     { label: "No plan", bg: "#f3f4f6", fg: "#6b7280" },
+};
+const AVATAR_COLORS = ["#2563eb", "#7c3aed", "#059669", "#b45309", "#be123c", "#0891b2"];
+
+const FILTER_GROUPS = [
+  { name: "Gender", options: ["Male", "Female", "Other"] },
+  { name: "Plan", options: ["Gold Plan", "Silver Plan", "Platinum Plan"] },
+  { name: "Add-on", options: ["Personal Training", "Steam & Sauna", "Diet Consultation"] },
+];
+
+class Component extends DCLogic {
+  state = { screen: "login", filtersOpen: false, selected: { Gender: [], Plan: [], "Add-on": [] }, docAdd: false, docEdit: true, genderAdd: "", genderEdit: "Male" };
+
+  renderVals() {
+    const tint = TINTS[this.props.tint ?? "sky"];
+    const cta = CTAS[this.props.cta ?? "charcoal"];
+    const r = RADII[this.props.radius ?? "soft"];
+    const isLogin = this.state.screen === "login";
+    const scr = this.state.screen;
+    const isAdd = scr === "add", isEdit = scr === "edit", isForm = isAdd || isEdit;
+    const isDetail = scr === "detail", isRenew = scr === "renew", isReports = scr === "reports", isAdmin = scr === "admin";
+
+    const btnBase = "padding:6px 12px;border-radius:8px;border:1px solid transparent;font-size:12.5px;font-weight:600;cursor:pointer;";
+    const btnOn = btnBase + "background:#fff;color:#111827;";
+    const btnOff = btnBase + "background:transparent;color:#9ca3af;";
+
+    const statusPills = [
+      { label: "All", count: MEMBERS.length, style: `padding:6px 14px;border-radius:${r.pill}px;border:1px solid ${tint.accent};background:${tint.accent};color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;` },
+      { label: "Active", count: MEMBERS.filter(m => m.status === "active").length, style: `padding:6px 14px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer;` },
+      { label: "Expiring", count: MEMBERS.filter(m => m.status === "expiring").length, style: `padding:6px 14px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer;` },
+      { label: "Expired", count: MEMBERS.filter(m => m.status === "expired").length, style: `padding:6px 14px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer;` },
+    ];
+
+    const members = MEMBERS.map((m, i) => {
+      const meta = STATUS_META[m.status];
+      const initials = m.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+      return {
+        ...m,
+        initials,
+        statusLabel: meta.label,
+        statusStyle: `display:inline-block;padding:3px 10px;border-radius:${r.pill}px;background:${meta.bg};color:${meta.fg};font-size:11.5px;font-weight:600;`,
+        avatarStyle: `width:38px;height:38px;border-radius:${r.tile}px;background:${AVATAR_COLORS[i % AVATAR_COLORS.length]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;flex-shrink:0;`,
+      };
+    });
+
+    const sel = this.state.selected;
+    const toggleOpt = (group, opt) => () => this.setState(s => {
+      const cur = s.selected[group];
+      const next = cur.includes(opt) ? cur.filter(x => x !== opt) : [...cur, opt];
+      return { selected: { ...s.selected, [group]: next } };
+    });
+    const filterGroups = FILTER_GROUPS.map(g => ({
+      name: g.name,
+      options: g.options.map(opt => {
+        const checked = sel[g.name].includes(opt);
+        return {
+          label: opt, checked, toggle: toggleOpt(g.name, opt),
+          checkboxStyle: `width:18px;height:18px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px solid ${checked ? tint.accent : "#d1d5db"};background:${checked ? tint.accent : "#fff"};`,
+        };
+      }),
+    }));
+    const appliedFilters = FILTER_GROUPS.flatMap(g => sel[g.name].map(opt => ({
+      group: g.name, label: opt, remove: toggleOpt(g.name, opt),
+    })));
+    const filterCount = appliedFilters.length;
+
+    const netErr = !!this.state.netErr;
+    const lv = this.state.loginVariant ?? "Default";
+    const loginVariants = {
+      "Default": null,
+      "Wrong credentials": { text: "Incorrect username or PIN. Try again or ask an admin to reset your PIN.", bg: "#fef2f2", border: "#fecaca", fg: "#b91c1c" },
+      "Deactivated": { text: "This account has been deactivated. Contact an admin to restore access.", bg: "#fffbeb", border: "#fde68a", fg: "#92400e" },
+      "Reset link sent": { text: "A PIN reset link has been sent to your registered email.", bg: "#ecfdf5", border: "#a7f3d0", fg: "#047857" },
+      "Signed out": null,
+    };
+    const banner = loginVariants[lv];
+    const loginVariantChips = Object.keys(loginVariants).map(label => ({
+      label, pick: () => this.setState({ loginVariant: label }),
+      style: lv === label
+        ? `padding:6px 12px;border-radius:${r.pill}px;border:1px solid ${tint.accent};background:${tint.accent};color:#fff;font-size:12px;font-weight:600;cursor:pointer;`
+        : `padding:6px 12px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer;`,
+    }));
+
+    return {
+      isLogin, isMembers: scr === "members", isForm, isAdd, isEdit, isDetail, isRenew,
+      loginVariantChips,
+      netErr, netOk: !netErr,
+      toggleNet: () => this.setState({ netErr: !netErr }),
+      netToggleLabel: netErr ? "● Network error ON" : "Simulate network error",
+      netToggleStyle: netErr
+        ? "padding:6px 12px;border-radius:8px;border:1px solid #f87171;font-size:12px;font-weight:600;cursor:pointer;background:#7f1d1d;color:#fecaca;"
+        : "padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:#9ca3af;",
+      netRetrySmallStyle: `flex-shrink:0;padding:5px 12px;border-radius:8px;border:1px solid currentColor;background:transparent;color:inherit;font-size:12px;font-weight:600;cursor:pointer;`,
+      netIconTileStyle: `width:60px;height:60px;border-radius:16px;background:#fee2e2;display:flex;align-items:center;justify-content:center;`,
+      netLoginBannerStyle: `display:flex;align-items:flex-start;gap:9px;width:100%;box-sizing:border-box;padding:10px 13px;border-radius:${r.el}px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12.5px;margin-bottom:14px;`,
+      isSignedOut: lv === "Signed out", notSignedOut: lv !== "Signed out",
+      pickDefaultLogin: () => this.setState({ loginVariant: "Default" }),
+      loginBannerShow: !!banner,
+      loginBannerText: banner ? banner.text : "",
+      loginBannerStyle: banner ? `display:flex;align-items:flex-start;gap:9px;width:100%;box-sizing:border-box;padding:10px 13px;border-radius:${r.el}px;background:${banner.bg};border:1px solid ${banner.border};color:${banner.fg};font-size:12.5px;margin-bottom:14px;` : "",
+      redirectBarStyle: `width:65%;height:100%;border-radius:999px;background:${tint.accent};`,
+      screenBtnStyleDetail: isDetail ? btnOn : btnOff,
+      screenBtnStyleRenew: isRenew ? btnOn : btnOff,
+      goDetail: () => this.setState({ screen: "detail" }),
+      goRenew: () => this.setState({ screen: "renew" }),
+      isReports,
+      screenBtnStyleReports: isReports ? btnOn : btnOff,
+      goReports: () => this.setState({ screen: "reports" }),
+      ...this.formVals(tint, cta, r, isAdd, isEdit),
+      ...this.detailVals(tint, cta, r),
+      isAdmin,
+      screenBtnStyleAdmin: isAdmin ? btnOn : btnOff,
+      goAdmin: () => this.setState({ screen: "admin" }),
+      ...this.reportVals(tint, r),
+      ...this.adminVals(tint, r),
+      filtersOpen: this.state.filtersOpen,
+      openFilters: () => this.setState({ filtersOpen: true }),
+      closeFilters: () => this.setState({ filtersOpen: false }),
+      clearFilters: () => this.setState({ selected: { Gender: [], Plan: [], "Add-on": [] } }),
+      filterGroups, appliedFilters, filterCount, hasFilters: filterCount > 0,
+      filterButtonStyle: `display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:${r.el}px;border:1px solid ${filterCount ? tint.accent : "#e5e7eb"};background:${filterCount ? tint.bg : "#fff"};color:${filterCount ? tint.accent : "#374151"};font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;`,
+      filterCountBadgeStyle: `display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;border-radius:999px;background:${tint.accent};color:#fff;font-size:10.5px;font-weight:700;padding:0 4px;`,
+      appliedChipStyle: `display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;border-radius:${r.pill}px;background:${tint.pillBg};color:${tint.accent};font-size:12px;font-weight:600;`,
+      chipRemoveStyle: `width:16px;height:16px;border-radius:999px;border:none;background:rgba(17,24,39,0.12);color:${tint.accent};display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;`,
+      applyButtonStyle: `flex:1;padding:10px 0;border-radius:10px;border:none;background-image:${cta};color:#fff;font-size:13px;font-weight:600;cursor:pointer;`,
+      goLogin: () => this.setState({ screen: "login" }),
+      goMembers: () => this.setState({ screen: "members" }),
+      screenBtnStyleLogin: isLogin ? btnOn : btnOff,
+      screenBtnStyleMembers: scr === "members" ? btnOn : btnOff,
+      screenBtnStyleAdd: isAdd ? btnOn : btnOff,
+      screenBtnStyleEdit: isEdit ? btnOn : btnOff,
+      goAdd: () => this.setState({ screen: "add" }),
+      goEdit: () => this.setState({ screen: "edit" }),
+      accentColor: tint.accent,
+
+      loginCardStyle: `width:100%;max-width:380px;background:linear-gradient(to bottom, ${tint.bg}, #fff);border:1px solid ${tint.border};border-radius:${r.card}px;box-shadow:0 20px 40px rgba(17,24,39,0.08);padding:36px 32px;display:flex;flex-direction:column;align-items:center;color:#111827;`,
+      logoTileStyle: `width:56px;height:56px;border-radius:${r.tile}px;background:#fff;box-shadow:0 6px 16px rgba(17,24,39,0.12);display:flex;align-items:center;justify-content:center;margin-bottom:20px;`,
+      smallLogoTileStyle: `width:30px;height:30px;border-radius:${Math.min(r.tile, 10)}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;`,
+      inputStyle: `width:100%;box-sizing:border-box;padding:10px 12px 10px 34px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#f9fafb;font-size:13.5px;color:#111827;outline:none;`,
+      pinInputStyle: `width:100%;box-sizing:border-box;padding:10px 44px 10px 34px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#f9fafb;font-size:13.5px;color:#111827;letter-spacing:.4em;outline:none;`,
+      ctaButtonStyle: `width:100%;padding:11px 0;border-radius:${r.el}px;border:none;background:#e5e7eb;color:#9ca3af;font-size:14px;font-weight:600;cursor:not-allowed;margin:6px 0 16px;background-image:${cta};color:#fff;box-shadow:0 6px 14px rgba(17,24,39,0.15);`,
+      googleButtonStyle: `width:100%;height:42px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:500;color:#374151;cursor:pointer;`,
+
+      navItemStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;color:#6b7280;font-size:13.5px;font-weight:500;cursor:pointer;`,
+      navItemActiveStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;color:${tint.accent};background:${tint.pillBg};font-size:13.5px;font-weight:600;cursor:pointer;`,
+      ctaSmallButtonStyle: `padding:9px 16px;border-radius:${r.el}px;border:none;background-image:${cta};color:#fff;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 10px rgba(17,24,39,0.12);`,
+      ghostButtonStyle: `padding:8px 14px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;`,
+      statusPills,
+      members,
+      listContainerStyle: `display:flex;flex-direction:column;`,
+    };
+  }
+
+  adminVals(tint, r) {
+    const tab = this.state.adminTab ?? "Hub";
+    const tabs = ["Hub", "Plans", "Branches", "Users", "Roles", "Audit Log", "Numbering"];
+    const adminTabs = tabs.map(label => ({
+      label, pick: () => this.setState({ adminTab: label }),
+      style: tab === label
+        ? `padding:7px 14px;border-radius:${r.pill}px;border:1px solid ${tint.accent};background:${tint.accent};color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;`
+        : `padding:7px 14px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:500;cursor:pointer;`,
+    }));
+    const row = `display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f6;`;
+    const input = `width:100%;box-sizing:border-box;padding:9px 12px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#f9fafb;font-size:13.5px;color:#111827;outline:none;font-family:inherit;`;
+    const errInput = input.replace("border:1px solid #e5e7eb", "border:1.5px solid #f87171").replace("background:#f9fafb", "background:#fef2f2");
+    const catBadge = (bg, fg) => `padding:2px 8px;border-radius:${r.pill}px;background:${bg};color:${fg};font-size:10.5px;font-weight:600;`;
+    const roleBadge = catBadge(tint.pillBg, tint.accent);
+    const roleBadgeMuted = catBadge("#f3f4f6", "#6b7280");
+    const hubCards = [
+      { title: "Plans", count: "6", sub: "Membership & add-on catalog with pricing." },
+      { title: "Branches", count: "3", sub: "Locations that scope numbering & records." },
+      { title: "Users", count: "5", sub: "Staff and admin accounts, roles, invites." },
+      { title: "Roles", count: "3", sub: "Role names assignable on Manage Users." },
+      { title: "Audit Log", count: "1,204", sub: "Field-level history of every change." },
+      { title: "Member Numbering", count: "3 seq", sub: "Per-branch sequence configuration." },
+    ].map(c => ({ ...c,
+      open: () => this.setState({ adminTab: c.title === "Member Numbering" ? "Numbering" : c.title }),
+      style: `background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:16px 18px;cursor:pointer;`,
+      countStyle: `padding:2px 9px;border-radius:${r.pill}px;background:${tint.pillBg};color:${tint.accent};font-size:11.5px;font-weight:700;`,
+    }));
+    const planRows = [
+      { name: "Gold Plan", category: "Membership", meta: "6 months · max 1 member", price: "₹12,000", cat: "m" },
+      { name: "Silver Plan", category: "Membership", meta: "3 months · max 1 member", price: "₹5,400", cat: "m" },
+      { name: "Platinum Plan", category: "Membership", meta: "12 months · max 2 (shared)", price: "₹48,000", cat: "m" },
+      { name: "Personal Training", category: "Add-on", meta: "1 month", price: "₹2,500", cat: "a" },
+      { name: "Steam & Sauna", category: "Add-on", meta: "1 month", price: "₹1,400", cat: "a" },
+      { name: "Diet Consultation", category: "Add-on", meta: "1 month", price: "₹1,800", cat: "a" },
+    ].map(p => ({ ...p, rowStyle: row, catStyle: p.cat === "m" ? catBadge(tint.pillBg, tint.accent) : catBadge("#fef3c7", "#b45309") }));
+    const userColors = ["#2563eb", "#059669", "#b45309", "#7c3aed", "#be123c"];
+    const userRows = [
+      { name: "Admin User", email: "admin@fitandfine.in", roles: ["Admin", "Staff"], state: "Active", you: true },
+      { name: "Ravi Kumar", email: "ravi@fitandfine.in", roles: ["Staff"], state: "Active" },
+      { name: "Meena Joshi", email: "meena@fitandfine.in", roles: ["Staff"], state: "Active" },
+      { name: "Arjun Patel", email: "arjun@fitandfine.in", roles: ["Staff"], state: "Deactivated" },
+      { name: "Kavya Reddy", email: "kavya@fitandfine.in", roles: ["Admin"], state: "Active" },
+    ].map((u, i) => ({ ...u,
+      initials: u.name.split(" ").map(w => w[0]).join("").toUpperCase(),
+      rowStyle: row,
+      avatarStyle: `width:34px;height:34px;border-radius:${r.tile}px;background:${userColors[i]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0;`,
+      roles: u.roles.map(rl => ({ label: rl, style: rl === "Admin" ? roleBadge : roleBadgeMuted })),
+      stateStyle: u.state === "Active" ? catBadge("#dcfce7", "#15803d") : catBadge("#fee2e2", "#b91c1c"),
+    }));
+    const auditVal = (bg, fg) => `padding:2px 8px;border-radius:6px;background:${bg};color:${fg};font-size:11.5px;font-weight:500;`;
+    const auditRows = [
+      { table: "members", field: "phone", record: "FF-0231 (Aditi Sharma)", oldVal: "98765 43211", newVal: "98765 43210", actor: "Ravi Kumar", when: "Today, 5:42 pm" },
+      { table: "subscriptions", field: "amount_paid", record: "#SUB-1204", oldVal: "₹11,000", newVal: "₹12,000", actor: "Admin User", when: "Today, 3:10 pm" },
+      { table: "plans", field: "price", record: "Gold Plan", oldVal: "₹11,500", newVal: "₹12,000", actor: "Admin User", when: "Yesterday, 6:55 pm" },
+      { table: "profiles", field: "active", record: "Arjun Patel", oldVal: "true", newVal: "false", actor: "Kavya Reddy", when: "28 Jul, 11:02 am" },
+      { table: "members", field: "handled_by_staff", record: "FF-0198 (Rohan Mehta)", oldVal: "Meena Joshi", newVal: "Ravi Kumar", actor: "Admin User", when: "27 Jul, 9:31 am" },
+    ].map(a => ({ ...a,
+      rowStyle: `display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid #f5f5f6;`,
+      tableStyle: catBadge("#f3f4f6", "#6b7280") + "flex-shrink:0;margin-top:2px;",
+      oldStyle: auditVal("#fee2e2", "#b91c1c"),
+      newStyle: auditVal("#dcfce7", "#15803d"),
+    }));
+    const numInput = `width:110px;box-sizing:border-box;padding:7px 10px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#f9fafb;font-size:13px;color:#111827;outline:none;text-align:right;`;
+    return {
+      adminTabs,
+      tabHub: tab === "Hub", tabPlans: tab === "Plans", tabBranches: tab === "Branches",
+      tabUsers: tab === "Users", tabRoles: tab === "Roles", tabAudit: tab === "Audit Log", tabNumbering: tab === "Numbering",
+      hubAvatarStyle: `width:52px;height:52px;border-radius:${r.tile}px;background:${tint.accent};color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;`,
+      roleBadgeStyle: roleBadge, roleBadgeMutedStyle: roleBadgeMuted,
+      hubCards, planRows, userRows, auditRows,
+      branchRows: [
+        { name: "City Center Branch", meta: "84 members · prefix FF" },
+        { name: "Main Branch", meta: "32 members · prefix FM" },
+        { name: "West Branch", meta: "12 members · prefix FW" },
+      ].map(b => ({ ...b, rowStyle: row })),
+      roleRows: [
+        { name: "Admin", desc: "Full access incl. Settings, catalogs, audit.", holders: "2 users" },
+        { name: "Staff", desc: "Members and Reports only.", holders: "3 users" },
+        { name: "Trainer", desc: "Read-only member access (planned).", holders: "0 users" },
+      ].map(ro => ({ ...ro, rowStyle: row })),
+      inviteRoleChips: [
+        { label: "Staff", style: `flex:1;padding:8px 0;border-radius:${r.el}px;border:1.5px solid ${tint.accent};background:${tint.bg};color:${tint.accent};font-size:13px;font-weight:600;cursor:pointer;` },
+        { label: "Admin", style: `flex:1;padding:8px 0;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:13px;font-weight:500;cursor:pointer;` },
+      ],
+      numberingRows: [
+        { branch: "City Center Branch", last: "FF-0231", next: "0225", err: true, inputStyle: numInput.replace("border:1px solid #e5e7eb", "border:1.5px solid #f87171").replace("background:#f9fafb", "background:#fef2f2") },
+        { branch: "Main Branch", last: "FM-0032", next: "0033", err: false, inputStyle: numInput },
+        { branch: "West Branch", last: "FW-0012", next: "0013", err: false, inputStyle: numInput },
+      ].map(n => ({ ...n, rowStyle: `display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #f5f5f6;` })),
+      errInputStyle: errInput,
+      iconBtnStyle: `width:28px;height:28px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#9ca3af;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;`,
+      auditSearchStyle: `flex:1;min-width:140px;box-sizing:border-box;padding:8px 12px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#f9fafb;font-size:12.5px;color:#111827;outline:none;`,
+    };
+  }
+
+  reportVals(tint, r) {
+    const range = this.state.range ?? "This month";
+    const empty = !!this.state.reportsEmpty;
+    const rangeChips = ["Today", "This week", "This month", "Custom…"].map(label => ({
+      label, pick: () => this.setState({ range: label }),
+      style: range === label
+        ? `padding:7px 14px;border-radius:${r.pill}px;border:1px solid ${tint.accent};background:${tint.accent};color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;`
+        : `padding:7px 14px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:500;cursor:pointer;`,
+    }));
+    const tile = (accentBg, accentFg) => `background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:16px 18px;`;
+    const reportTiles = [
+      { label: "Total members", value: "128", sub: "all branches", labelColor: "#6b7280", style: tile() },
+      { label: "Active", value: "94", sub: "73% of members", labelColor: "#15803d", style: tile() },
+      { label: "Expiring soon", value: "12", sub: "next 7 days", labelColor: "#b45309", style: tile() },
+      { label: "Expired", value: "22", sub: "no current plan: 8", labelColor: "#b91c1c", style: tile() },
+    ];
+    const barVals = [{ month: "Feb", value: 14 }, { month: "Mar", value: 22 }, { month: "Apr", value: 17 }, { month: "May", value: 26 }, { month: "Jun", value: 19 }, { month: "Jul", value: 31 }];
+    const max = 31;
+    const barData = barVals.map((b, i) => ({ ...b,
+      barStyle: `width:100%;max-width:38px;height:${Math.round((b.value / max) * 100)}%;min-height:6px;border-radius:6px 6px 2px 2px;background:${i === barVals.length - 1 ? tint.accent : tint.pillBg};`,
+    }));
+    const donutColors = { Cash: tint.accent, UPI: "#f59e0b", Card: "#9ca3af" };
+    const expRow = `display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f6;`;
+    const expiring = [
+      { name: "Rohan Mehta", plan: "Silver Plan", expires: "Mon, 3 Aug", color: "#7c3aed" },
+      { name: "Sneha Iyer", plan: "Silver Plan", expires: "Wed, 5 Aug", color: "#059669" },
+      { name: "Deepak Joshi", plan: "Gold Plan", expires: "Thu, 6 Aug", color: "#0891b2" },
+      { name: "Meera Pillai", plan: "Gold Plan + PT", expires: "Sat, 8 Aug", color: "#be123c" },
+      { name: "Karan Verma", plan: "Gold Plan", expires: "Sat, 8 Aug", color: "#b45309" },
+      { name: "Ananya Gupta", plan: "Silver Plan", expires: "Sun, 9 Aug", color: "#2563eb" },
+    ];
+    const txRows = [
+      { member: "Aditi Sharma", meta: "Gold Plan · 6 mo · 28 Jul, 6:12 pm · by Ravi", mode: "UPI", amount: "₹12,000" },
+      { member: "Karan Verma", meta: "Personal Training · 1 mo · 27 Jul, 11:40 am · by Meena", mode: "Cash", amount: "₹2,500" },
+      { member: "Farhan Ali", meta: "Platinum Plan · 12 mo · 25 Jul, 7:05 pm · by Ravi", mode: "Card", amount: "₹48,000" },
+      { member: "Sneha Iyer", meta: "Steam & Sauna · 3 mo · 22 Jul, 9:20 am · by Arjun", mode: "UPI", amount: "₹3,600" },
+      { member: "Vikram Rao", meta: "Gold Plan · 3 mo · 20 Jul, 5:48 pm · by Meena", mode: "Cash", amount: "₹6,800" },
+      { member: "Meera Pillai", meta: "Gold Plan · 6 mo · 18 Jul, 4:15 pm · by Ravi", mode: "UPI", amount: "₹12,000" },
+      { member: "Deepak Joshi", meta: "Diet Consultation · 1 mo · 16 Jul, 10:02 am · by Arjun", mode: "Cash", amount: "₹1,800" },
+      { member: "Ananya Gupta", meta: "Silver Plan · 3 mo · 14 Jul, 6:50 pm · by Meena", mode: "UPI", amount: "₹5,400" },
+      { member: "Rohan Mehta", meta: "Steam & Sauna · 1 mo · 12 Jul, 8:30 am · by Ravi", mode: "Card", amount: "₹1,400" },
+    ];
+    return {
+      rangeChips, rangeLabel: range.toLowerCase(),
+      reportsEmpty: empty, reportsFilled: !empty,
+      toggleReportsEmpty: () => this.setState({ reportsEmpty: !empty }),
+      emptyToggleLabel: empty ? "Show with data" : "Show empty state",
+      emptyToggleStyle: `padding:7px 12px;border-radius:${r.el}px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;`,
+      reportTiles: empty ? reportTiles.map(t => ({ ...t, value: "0", sub: t.label === "Total members" ? "no members yet" : "—" })) : reportTiles,
+      barData,
+      donutStyle: `width:190px;height:190px;border-radius:999px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(${donutColors.Cash} 0 46%, ${donutColors.UPI} 46% 81%, ${donutColors.Card} 81% 100%);`,
+      donutLegend: [
+        { label: "Cash", value: "46% · ₹39.7k", dotStyle: `width:9px;height:9px;border-radius:3px;background:${donutColors.Cash};flex-shrink:0;` },
+        { label: "UPI", value: "35% · ₹30.2k", dotStyle: `width:9px;height:9px;border-radius:3px;background:${donutColors.UPI};flex-shrink:0;` },
+        { label: "Card", value: "19% · ₹16.5k", dotStyle: `width:9px;height:9px;border-radius:3px;background:${donutColors.Card};flex-shrink:0;` },
+      ],
+      expiringList: expiring.map(e => ({ ...e,
+        initials: e.name.split(" ").map(w => w[0]).join("").toUpperCase(),
+        rowStyle: expRow,
+        avatarStyle: `width:32px;height:32px;border-radius:${r.tile}px;background:${e.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;`,
+      })),
+      txns: txRows.map(tx => ({ ...tx,
+        rowStyle: `display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f5f5f6;`,
+        modeStyle: `flex-shrink:0;padding:2px 9px;border-radius:${r.pill}px;background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:600;`,
+      })),
+    };
+  }
+
+  detailVals(tint, cta, r) {
+    const badge = (bg, fg) => `display:inline-block;padding:3px 10px;border-radius:${r.pill}px;background:${bg};color:${fg};font-size:11.5px;font-weight:600;`;
+    const kvRow = `display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #f5f5f6;`;
+    const historyRows = [
+      { title: "Gold Plan · 6 months", meta: "1 Mar 2026 → 12 Aug 2026 · UPI · by Ravi Kumar", amount: "₹12,000", color: tint.accent },
+      { title: "Personal Training · 2 months", meta: "5 Jun 2026 → 5 Aug 2026 · Cash · by Meena Joshi", amount: "₹5,000", color: "#b45309" },
+      { title: "Silver Plan · 3 months", meta: "1 Dec 2025 → 28 Feb 2026 · Card · by Ravi Kumar", amount: "₹5,400", color: "#9ca3af" },
+      { title: "Silver Plan · 3 months", meta: "1 Sep 2025 → 30 Nov 2025 · Cash · by Ravi Kumar", amount: "₹5,400", color: "#9ca3af" },
+    ];
+    const pay = this.state.payMode ?? "Cash";
+    const payChips = ["Cash", "UPI", "Card"].map(p => ({
+      label: p, pick: () => this.setState({ payMode: p }),
+      style: pay === p
+        ? `flex:1;padding:8px 0;border-radius:${r.el}px;border:1.5px solid ${tint.accent};background:${tint.bg};color:${tint.accent};font-size:13px;font-weight:600;cursor:pointer;`
+        : `flex:1;padding:8px 0;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:13px;font-weight:500;cursor:pointer;`,
+    }));
+    const qty = (sel) => ["×1", "×2", "×3", "×6", "×12", "Custom"].map(q => ({
+      label: q,
+      style: q === sel
+        ? `padding:6px 11px;border-radius:${r.pill}px;border:1.5px solid ${tint.accent};background:${tint.bg};color:${tint.accent};font-size:12px;font-weight:600;cursor:pointer;`
+        : `padding:6px 11px;border-radius:${r.pill}px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:500;cursor:pointer;`,
+    }));
+    const itemCard = `background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:20px 22px;margin-bottom:14px;`;
+    return {
+      heroCardStyle: `display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:20px 22px;margin-bottom:16px;`,
+      heroAvatarStyle: `width:68px;height:68px;border-radius:${r.tile}px;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;flex-shrink:0;`,
+      activeBadgeStyle: badge("#dcfce7", "#15803d"),
+      expiringBadgeStyle: badge("#fef3c7", "#b45309"),
+      dangerGhostStyle: `padding:8px 14px;border-radius:${r.el}px;border:1px solid #fecaca;background:#fff;color:#dc2626;font-size:12.5px;font-weight:600;cursor:pointer;`,
+      kvRowStyle: kvRow, kvRowLastStyle: kvRow.replace("border-bottom:1px solid #f5f5f6;", ""),
+      kvKeyStyle: `font-size:12.5px;color:#9ca3af;flex-shrink:0;`,
+      kvValStyle: `font-size:13px;color:#111827;font-weight:500;text-align:right;`,
+      membershipCardStyle: `background:linear-gradient(to bottom, ${tint.bg}, #fff);border:1px solid ${tint.border};border-radius:16px;padding:20px 22px;margin-bottom:14px;`,
+      sectionTitleOnTintStyle: `font-size:11.5px;font-weight:700;color:${tint.accent};text-transform:uppercase;letter-spacing:.05em;`,
+      sectionTitleNoMbStyle: `font-size:11.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;`,
+      progressFillStyle: `width:92%;height:100%;border-radius:999px;background:${tint.accent};`,
+      addonRowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f6;`,
+      addonRowLastStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 0;`,
+      history: historyRows.map(h => ({ ...h,
+        rowStyle: `display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f6;`,
+        dotStyle: `width:8px;height:8px;border-radius:999px;background:${h.color};margin-top:5px;flex-shrink:0;`,
+      })),
+      payChips,
+      cartItems: [
+        { category: "Membership", plan: "Gold Plan · 6 months · ₹12,000", start: "2026-08-13", startHint: "Defaults to day after current membership expires.", amount: "12,000", end: "12 Feb 2027", warn: false, qtyChips: qty("×1"), cardStyle: itemCard, tagStyle: badge(tint.pillBg, tint.accent) },
+        { category: "Add-on", plan: "Personal Training · 1 month · ₹2,500", start: "2026-08-01", startHint: "Defaults to day after current add-on expires.", amount: "2,500", end: "31 Aug 2026", warn: true, qtyChips: qty("×1"), cardStyle: itemCard, tagStyle: badge("#fef3c7", "#b45309") },
+      ],
+      endPreviewStyle: `display:flex;align-items:center;gap:6px;margin-top:14px;padding:9px 12px;border-radius:10px;background:#f9fafb;border:1px dashed #e5e7eb;font-size:12.5px;color:#374151;`,
+      addItemButtonStyle: `width:100%;padding:12px 0;border-radius:14px;border:1.5px dashed #d1d5db;background:transparent;color:#6b7280;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px;`,
+      checkoutFooterStyle: `display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:16px 22px;`,
+    };
+  }
+
+  formVals(tint, cta, r, isAdd, isEdit) {
+    const doctorCare = isEdit ? this.state.docEdit : this.state.docAdd;
+    const gender = isEdit ? this.state.genderEdit : this.state.genderAdd;
+    const input = `width:100%;box-sizing:border-box;padding:9px 12px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#f9fafb;font-size:13.5px;color:#111827;outline:none;font-family:inherit;`;
+    const inputErr = input.replace("border:1px solid #e5e7eb", "border:1.5px solid #f87171").replace("background:#f9fafb", "background:#fef2f2");
+    const v = isEdit ? {
+      name: "Rohan Mehta", phone: "91234 5678", dob: "1994-03-18", doj: "2025-11-02", branch: "City Center Branch",
+      weight: "78", height: "176", doctorDetails: "Mild knee ligament strain — avoid heavy squats for 6 weeks (Dr. Kulkarni).",
+      emName: "Nisha Mehta", emPhone: "88990", emRel: "Spouse",
+      email: "rohan.m@example.com", occupation: "Software Engineer", aadhaar: "4821 XXXX XXXX", address: "14 Lake View Rd, Pune",
+    } : { name: "", phone: "", dob: "", doj: "2026-07-31", branch: "City Center Branch", weight: "", height: "", doctorDetails: "", emName: "", emPhone: "", emRel: "Parent", email: "", occupation: "", aadhaar: "", address: "" };
+    const genderChips = ["Male", "Female", "Other"].map(gname => ({
+      label: gname,
+      pick: () => this.setState(isEdit ? { genderEdit: gname } : { genderAdd: gname }),
+      style: gender === gname
+        ? `flex:1;padding:8px 0;border-radius:${r.el}px;border:1.5px solid ${tint.accent};background:${tint.bg};color:${tint.accent};font-size:13px;font-weight:600;cursor:pointer;`
+        : `flex:1;padding:8px 0;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-size:13px;font-weight:500;cursor:pointer;`,
+    }));
+    return {
+      formTitle: isEdit ? "Edit Member" : "Add Member",
+      formSubtitle: isEdit ? "FF-0198 · Rohan Mehta · joined 2 Nov 2025" : "Subscription is sold separately after the member is created.",
+      formSaveLabel: isEdit ? "Save changes" : "Create member",
+      v, genderChips, doctorCare,
+      toggleDoctor: () => this.setState(isEdit ? { docEdit: !doctorCare } : { docAdd: !doctorCare }),
+      formCardStyle: `background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:20px 22px;margin-bottom:14px;`,
+      sectionTitleStyle: `font-size:11.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;`,
+      labelStyle: `display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px;`,
+      formInputStyle: input,
+      phoneInputStyle: isEdit ? inputErr : input,
+      emPhoneInputStyle: isEdit ? inputErr : input,
+      textareaStyle: input + "resize:vertical;",
+      errTextStyle: `font-size:11.5px;color:#dc2626;margin-top:5px;font-weight:500;`,
+      readonlyStyle: `display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-radius:${r.el}px;border:1px dashed #e5e7eb;background:#f3f4f6;font-size:13.5px;color:#6b7280;`,
+      docToggleStyle: `position:relative;width:44px;height:24px;border-radius:999px;border:none;cursor:pointer;flex-shrink:0;background:${doctorCare ? tint.accent : "#d1d5db"};transition:background .15s;`,
+      docKnobStyle: `position:absolute;top:2px;left:${doctorCare ? "22px" : "2px"};width:20px;height:20px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s;`,
+      photoPreviewStyle: `width:64px;height:64px;border-radius:${r.tile}px;background:${isEdit ? "#7c3aed" : "#f3f4f6"};border:1px ${isEdit ? "solid transparent" : "dashed #d1d5db"};display:flex;align-items:center;justify-content:center;flex-shrink:0;`,
+      cancelButtonStyle: `padding:9px 18px;border-radius:${r.el}px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer;`,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

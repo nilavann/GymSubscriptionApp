@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { RefreshCw, Users, CheckCircle2, Clock, XCircle, CalendarClock } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
-import { todayDate, firstOfCurrentMonth, formatDate, formatMonth } from '../lib/datetime';
+import { todayDate, addDays, firstOfCurrentMonth, formatDate, formatMonth } from '../lib/datetime';
 import { STATUS_LABEL } from '../lib/status';
 import type { MemberListRow } from '../types/member-list';
 import type { MonthlyCount, PaymentModeTotal, ReportSummary, ReportTransactionRow } from '../types/report';
@@ -10,19 +10,18 @@ import type { PaymentMode } from '../types/subscription';
 import './ReportsPage.css';
 
 /**
- * Categorical slots 1-3 of the dataviz skill's validated reference palette
- * (`palette.md`) — this app has no multi-hue categorical set of its own, only a
- * single brand hue + status colors, so the reference instance is used as-is per the
- * skill's own guidance. Validated via `validate_palette.js`: PASS on lightness,
- * chroma, CVD separation (worst adjacent ΔE 17.6), and the normal-vision floor
- * (worst adjacent ΔE 29.0); WARN on contrast for Card (#e87ba4, 2.69:1) — mitigated
- * below by always-visible legend text (mode/amount/%), never color alone.
+ * Categorical slots for the payment-mode donut/legend — per frontend/mockups/README.md,
+ * Cash is tied to the active tint accent (not the avatar categorical palette) so it reads
+ * as "this app's main color," while UPI/Card use fixed neutral-adjacent tones that stay
+ * legible across every tint choice.
  */
 const PAYMENT_MODE_COLOR: Record<PaymentMode, string> = {
-  Cash: '#2a78d6',
-  UPI: '#008300',
-  Card: '#e87ba4',
+  Cash: 'var(--tint-accent)',
+  UPI: '#f59e0b',
+  Card: '#9ca3af',
 };
+
+type RangePreset = 'today' | 'week' | 'month' | 'custom';
 
 function formatRupees(amount: number): string {
   return `₹${Math.round(amount).toLocaleString('en-IN')}`;
@@ -46,6 +45,7 @@ export function ReportsPage() {
   const [endDate, setEndDate] = useState(todayDate());
   const [appliedRange, setAppliedRange] = useState({ start: firstOfCurrentMonth(), end: todayDate() });
   const [rangeError, setRangeError] = useState<string | null>(null);
+  const [rangePreset, setRangePreset] = useState<RangePreset>('month');
 
   const [transactions, setTransactions] = useState<ReportTransactionRow[]>([]);
   const [rangeState, setRangeState] = useState<LoadState>('loading');
@@ -87,6 +87,18 @@ export function ReportsPage() {
     loadRange(startDate, endDate);
   }
 
+  function selectPreset(preset: RangePreset) {
+    setRangePreset(preset);
+    if (preset === 'custom') return;
+    const today = todayDate();
+    const start = preset === 'today' ? today : preset === 'week' ? addDays(today, -6) : firstOfCurrentMonth();
+    setStartDate(start);
+    setEndDate(today);
+    setRangeError(null);
+    setAppliedRange({ start, end: today });
+    loadRange(start, today);
+  }
+
   const summary: ReportSummary = useMemo(() => reportService.summarize(memberRows), [memberRows, reportService]);
   const expiringRows = useMemo(() => reportService.expiringThisWeek(memberRows), [memberRows, reportService]);
 
@@ -108,6 +120,25 @@ export function ReportsPage() {
     <div className="reports-page">
       <div className="reports-page-header">
         <h1>Reports</h1>
+        <div className="reports-range-chips" role="group" aria-label="Date range">
+          {(['today', 'week', 'month'] as RangePreset[]).map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              className={`reports-range-chip${rangePreset === preset ? ' reports-range-chip-active' : ''}`}
+              onClick={() => selectPreset(preset)}
+            >
+              {preset === 'today' ? 'Today' : preset === 'week' ? 'This week' : 'This month'}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`reports-range-chip${rangePreset === 'custom' ? ' reports-range-chip-active' : ''}`}
+            onClick={() => selectPreset('custom')}
+          >
+            Custom…
+          </button>
+        </div>
       </div>
 
       {/* Static section: summary tiles + Expiring This Week — independent of the date range below. */}
@@ -168,22 +199,24 @@ export function ReportsPage() {
       )}
 
       {/* Range-scoped section: date picker, charts, transaction list — independent of the section above. */}
-      <section className="reports-section">
-        <form className="reports-range-form" onSubmit={handleApply}>
-          <div className="reports-range-field">
-            <label htmlFor="report-start">Start date</label>
-            <input id="report-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
-          <div className="reports-range-field">
-            <label htmlFor="report-end">End date</label>
-            <input id="report-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
-          <button type="submit" className="reports-apply">
-            Apply
-          </button>
-        </form>
-        {rangeError && <p className="reports-range-error">{rangeError}</p>}
-      </section>
+      {rangePreset === 'custom' && (
+        <section className="reports-section">
+          <form className="reports-range-form" onSubmit={handleApply}>
+            <div className="reports-range-field">
+              <label htmlFor="report-start">Start date</label>
+              <input id="report-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div className="reports-range-field">
+              <label htmlFor="report-end">End date</label>
+              <input id="report-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+            <button type="submit" className="reports-apply">
+              Apply
+            </button>
+          </form>
+          {rangeError && <p className="reports-range-error">{rangeError}</p>}
+        </section>
+      )}
 
       {rangeState === 'loading' && <div className="reports-skeleton" aria-label="Loading" />}
 

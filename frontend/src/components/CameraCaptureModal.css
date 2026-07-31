@@ -1,7 +1,9 @@
 .camera-capture-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.85);
+  /* Tracks --color-neutral-900 (#0F172A = 15,23,42) at a heavier opacity than the
+     other modal scrims, so the live camera preview stays the clear focal point. */
+  background: rgba(15, 23, 42, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,13 +13,13 @@
 
 .camera-capture-dialog {
   background: var(--color-neutral-900);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   width: 100%;
   max-width: 480px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 8px 24px var(--color-shadow);
+  box-shadow: 0 20px 40px var(--color-shadow);
 }
 
 .camera-capture-header {
@@ -86,15 +88,15 @@
   min-height: 44px;
   margin: 1rem auto;
   border-radius: 50%;
-  background: var(--color-brand-600);
+  background: var(--tint-accent);
   color: var(--color-text-inverse);
   border: 3px solid var(--color-text-inverse);
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .camera-capture-shutter:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.9;
 }
 
 .camera-capture-shutter:active:not(:disabled) {
@@ -102,7 +104,7 @@
 }
 
 .camera-capture-shutter:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
   cursor: not-allowed;
 }
 

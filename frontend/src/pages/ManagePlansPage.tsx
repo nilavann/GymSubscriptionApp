@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, RefreshCw, X, Check } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { sanitizeDecimal } from '../lib/input-masks';
+import { AdminTabs } from '../components/AdminTabs';
 import type { Plan, PlanCategory } from '../types/plan';
 import type { PlanDraft, PlanFormErrors } from '../services/plan.service';
 import './ManagePlansPage.css';
@@ -182,6 +183,8 @@ export function ManagePlansPage() {
           Add Plan
         </button>
       </div>
+
+      <AdminTabs />
 
       {plans.length > 0 && (
         <div className="plans-filter-row" role="group" aria-label="Category filter">

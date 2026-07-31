@@ -13,11 +13,12 @@ export function LoadingView() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: '0.75rem',
-        background: 'var(--color-surface-dark)',
-        color: 'var(--color-text-brand)',
+        background: 'var(--color-surface-page)',
+        color: 'var(--color-text-secondary)',
+        fontSize: '0.85rem',
       }}
     >
-      <RefreshCw size={28} strokeWidth={2} className="loading-view-spin" aria-hidden="true" />
+      <RefreshCw size={28} strokeWidth={2} className="loading-view-spin" aria-hidden="true" style={{ color: 'var(--tint-accent)' }} />
       Loading…
     </div>
   );

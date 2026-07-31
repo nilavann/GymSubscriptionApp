@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Plus, Pencil, Trash2, RefreshCw, X, Check } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
+import { AdminTabs } from '../components/AdminTabs';
 import type { Role } from '../types/role';
 import type { RoleDraft, RoleFormErrors } from '../services/role.service';
 import './ManageRolesPage.css';
@@ -163,6 +164,8 @@ export function ManageRolesPage() {
           Add Role
         </button>
       </div>
+
+      <AdminTabs />
 
       {isFormOpen && (
         <form className="roles-form" onSubmit={handleSubmit} noValidate>

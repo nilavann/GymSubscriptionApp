@@ -1,5 +1,5 @@
 .add-member-page {
-  max-width: 640px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
@@ -15,10 +15,16 @@
   margin-top: 0;
 }
 
+.add-member-subtitle {
+  margin: 0.25rem 0 1.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
 .add-member-skeleton {
   height: 400px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  border-radius: var(--radius-el);
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
   animation: add-member-shimmer 1.4s ease infinite;
 }
@@ -70,19 +76,19 @@
 }
 
 .add-member-retry {
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .add-member-retry:hover {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .add-member-retry:active {
@@ -90,50 +96,43 @@
 }
 
 .add-member-banner-error {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
   border: 1px solid var(--color-status-danger-border);
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
 
 .add-member-section {
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  padding: 1rem;
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  background: var(--color-surface-card);
-  box-shadow: 0 1px 3px var(--color-shadow);
-  transition: box-shadow 0.2s ease;
-}
-
-.add-member-section:focus-within {
-  box-shadow: 0 4px 12px var(--color-shadow);
+  background: var(--color-neutral-0);
 }
 
 .add-member-section legend {
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   padding: 0 0.35rem;
 }
 
 .add-member-section label {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   margin-top: 0.5rem;
 }
 
-/* Field pairing (mobile: one per row, desktop: two per row) — used by Personal Details
-   and Emergency Contact. Doctor's Care and Photo have nothing worth pairing, so they stay
-   plain flex-column children of .add-member-section instead of using this wrapper. */
+/* Field pairing (mobile: one per row, desktop: two per row). */
 .add-member-field-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -167,10 +166,10 @@
 .add-member-section select,
 .add-member-section textarea {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.6rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
   min-height: 44px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -185,18 +184,24 @@
 .add-member-section select:focus,
 .add-member-section textarea:focus {
   outline: none;
-  border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
 }
 
 .add-member-error {
-  color: var(--color-status-danger);
-  font-size: 0.8rem;
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.add-member-helper {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
   margin: 0;
 }
 
 .add-member-required {
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text-deep);
   font-weight: 700;
 }
 
@@ -215,7 +220,7 @@
 
 .add-member-chip-label {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   margin-top: 0.5rem;
 }
@@ -233,19 +238,20 @@
 }
 
 .add-member-chip {
+  flex: 1;
   min-height: 44px;
   padding: 0.5rem 1rem;
-  border-radius: 20px;
+  border-radius: var(--radius-el);
   border: 1px solid var(--color-border-default);
-  background: var(--color-surface-card);
+  background: var(--color-neutral-0);
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .add-member-chip:hover {
-  border-color: var(--color-neutral-400);
+  border-color: var(--tint-accent);
 }
 
 .add-member-chip:active {
@@ -253,16 +259,58 @@
 }
 
 .add-member-chip-selected {
-  background: var(--color-neutral-900);
-  border-color: var(--color-neutral-900);
-  color: var(--color-text-inverse);
+  background: var(--tint-pill-bg);
+  border-color: var(--tint-border);
+  color: var(--tint-accent);
   font-weight: 700;
 }
 
-.add-member-photo-preview {
-  width: 96px;
-  height: 96px;
+/* Doctor's-care toggle switch */
+.add-member-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.add-member-toggle {
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--color-neutral-200);
+  padding: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.add-member-toggle-on {
+  background: var(--tint-accent);
+}
+
+.add-member-toggle-knob {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
+  background: var(--color-neutral-0);
+  box-shadow: 0 1px 3px var(--color-shadow);
+  transition: transform 0.15s ease;
+}
+
+.add-member-toggle-on .add-member-toggle-knob {
+  transform: translateX(20px);
+}
+
+.add-member-photo-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-tile);
   object-fit: cover;
   margin-bottom: 0.5rem;
   box-shadow: 0 2px 6px var(--color-shadow);
@@ -275,17 +323,18 @@
 }
 
 .add-member-photo-actions button {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 8px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.5rem 1rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .add-member-photo-actions button:hover {
-  background: var(--color-neutral-50);
-  border-color: var(--color-neutral-400);
+  background: var(--color-surface-page);
+  border-color: var(--color-neutral-300);
 }
 
 .add-member-actions {
@@ -298,22 +347,22 @@
 .add-member-cancel,
 .add-member-submit {
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.75rem 2rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .add-member-cancel {
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
 }
 
 .add-member-cancel:hover:not(:disabled) {
-  background: var(--color-neutral-50);
+  background: var(--color-surface-page);
 }
 
 .add-member-cancel:active:not(:disabled) {
@@ -326,14 +375,14 @@
 }
 
 .add-member-submit {
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
   box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .add-member-submit:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.92;
   box-shadow: 0 4px 10px var(--color-shadow);
 }
 
@@ -342,7 +391,8 @@
 }
 
 .add-member-submit:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
   box-shadow: none;
 }

@@ -8,21 +8,24 @@
 
 .member-numbering-section {
   margin: 1.5rem 0;
-  background: var(--color-surface-card);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  padding: 1rem 1.25rem 1.25rem;
-  box-shadow: 0 1px 3px var(--color-shadow);
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem 1.25rem;
 }
 
 .member-numbering-section-title {
-  font-size: 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
   margin: 0 0 0.5rem;
 }
 
 .member-numbering-hint {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   margin: 0 0 1rem;
 }
 
@@ -43,7 +46,7 @@
 }
 
 .member-numbering-config-field label {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -51,10 +54,10 @@
 .member-numbering-config-field input,
 .member-numbering-edit-row input {
   background: var(--color-surface-input);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-el);
   padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   min-height: 44px;
   width: 100%;
 }
@@ -62,8 +65,8 @@
 .member-numbering-config-field input:focus,
 .member-numbering-edit-row input:focus {
   outline: none;
-  border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 3px var(--color-interactive-focus-ring);
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
 }
 
 .member-numbering-save {
@@ -71,49 +74,51 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0 1.25rem;
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
   align-self: flex-end;
-  transition: background-color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .member-numbering-save:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .member-numbering-save:disabled {
-  background: var(--color-interactive-disabled);
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
 }
 
 .member-numbering-field-error {
-  color: var(--color-status-danger);
-  font-size: 0.8rem;
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.75rem;
   margin: 0;
 }
 
 .member-numbering-banner-error {
-  background: var(--color-status-danger-bg);
+  background: var(--color-status-danger-bg-subtle);
   border: 1px solid var(--color-status-danger-border);
-  color: var(--color-status-danger);
+  color: var(--color-status-danger-text);
   padding: 0.6rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-el);
+  font-size: 0.82rem;
   margin-top: 0.75rem;
 }
 
 .member-numbering-banner-success {
-  background: var(--color-status-success-bg);
+  background: var(--color-status-success-bg-subtle);
   border: 1px solid var(--color-status-success-border);
-  color: var(--color-status-success-text);
+  color: var(--color-status-success-text-deep);
   padding: 0.6rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-el);
+  font-size: 0.82rem;
   margin-top: 0.75rem;
 }
 
@@ -121,9 +126,9 @@
 
 .member-numbering-skeleton {
   height: 160px;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   margin: 1rem 0;
-  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-100) 37%, var(--color-neutral-50) 63%);
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
   animation: member-numbering-shimmer 1.4s ease infinite;
 }
@@ -148,10 +153,10 @@
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  background: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-el);
   padding: 0.6rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
@@ -159,7 +164,7 @@
 }
 
 .member-numbering-retry:hover {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 @keyframes member-numbering-spin {
@@ -191,9 +196,9 @@
 }
 
 .member-numbering-card {
-  background: var(--color-surface-background);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
+  background: var(--color-surface-page);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-el);
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -208,18 +213,19 @@
 }
 
 .member-numbering-card-name {
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.85rem;
   color: var(--color-text-primary);
 }
 
 .member-numbering-card-code {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
 }
 
 .member-numbering-card-row {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
   display: flex;
   align-items: center;
@@ -243,15 +249,14 @@
   gap: 0.3rem;
   background: none;
   border: none;
-  color: var(--color-brand-600);
-  font-size: 0.85rem;
+  color: var(--tint-accent);
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   padding: 0.25rem 0.4rem;
 }
 
 .member-numbering-edit-link:hover {
-  color: var(--color-brand-800);
   text-decoration: underline;
 }
 
@@ -261,21 +266,21 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  border: 1.5px solid var(--color-border-strong);
-  background: var(--color-surface-card);
+  border-radius: var(--radius-el);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
   color: var(--color-text-secondary);
   cursor: pointer;
 }
 
 .member-numbering-icon-button-primary {
-  background: var(--color-brand-600);
-  border-color: var(--color-brand-600);
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
+  border-color: transparent;
   color: var(--color-text-inverse);
 }
 
 .member-numbering-icon-button-primary:hover:not(:disabled) {
-  background: var(--color-brand-800);
+  opacity: 0.92;
 }
 
 .member-numbering-icon-button:disabled {
@@ -291,7 +296,7 @@
 
 .member-numbering-table-code {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .member-numbering-table-actions {
@@ -308,7 +313,8 @@
   .member-numbering-table {
     display: table;
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
     margin-top: 1rem;
   }
 
@@ -316,13 +322,31 @@
   .member-numbering-table td {
     text-align: left;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border-default);
     font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
   }
 
   .member-numbering-table th {
-    color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 0;
+  }
+
+  .member-numbering-table tbody tr {
+    background: var(--color-surface-page);
+  }
+
+  .member-numbering-table tbody tr td:first-child {
+    border-top-left-radius: var(--radius-el);
+    border-bottom-left-radius: var(--radius-el);
+  }
+
+  .member-numbering-table tbody tr td:last-child {
+    border-top-right-radius: var(--radius-el);
+    border-bottom-right-radius: var(--radius-el);
   }
 }

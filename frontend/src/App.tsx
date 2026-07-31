@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { ServicesProvider } from './context/services.context';
 import { AuthProvider } from './context/auth.context';
+import { ThemeProvider } from './context/theme.context';
 import { RequireAuth } from './components/RequireAuth';
 import { RequireAdmin } from './components/RequireAdmin';
 import { AppShell } from './components/AppShell';
@@ -130,14 +131,16 @@ const router = createBrowserRouter([
 
 export function App() {
   return (
-    <ServicesProvider>
-      <AuthProvider>
-        <ChunkLoadErrorBoundary>
-          <Suspense fallback={<LoadingView />}>
-            <RouterProvider router={router} />
-          </Suspense>
-        </ChunkLoadErrorBoundary>
-      </AuthProvider>
-    </ServicesProvider>
+    <ThemeProvider>
+      <ServicesProvider>
+        <AuthProvider>
+          <ChunkLoadErrorBoundary>
+            <Suspense fallback={<LoadingView />}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </ChunkLoadErrorBoundary>
+        </AuthProvider>
+      </ServicesProvider>
+    </ThemeProvider>
   );
 }

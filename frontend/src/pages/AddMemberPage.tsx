@@ -189,12 +189,13 @@ export function AddMemberPage() {
   return (
     <div className="add-member-page">
       <h1>Add Member</h1>
+      <p className="add-member-subtitle">Subscription is sold separately after the member is created.</p>
 
       {saveError && <div className="add-member-banner-error">{saveError}</div>}
 
       <form onSubmit={handleSubmit} noValidate>
         <fieldset className="add-member-section">
-          <legend>Personal Details</legend>
+          <legend>Identity</legend>
           <div className="add-member-field-grid">
             <div className="add-member-field">
               <label htmlFor="name">
@@ -286,23 +287,11 @@ export function AddMemberPage() {
                   </option>
                 ))}
               </select>
-              {showError('branch_id') && <p className="add-member-error">{errors.branch_id}</p>}
-            </div>
-
-            <div className="add-member-field">
-              <label htmlFor="handled_by_staff">Handled by staff</label>
-              <select
-                id="handled_by_staff"
-                value={form.handled_by_staff}
-                onChange={(e) => updateField('handled_by_staff', e.target.value)}
-              >
-                <option value="">Not set</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name}
-                  </option>
-                ))}
-              </select>
+              {showError('branch_id') ? (
+                <p className="add-member-error">{errors.branch_id}</p>
+              ) : (
+                <p className="add-member-helper">Drives member-number generation.</p>
+              )}
             </div>
 
             <div className="add-member-field">
@@ -327,55 +316,11 @@ export function AddMemberPage() {
               </div>
               {showError('gender') && <p className="add-member-error">{errors.gender}</p>}
             </div>
-
-            <div className="add-member-field">
-              <label htmlFor="email">Email (optional)</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={form.email}
-                onChange={(e) => updateField('email', e.target.value)}
-                onBlur={() => handleBlur('email')}
-              />
-              {showError('email') && <p className="add-member-error">{errors.email}</p>}
-            </div>
-
-            <div className="add-member-field">
-              <label htmlFor="occupation">Occupation (optional)</label>
-              <input
-                id="occupation"
-                placeholder="e.g. Software Engineer"
-                value={form.occupation}
-                onChange={(e) => updateField('occupation', e.target.value)}
-              />
-            </div>
-
-            <div className="add-member-field">
-              <label htmlFor="aadhaar_number">Aadhaar number (optional)</label>
-              <input
-                id="aadhaar_number"
-                placeholder="12-digit Aadhaar number"
-                value={form.aadhaar_number}
-                onChange={(e) => updateField('aadhaar_number', sanitizeDigits(e.target.value, 12))}
-              />
-            </div>
-
-            <div className="add-member-field add-member-field-span-2">
-              <label htmlFor="residential_address">Address (optional)</label>
-              <textarea
-                id="residential_address"
-                rows={4}
-                placeholder="Street, city, state"
-                value={form.residential_address}
-                onChange={(e) => updateField('residential_address', e.target.value)}
-              />
-            </div>
           </div>
         </fieldset>
 
         <fieldset className="add-member-section">
-          <legend>Body Metrics</legend>
+          <legend>Body metrics</legend>
           <div className="add-member-metrics-row">
             <div>
               <label htmlFor="weight_kg">
@@ -417,23 +362,25 @@ export function AddMemberPage() {
         </fieldset>
 
         <fieldset className="add-member-section">
-          <legend>Doctor's Care</legend>
-          <div className="add-member-chip-row" role="group" aria-label="Under doctor's care">
-            <button
-              type="button"
-              className={`add-member-chip${!form.under_doctor_care ? ' add-member-chip-selected' : ''}`}
-              onClick={() => updateField('under_doctor_care', false)}
+          <legend>Medical</legend>
+          <label className="add-member-toggle-row">
+            <span>Under doctor's care</span>
+            <span
+              className={`add-member-toggle${form.under_doctor_care ? ' add-member-toggle-on' : ''}`}
+              role="switch"
+              aria-checked={form.under_doctor_care}
+              tabIndex={0}
+              onClick={() => updateField('under_doctor_care', !form.under_doctor_care)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  updateField('under_doctor_care', !form.under_doctor_care);
+                }
+              }}
             >
-              No
-            </button>
-            <button
-              type="button"
-              className={`add-member-chip${form.under_doctor_care ? ' add-member-chip-selected' : ''}`}
-              onClick={() => updateField('under_doctor_care', true)}
-            >
-              Yes
-            </button>
-          </div>
+              <span className="add-member-toggle-knob" />
+            </span>
+          </label>
 
           {form.under_doctor_care && (
             <>
@@ -456,7 +403,7 @@ export function AddMemberPage() {
         </fieldset>
 
         <fieldset className="add-member-section">
-          <legend>Emergency Contact</legend>
+          <legend>Emergency contact</legend>
           <div className="add-member-field-grid">
             <div className="add-member-field">
               <label htmlFor="emergency_contact_name">
@@ -520,7 +467,76 @@ export function AddMemberPage() {
         </fieldset>
 
         <fieldset className="add-member-section">
-          <legend>Photo (optional)</legend>
+          <legend>Optional details</legend>
+          <div className="add-member-field-grid">
+            <div className="add-member-field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={form.email}
+                onChange={(e) => updateField('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
+              />
+              {showError('email') && <p className="add-member-error">{errors.email}</p>}
+            </div>
+
+            <div className="add-member-field">
+              <label htmlFor="occupation">Occupation</label>
+              <input
+                id="occupation"
+                placeholder="e.g. Software Engineer"
+                value={form.occupation}
+                onChange={(e) => updateField('occupation', e.target.value)}
+              />
+            </div>
+
+            <div className="add-member-field">
+              <label htmlFor="aadhaar_number">Aadhaar number</label>
+              <input
+                id="aadhaar_number"
+                placeholder="12-digit Aadhaar number"
+                value={form.aadhaar_number}
+                onChange={(e) => updateField('aadhaar_number', sanitizeDigits(e.target.value, 12))}
+              />
+            </div>
+
+            <div className="add-member-field add-member-field-span-2">
+              <label htmlFor="residential_address">Residential address</label>
+              <textarea
+                id="residential_address"
+                rows={4}
+                placeholder="Street, city, state"
+                value={form.residential_address}
+                onChange={(e) => updateField('residential_address', e.target.value)}
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset className="add-member-section">
+          <legend>Staff record</legend>
+          <div className="add-member-field">
+            <label htmlFor="handled_by_staff">Handled by staff</label>
+            <select
+              id="handled_by_staff"
+              value={form.handled_by_staff}
+              onChange={(e) => updateField('handled_by_staff', e.target.value)}
+            >
+              <option value="">Not set</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name}
+                </option>
+              ))}
+            </select>
+            <p className="add-member-helper">Pre-filled with the logged-in staff member — change it if a colleague actually handled the signup.</p>
+          </div>
+        </fieldset>
+
+        <fieldset className="add-member-section">
+          <legend>Photo</legend>
           {photoPreviewUrl && <img src={photoPreviewUrl} alt="Selected preview" className="add-member-photo-preview" />}
           <div className="add-member-photo-actions">
             {/* Two always-visible buttons: Take Photo opens a live in-page camera
@@ -538,6 +554,7 @@ export function AddMemberPage() {
               Upload Photo
             </button>
           </div>
+          <p className="add-member-helper">Compressed automatically. A photo failure never blocks saving the member.</p>
           <input
             ref={uploadInputRef}
             type="file"
@@ -572,7 +589,7 @@ export function AddMemberPage() {
             ) : (
               <Check size={18} strokeWidth={2} />
             )}
-            {isSaving ? 'Saving…' : 'Save'}
+            {isSaving ? 'Saving…' : 'Create member'}
           </button>
         </div>
       </form>

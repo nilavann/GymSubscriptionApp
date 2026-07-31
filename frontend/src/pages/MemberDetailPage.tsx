@@ -17,7 +17,7 @@ import { useServices } from '../context/services.context';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import { PhotoLightbox } from '../components/PhotoLightbox';
 import { withTimeout } from '../lib/with-timeout';
-import { formatDate, toLocalDisplay } from '../lib/datetime';
+import { formatDate, toLocalDisplay, todayDate } from '../lib/datetime';
 import { sanitizeDigits, sanitizeDecimal } from '../lib/input-masks';
 import { deriveStatus, STATUS_LABEL, STATUS_BADGE_CLASS } from '../lib/status';
 import { getAvatarColor, getInitials } from '../lib/avatar';
@@ -350,23 +350,6 @@ export function MemberDetailPage() {
           <ArrowLeft size={16} strokeWidth={2} />
           Members
         </Link>
-        {!isEditingMember ? (
-          <button type="button" className="member-detail-edit-button" onClick={startEdit}>
-            <Pencil size={16} strokeWidth={2} />
-            Edit
-          </button>
-        ) : (
-          <div className="member-detail-header-actions">
-            <button type="button" className="member-detail-cancel" disabled={isSavingMember} onClick={cancelEdit}>
-              <X size={16} strokeWidth={2} />
-              Cancel
-            </button>
-            <button type="submit" form="member-detail-form" className="member-detail-save" disabled={isSavingMember}>
-              {isSavingMember ? <RefreshCw size={16} strokeWidth={2} className="member-detail-spin" /> : <Check size={16} strokeWidth={2} />}
-              {isSavingMember ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        )}
       </div>
 
       {memberSaveError && <div className="member-detail-banner-error">{memberSaveError}</div>}
@@ -430,13 +413,39 @@ export function MemberDetailPage() {
             </p>
           )}
         </div>
+
+        <div className="member-detail-hero-actions">
+          {!isEditingMember ? (
+            <>
+              <button type="button" className="member-detail-edit-button" onClick={startEdit}>
+                <Pencil size={16} strokeWidth={2} />
+                Edit
+              </button>
+              <button type="button" className="member-detail-delete-link" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 size={16} strokeWidth={2} />
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="member-detail-cancel" disabled={isSavingMember} onClick={cancelEdit}>
+                <X size={16} strokeWidth={2} />
+                Cancel
+              </button>
+              <button type="submit" form="member-detail-form" className="member-detail-save" disabled={isSavingMember}>
+                {isSavingMember ? <RefreshCw size={16} strokeWidth={2} className="member-detail-spin" /> : <Check size={16} strokeWidth={2} />}
+                {isSavingMember ? 'Saving…' : 'Save'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="member-detail-columns">
         <div className="member-detail-column-left">
           <form id="member-detail-form" onSubmit={handleSaveMember} noValidate>
             <fieldset className="member-detail-section">
-              <legend>Personal Details</legend>
+              <legend>Personal</legend>
               {!isEditingMember || !memberForm ? (
                 <dl className="member-detail-view-grid">
                   <ViewField label="Name" value={member.name} />
@@ -609,7 +618,7 @@ export function MemberDetailPage() {
             </fieldset>
 
             <fieldset className="member-detail-section">
-              <legend>Doctor's Care</legend>
+              <legend>Medical</legend>
               {!isEditingMember || !memberForm ? (
                 <dl className="member-detail-view-grid">
                   <ViewField label="Under doctor's care" value={member.under_doctor_care ? 'Yes' : 'No'} />
@@ -617,22 +626,24 @@ export function MemberDetailPage() {
                 </dl>
               ) : (
                 <>
-                  <div className="member-detail-chip-row" role="group" aria-label="Under doctor's care">
-                    <button
-                      type="button"
-                      className={`member-detail-chip${!memberForm.under_doctor_care ? ' member-detail-chip-selected' : ''}`}
-                      onClick={() => updateField('under_doctor_care', false)}
+                  <label className="member-detail-toggle-row">
+                    <span>Under doctor's care</span>
+                    <span
+                      className={`member-detail-toggle${memberForm.under_doctor_care ? ' member-detail-toggle-on' : ''}`}
+                      role="switch"
+                      aria-checked={memberForm.under_doctor_care}
+                      tabIndex={0}
+                      onClick={() => updateField('under_doctor_care', !memberForm.under_doctor_care)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          updateField('under_doctor_care', !memberForm.under_doctor_care);
+                        }
+                      }}
                     >
-                      No
-                    </button>
-                    <button
-                      type="button"
-                      className={`member-detail-chip${memberForm.under_doctor_care ? ' member-detail-chip-selected' : ''}`}
-                      onClick={() => updateField('under_doctor_care', true)}
-                    >
-                      Yes
-                    </button>
-                  </div>
+                      <span className="member-detail-toggle-knob" />
+                    </span>
+                  </label>
                   {memberForm.under_doctor_care && (
                     <>
                       <label htmlFor="detail-doctor_care_details">
@@ -653,7 +664,7 @@ export function MemberDetailPage() {
             </fieldset>
 
             <fieldset className="member-detail-section">
-              <legend>Emergency Contact</legend>
+              <legend>Emergency contact</legend>
               {!isEditingMember || !memberForm ? (
                 <dl className="member-detail-view-grid">
                   <ViewField label="Name" value={member.emergency_contact_name} />
@@ -714,7 +725,7 @@ export function MemberDetailPage() {
             </fieldset>
 
             <fieldset className="member-detail-section">
-              <legend>System Fields</legend>
+              <legend>System</legend>
               <dl className="member-detail-view-grid">
                 <ViewField label="Member number" value={member.member_number} />
                 <ViewField label="Created by" value={member.created_by ? profileById.get(member.created_by)?.full_name ?? 'Unknown' : '—'} />
@@ -743,11 +754,6 @@ export function MemberDetailPage() {
               </dl>
             </fieldset>
           </form>
-
-          <button type="button" className="member-detail-delete-link" onClick={() => setDeleteConfirmOpen(true)}>
-            <Trash2 size={16} strokeWidth={2} />
-            Delete Member
-          </button>
         </div>
 
         <div className="member-detail-column-right">
@@ -763,7 +769,12 @@ export function MemberDetailPage() {
               </div>
             ) : (
               <div className="member-detail-item-card">
-                <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
+                <div className="member-detail-item-card-top">
+                  <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
+                  <Link to={`/members/${member.id}/renew`} className="member-detail-renew-button">
+                    Renew
+                  </Link>
+                </div>
                 <p className="member-detail-item-detail">
                   {formatDate(currentMembershipItem.start_date)} –{' '}
                   {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
@@ -771,9 +782,20 @@ export function MemberDetailPage() {
                   <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
                 </p>
                 <p className="member-detail-item-amount">₹{currentMembershipItem.amount_paid}</p>
-                <Link to={`/members/${member.id}/renew`} className="member-detail-renew-button">
-                  Renew
-                </Link>
+                {currentMembershipItem.end_date &&
+                  (() => {
+                    const { pct, daysRemaining } = membershipProgress(currentMembershipItem.start_date, currentMembershipItem.end_date);
+                    return (
+                      <>
+                        <div className="member-detail-progress-track">
+                          <div className="member-detail-progress-fill" style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="member-detail-progress-label">
+                          {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}
+                        </p>
+                      </>
+                    );
+                  })()}
               </div>
             )}
           </section>
@@ -921,6 +943,19 @@ export function MemberDetailPage() {
       )}
     </div>
   );
+}
+
+/** UI-only progress preview for the current-membership card — never the source of truth for end_date. */
+function membershipProgress(start: string, end: string) {
+  const toUTC = (d: string) => {
+    const [y, m, dd] = d.split('-').map(Number);
+    return Date.UTC(y, m - 1, dd);
+  };
+  const totalDays = Math.max(1, (toUTC(end) - toUTC(start)) / 86400000);
+  const elapsedDays = Math.min(totalDays, Math.max(0, (toUTC(todayDate()) - toUTC(start)) / 86400000));
+  const pct = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+  const daysRemaining = Math.max(0, Math.round(totalDays - elapsedDays));
+  return { pct, daysRemaining };
 }
 
 function ViewField({ label, value, span }: { label: string; value: string; span?: boolean }) {

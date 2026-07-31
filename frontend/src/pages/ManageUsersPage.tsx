@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, RefreshCw, X, Check } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
+import { AdminTabs } from '../components/AdminTabs';
 import type { ManagedUser } from '../types/profile';
 import type { Role } from '../types/role';
 import type { EditUserDraft, EditUserFormErrors } from '../services/user.service';
@@ -168,6 +169,10 @@ export function ManageUsersPage() {
           Invite User
         </Link>
       </div>
+
+      <AdminTabs />
+
+      <p className="users-self-note">You can't change your own role or deactivate yourself.</p>
 
       {successMessage && (
         <div className="users-banner-success">
