@@ -63,9 +63,11 @@ export const profileRepository = {
     return (data ?? []) as unknown as Profile[];
   },
 
-  /** Every non-deleted user, WITH email — Manage Users list (screens.md WSCR-09). Admin-only, via list-users (edge-functions.md §5). */
-  async getAllUsers(): Promise<ManagedUser[]> {
-    const { data, error } = await supabase.functions.invoke('list-users', { body: {} });
+  /** Users, WITH email — Manage Users list (screens.md WSCR-09). Admin-only, via list-users
+   * (edge-functions.md §5). Pass includeDeleted to also get soft-deleted users, for the
+   * Restore flow — each row's deleted_at tells the caller which are which. */
+  async getAllUsers(includeDeleted = false): Promise<ManagedUser[]> {
+    const { data, error } = await supabase.functions.invoke('list-users', { body: { include_deleted: includeDeleted } });
     if (error) throw new Error(await extractFunctionErrorMessage(error));
     return (data?.users ?? []) as ManagedUser[];
   },
@@ -86,6 +88,12 @@ export const profileRepository = {
   /** Soft-deletes a user (REQ-ADMIN-006) — distinct from deactivation, never on the caller's own account. */
   async delete(id: string): Promise<void> {
     const { error } = await supabase.functions.invoke('update-user', { body: { user_id: id, delete: true } });
+    if (error) throw new Error(await extractFunctionErrorMessage(error));
+  },
+
+  /** Reverses a soft-delete, clearing deleted_at/deleted_by so the user reappears in Manage Users. */
+  async restore(id: string): Promise<void> {
+    const { error } = await supabase.functions.invoke('update-user', { body: { user_id: id, restore: true } });
     if (error) throw new Error(await extractFunctionErrorMessage(error));
   },
 };

@@ -37,6 +37,24 @@
   margin: 0.75rem 0 0;
 }
 
+.users-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.users-checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--tint-accent);
+}
+
 .users-skeleton {
   height: 300px;
   border-radius: var(--radius-el);
@@ -371,6 +389,11 @@
 .users-status-inactive {
   background: var(--color-status-danger-bg);
   color: var(--color-status-danger-text);
+}
+
+.users-status-deleted {
+  background: var(--color-status-neutral-bg);
+  color: var(--color-status-neutral-text);
 }
 
 .users-you-tag {

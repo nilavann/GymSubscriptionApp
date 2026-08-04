@@ -15,6 +15,7 @@ interface UpdateUserPayload {
   roles?: string[];
   is_active?: boolean;
   delete?: boolean;
+  restore?: boolean;
 }
 
 function jsonResponse(body: unknown, status: number) {
@@ -100,6 +101,16 @@ Deno.serve(async (req) => {
         p_target_user_id: payload.user_id,
       });
       if (deleteError) throw deleteError;
+      return jsonResponse({ success: true }, 200);
+    }
+
+    // Restore — undoes a soft-delete (clears deleted_at/deleted_by) so deletion isn't a dead end.
+    if (payload.restore) {
+      const { error: restoreError } = await supabaseAdmin.rpc('restore_profile', {
+        p_caller_id: callerId,
+        p_target_user_id: payload.user_id,
+      });
+      if (restoreError) throw restoreError;
       return jsonResponse({ success: true }, 200);
     }
 

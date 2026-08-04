@@ -1,8 +1,9 @@
 // Returns every non-deleted user (id, email, full_name, role, is_active) for the Manage
-// Users screen — see spec/backend/edge-functions.md §5 "list-users". Needs its own
-// function because `profiles` has no `email` column (login identity lives entirely in
-// auth.users, per auth.md §2) and reading OTHER users' emails requires the Admin API,
-// which requires the service role.
+// Users screen — see spec/backend/edge-functions.md §5 "list-users". Pass
+// { include_deleted: true } to also get soft-deleted users (for the Restore flow); each
+// row's deleted_at tells the caller which. Needs its own function because `profiles` has
+// no `email` column (login identity lives entirely in auth.users, per auth.md §2) and
+// reading OTHER users' emails requires the Admin API, which requires the service role.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -15,6 +16,11 @@ interface ProfileWithRolesRow {
   full_name: string;
   roles: string[];
   is_active: boolean;
+  deleted_at: string | null;
+}
+
+interface ListUsersPayload {
+  include_deleted?: boolean;
 }
 
 function jsonResponse(body: unknown, status: number) {
@@ -63,10 +69,13 @@ Deno.serve(async (req) => {
       return jsonError('Admin access required', 403);
     }
 
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from('profiles_with_roles')
-      .select('id, full_name, roles, is_active')
-      .is('deleted_at', null);
+    const payload = (await req.json().catch(() => ({}))) as ListUsersPayload;
+
+    let profilesQuery = supabaseAdmin.from('profiles_with_roles').select('id, full_name, roles, is_active, deleted_at');
+    if (!payload.include_deleted) {
+      profilesQuery = profilesQuery.is('deleted_at', null);
+    }
+    const { data: profiles, error: profilesError } = await profilesQuery;
     if (profilesError) throw profilesError;
 
     // auth.admin.listUsers() is paginated — loop until a page comes back short of a full
@@ -92,6 +101,7 @@ Deno.serve(async (req) => {
         full_name: p.full_name,
         roles: p.roles,
         is_active: p.is_active,
+        deleted_at: p.deleted_at,
       }))
       .sort((a, b) => a.full_name.localeCompare(b.full_name));
 
