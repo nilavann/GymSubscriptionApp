@@ -1,70 +1,98 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, X, Check, RefreshCw, Plus, Trash2, Calendar } from 'lucide-react';
+import { ArrowLeft, Trash2, Calendar, AlertTriangle, WifiOff, RefreshCw } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
-import { formatDate } from '../lib/datetime';
+import { formatDate, todayDate } from '../lib/datetime';
 import type { Member } from '../types/member';
 import type { Plan } from '../types/plan';
 import type { MemberCurrentItem } from '../types/member-current-item';
-import type { MemberListRow } from '../types/member-list';
 import type { PaymentMode } from '../types/subscription';
 import {
   newCheckoutItem,
   defaultStartDateForPlan,
-  previewEndDate,
   defaultAmountPaid,
+  previewEndDate,
   validateCheckoutItem,
   isCheckoutValid,
-  findOverlapConflicts,
+  findItemOverlap,
+  buildInitialCheckoutItems,
   type CheckoutItemDraft,
-  type OverlapConflict,
+  type ItemOverlapConflict,
 } from '../services/subscription.service';
 import './RenewSubscriptionPage.css';
 
 const FETCH_TIMEOUT_MS = 10000;
 const QUANTITY_PRESETS = [1, 2, 3, 6, 12];
+const PAYMENT_MODES: PaymentMode[] = ['Cash', 'UPI', 'Card'];
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
+
+function Req() {
+  return (
+    <span className="renew-required" aria-hidden="true">
+      {' '}
+      *
+    </span>
+  );
+}
+
+function formatRupees(amount: number): string {
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+}
+
+function planOptionLabel(plan: Plan): string {
+  const duration = plan.duration_days === null ? 'Never expires' : `${plan.duration_days} days`;
+  return `${plan.name} · ${duration} · ₹${plan.price.toLocaleString('en-IN')}`;
+}
 
 export function RenewSubscriptionPage() {
   const { id } = useParams();
   const memberId = Number(id);
   const navigate = useNavigate();
-  const { memberRepository, planRepository, memberListRepository, subscriptionRepository } = useServices();
+  const { memberRepository, planRepository, subscriptionRepository } = useServices();
 
   const [member, setMember] = useState<Member | null>(null);
   const [currentItems, setCurrentItems] = useState<MemberCurrentItem[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [allMembers, setAllMembers] = useState<MemberListRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
 
-  const [items, setItems] = useState<CheckoutItemDraft[]>([newCheckoutItem()]);
+  const [items, setItems] = useState<CheckoutItemDraft[]>([]);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('Cash');
   const [notes, setNotes] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
 
-  const [overlapConflicts, setOverlapConflicts] = useState<OverlapConflict[] | null>(null);
-  const [hasConfirmedOverlap, setHasConfirmedOverlap] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [touchedItemKeys, setTouchedItemKeys] = useState<Set<string>>(new Set());
+  const [amountFocusKey, setAmountFocusKey] = useState<string | null>(null);
+  const [pendingFocusKey, setPendingFocusKey] = useState<string | null>(null);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveErrorKind, setSaveErrorKind] = useState<'network' | 'generic' | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState('');
+
+  const itemCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const planSelectRefs = useRef<Record<string, HTMLSelectElement | null>>({});
+  /** Per item, the last start date that didn't overlap — lets the overlap warning's own
+   * Cancel button revert to it (§4's "reverts the start date to its last non-overlapping value"). */
+  const lastGoodStartDateRef = useRef<Record<string, string>>({});
 
   async function load() {
     setLoadState('loading');
     try {
-      const [memberData, items, planRows, memberRows] = await Promise.all([
+      const [memberData, currentItemsData, planRows] = await Promise.all([
         withTimeout(memberRepository.getById(memberId), FETCH_TIMEOUT_MS, new Error('member-timeout')),
         withTimeout(subscriptionRepository.getCurrentItemsForMember(memberId), FETCH_TIMEOUT_MS, new Error('items-timeout')),
         withTimeout(planRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('plans-timeout')),
-        withTimeout(memberListRepository.getAll(), FETCH_TIMEOUT_MS, new Error('members-timeout')),
       ]);
       if (!memberData) {
         setLoadState('generic-error');
         return;
       }
       setMember(memberData);
-      setCurrentItems(items);
+      setCurrentItems(currentItemsData);
       setPlans(planRows);
-      setAllMembers(memberRows);
+      setItems(buildInitialCheckoutItems(currentItemsData, planRows));
+      setIsDirty(false);
       setLoadState('loaded');
     } catch (err) {
       const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
@@ -80,18 +108,40 @@ export function RenewSubscriptionPage() {
   const planById = useMemo(() => new Map(plans.map((p) => [p.id, p])), [plans]);
   const membershipPlans = useMemo(() => plans.filter((p) => p.category === 'membership'), [plans]);
   const addonPlans = useMemo(() => plans.filter((p) => p.category === 'addon'), [plans]);
-  const sharedMemberOptions = useMemo(() => allMembers.filter((m) => m.id !== memberId), [allMembers, memberId]);
 
-  const membershipItemCount = items.filter((item) => item.plan_id !== '' && planById.get(item.plan_id)?.category === 'membership').length;
+  const membershipItemCount = items.filter((item) => item.category === 'membership').length;
 
   const itemErrors = useMemo(
-    () => items.map((item) => validateCheckoutItem(item, item.plan_id === '' ? undefined : planById.get(item.plan_id), memberId)),
-    [items, planById, memberId]
+    () => items.map((item) => validateCheckoutItem(item, item.plan_id === '' ? undefined : planById.get(item.plan_id))),
+    [items, planById]
   );
   const canSubmit = isCheckoutValid(itemErrors, membershipItemCount) && !isSaving;
 
-  function updateItem(key: string, updates: Partial<CheckoutItemDraft>) {
-    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, ...updates } : item)));
+  const overlapByKey = useMemo(() => {
+    const map = new Map<string, ItemOverlapConflict | null>();
+    items.forEach((item) => map.set(item.key, findItemOverlap(item, items, planById, currentItems)));
+    return map;
+  }, [items, planById, currentItems]);
+
+  useEffect(() => {
+    items.forEach((item) => {
+      if (!overlapByKey.get(item.key)) lastGoodStartDateRef.current[item.key] = item.start_date;
+    });
+  }, [items, overlapByKey]);
+
+  useEffect(() => {
+    if (!pendingFocusKey) return;
+    itemCardRefs.current[pendingFocusKey]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    planSelectRefs.current[pendingFocusKey]?.focus();
+    setPendingFocusKey(null);
+  }, [pendingFocusKey]);
+
+  function markDirty() {
+    setIsDirty(true);
+  }
+
+  function touchItem(key: string) {
+    setTouchedItemKeys((prev) => new Set(prev).add(key));
   }
 
   function handlePlanChange(key: string, planId: number) {
@@ -99,38 +149,81 @@ export function RenewSubscriptionPage() {
     setItems((prev) =>
       prev.map((item) => {
         if (item.key !== key) return item;
-        const startDate = plan ? defaultStartDateForPlan(plan, currentItems) : item.start_date;
-        const quantity = plan?.duration_days === null ? 1 : item.quantity === '' ? 1 : item.quantity;
-        const amount = item.amountTouched ? item.amount_paid : defaultAmountPaid(plan, typeof quantity === 'number' ? quantity : 1);
+        const isFirstPick = item.plan_id === '';
+        const startDate = isFirstPick && plan ? defaultStartDateForPlan(plan, currentItems) : item.start_date;
         return {
           ...item,
           plan_id: planId,
           start_date: startDate,
-          quantity,
-          amount_paid: amount,
-          shared_member_id: plan?.category === 'membership' && plan.max_members === 2 ? item.shared_member_id : '',
+          amount_paid: defaultAmountPaid(plan, item.quantity),
+          overlapAcknowledged: false,
         };
       })
     );
+    markDirty();
   }
 
-  function handleQuantityChange(key: string, quantity: number) {
+  function handleStartDateChange(key: string, value: string) {
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, start_date: value, overlapAcknowledged: false } : item)));
+    markDirty();
+  }
+
+  function handleQuantityPreset(key: string, preset: number) {
     setItems((prev) =>
       prev.map((item) => {
         if (item.key !== key) return item;
         const plan = item.plan_id === '' ? undefined : planById.get(item.plan_id);
-        const amount = item.amountTouched ? item.amount_paid : defaultAmountPaid(plan, quantity);
-        return { ...item, quantity, amount_paid: amount };
+        return { ...item, quantity: preset, isCustomQuantity: false, amount_paid: defaultAmountPaid(plan, preset), overlapAcknowledged: false };
       })
     );
+    markDirty();
+  }
+
+  function handleQuantityCustomInput(key: string, value: number) {
+    const clamped = Math.max(1, Math.min(60, Number.isFinite(value) ? value : 1));
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.key !== key) return item;
+        const plan = item.plan_id === '' ? undefined : planById.get(item.plan_id);
+        return { ...item, quantity: clamped, amount_paid: defaultAmountPaid(plan, clamped), overlapAcknowledged: false };
+      })
+    );
+    markDirty();
+  }
+
+  function showCustomQuantity(key: string) {
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, isCustomQuantity: true } : item)));
+  }
+
+  function backToPresets(key: string) {
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, isCustomQuantity: false } : item)));
+  }
+
+  function handleAmountChange(key: string, digits: string) {
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, amount_paid: digits === '' ? '' : Number(digits) } : item)));
+    markDirty();
   }
 
   function addItem() {
-    setItems((prev) => [...prev, newCheckoutItem()]);
+    const hasMembership = items.some((item) => item.category === 'membership');
+    const item = newCheckoutItem(hasMembership ? 'addon' : 'membership');
+    setItems((prev) => [...prev, item]);
+    setPendingFocusKey(item.key);
+    markDirty();
   }
 
   function removeItem(key: string) {
-    setItems((prev) => (prev.length > 1 ? prev.filter((item) => item.key !== key) : prev));
+    setItems((prev) => prev.filter((item) => item.key !== key));
+    markDirty();
+  }
+
+  function handleOverlapCancel(key: string) {
+    const fallback = lastGoodStartDateRef.current[key] ?? todayDate();
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, start_date: fallback, overlapAcknowledged: false } : item)));
+  }
+
+  function handleOverlapSaveAnyway(key: string) {
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, overlapAcknowledged: true } : item)));
   }
 
   function markAllTouched() {
@@ -139,33 +232,37 @@ export function RenewSubscriptionPage() {
 
   async function performSave() {
     if (!member) return;
-    setSaveError(null);
+    setSaveErrorKind(null);
+    setSaveErrorMessage('');
     setIsSaving(true);
     try {
       const result = await subscriptionRepository.create({
         member_id: member.id,
         payment_mode: paymentMode,
         notes: notes.trim() || null,
-        items: items.map((item) => ({
-          plan_id: item.plan_id as number,
-          member_id: member.id,
-          shared_member_id: item.shared_member_id === '' ? null : item.shared_member_id,
-          start_date: item.start_date,
-          quantity: item.quantity === '' ? null : item.quantity,
-          amount_paid: item.amount_paid === '' ? null : item.amount_paid,
-        })),
+        items: items.map((item) => {
+          const plan = item.plan_id === '' ? undefined : planById.get(item.plan_id);
+          return {
+            plan_id: item.plan_id as number,
+            member_id: member.id,
+            shared_member_id: null,
+            start_date: item.start_date,
+            quantity: plan?.duration_days === null ? null : item.quantity,
+            amount_paid: item.amount_paid === '' ? null : item.amount_paid,
+          };
+        }),
       });
-      if (result) {
-        navigate(`/members/${member.id}`, { replace: true });
-      }
+      navigate(`/members/${member.id}`, {
+        replace: true,
+        state: { toast: `Checkout saved · receipt #${result.subscription.id}` },
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       if (message === 'Failed to fetch') {
-        setSaveError("Couldn't save this checkout — check your connection and try again.");
-      } else if (message) {
-        setSaveError(message);
+        setSaveErrorKind('network');
       } else {
-        setSaveError('Something went wrong saving this checkout. Please try again.');
+        setSaveErrorKind('generic');
+        setSaveErrorMessage(message || 'Something went wrong saving this checkout. Please try again.');
       }
       setIsSaving(false);
     }
@@ -175,21 +272,15 @@ export function RenewSubscriptionPage() {
     event.preventDefault();
     markAllTouched();
     if (!isCheckoutValid(itemErrors, membershipItemCount)) return;
-
-    if (!hasConfirmedOverlap) {
-      const conflicts = findOverlapConflicts(items, planById, currentItems);
-      if (conflicts.length > 0) {
-        setOverlapConflicts(conflicts);
-        return;
-      }
-    }
     await performSave();
   }
 
-  async function handleSaveAnyway() {
-    setHasConfirmedOverlap(true);
-    setOverlapConflicts(null);
-    await performSave();
+  function handleCancelClick() {
+    if (isDirty) {
+      setDiscardConfirmOpen(true);
+    } else {
+      navigate(`/members/${memberId}`);
+    }
   }
 
   if (loadState === 'loading') {
@@ -221,7 +312,7 @@ export function RenewSubscriptionPage() {
   if (plans.length === 0) {
     return (
       <div className="renew-page">
-        <h1>Add Subscription</h1>
+        <h1>Renew / Add Subscription</h1>
         <p className="renew-empty-plans">No plans available — ask an admin to add one first.</p>
         <Link to={`/members/${memberId}`} className="renew-cancel-link">
           Back to member
@@ -231,228 +322,325 @@ export function RenewSubscriptionPage() {
   }
 
   const totalThisVisit = items.reduce((sum, item) => sum + (typeof item.amount_paid === 'number' ? item.amount_paid : 0), 0);
+  const validityMessage =
+    membershipItemCount === 1
+      ? '✓ Contains exactly one membership item'
+      : membershipItemCount === 0
+        ? 'Add one membership item to continue'
+        : 'Only one membership item per checkout';
 
   return (
     <div className="renew-page">
-      <Link to={`/members/${memberId}`} className="renew-back-link">
-        <ArrowLeft size={16} strokeWidth={2} />
-      </Link>
-      <h1>Renew / Add Subscription</h1>
+      <div className="renew-title-row">
+        <Link to={`/members/${memberId}`} className="renew-back-link" aria-label="Back to member">
+          <ArrowLeft size={15} strokeWidth={2} />
+        </Link>
+        <h1>Renew / Add Subscription</h1>
+      </div>
       <p className="renew-subtitle">
         {member ? `${member.name} · ${member.member_number} · ` : ''}one checkout, one or more items
       </p>
 
-      {saveError && <div className="renew-banner-error">{saveError}</div>}
+      {saveErrorKind === 'generic' && <div className="renew-banner-error">{saveErrorMessage}</div>}
 
       <form onSubmit={handleSubmit} noValidate>
-        <fieldset className="renew-header-fields">
-          <legend>Payment</legend>
+        <div className="renew-card">
+          <p className="renew-section-title">Payment</p>
+          <div className="renew-form-grid">
+            <div className="renew-field">
+              <span className="renew-field-label">
+                Payment mode
+                <Req />
+              </span>
+              <div className="renew-payment-chip-row" role="group" aria-label="Payment mode">
+                {PAYMENT_MODES.map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`renew-payment-chip${paymentMode === mode ? ' renew-payment-chip-selected' : ''}`}
+                    disabled={isSaving}
+                    onClick={() => {
+                      setPaymentMode(mode);
+                      markDirty();
+                    }}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <span className="renew-field-label">Payment mode</span>
-          <div className="renew-chip-row" role="group" aria-label="Payment mode">
-            {(['Cash', 'UPI', 'Card'] as PaymentMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={`renew-chip${paymentMode === mode ? ' renew-chip-selected' : ''}`}
-                onClick={() => setPaymentMode(mode)}
-              >
-                {mode}
-              </button>
-            ))}
+            <div className="renew-field">
+              <label htmlFor="renew-notes">
+                Notes <span className="renew-field-optional">(optional, ≤ 200 chars)</span>
+              </label>
+              <input
+                id="renew-notes"
+                type="text"
+                maxLength={200}
+                placeholder="e.g. paid partially, balance next week"
+                value={notes}
+                disabled={isSaving}
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  markDirty();
+                }}
+              />
+              {notes.length >= 180 && <p className="renew-helper">{notes.length}/200</p>}
+            </div>
           </div>
-
-          <label htmlFor="notes">Notes (optional, ≤ 200 chars)</label>
-          <textarea id="notes" rows={3} maxLength={200} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </fieldset>
+        </div>
 
         <div className="renew-items">
           {items.map((item, index) => {
             const plan = item.plan_id === '' ? undefined : planById.get(item.plan_id);
             const errors = itemErrors[index];
             const showErrors = touchedItemKeys.has(item.key);
-            const showQuantity = plan && plan.duration_days !== null;
-            const showSharedMember = plan?.category === 'membership' && plan.max_members === 2;
-            const endDatePreview = plan ? previewEndDate(plan, item.start_date, item.quantity === '' ? 1 : item.quantity) : null;
+            const categoryPlans = item.category === 'membership' ? membershipPlans : addonPlans;
+            const showQuantity = !plan || plan.duration_days !== null;
+            const isIndefinite = plan && plan.duration_days === null;
+            const endDatePreview = plan ? previewEndDate(plan, item.start_date, item.quantity) : null;
+            const isPastStart = item.start_date !== '' && item.start_date < todayDate();
+            const conflict = overlapByKey.get(item.key) ?? null;
+            const isOnlyMembership = item.category === 'membership' && membershipItemCount === 1;
+            const startHelperText =
+              item.category === 'membership'
+                ? 'Defaults to day after current membership expires.'
+                : 'Defaults to day after current add-on expires.';
 
             return (
-              <div key={item.key} className="renew-item-card">
+              <div
+                key={item.key}
+                className="renew-card renew-item-card"
+                ref={(el) => {
+                  itemCardRefs.current[item.key] = el;
+                }}
+              >
                 <div className="renew-item-header">
-                  {plan ? (
-                    <span className={`renew-category-tag renew-category-tag-${plan.category}`}>
-                      {plan.category === 'addon' ? 'Add-on' : 'Membership'}
-                    </span>
-                  ) : (
-                    <span className="renew-item-title">Item {index + 1}</span>
-                  )}
-                  {items.length > 1 && (
-                    <button
-                      type="button"
-                      className="renew-remove-item"
-                      onClick={() => removeItem(item.key)}
-                      aria-label={`Remove item ${index + 1}`}
-                    >
-                      <Trash2 size={16} strokeWidth={2} />
-                    </button>
-                  )}
+                  <span className={`renew-category-tag renew-category-tag-${item.category}`}>
+                    {item.category === 'addon' ? 'Add-on' : 'Membership'}
+                  </span>
+                  <button
+                    type="button"
+                    className="renew-delete-item"
+                    disabled={isOnlyMembership || isSaving}
+                    title={isOnlyMembership ? 'A checkout needs one membership.' : undefined}
+                    aria-label={`Remove ${item.category === 'addon' ? 'add-on' : 'membership'} item`}
+                    onClick={() => removeItem(item.key)}
+                  >
+                    <Trash2 size={12} strokeWidth={2} />
+                  </button>
                 </div>
 
-                <label htmlFor={`plan-${item.key}`}>Plan</label>
-                <select
-                  id={`plan-${item.key}`}
-                  value={item.plan_id}
-                  onChange={(e) => handlePlanChange(item.key, Number(e.target.value))}
-                  onBlur={() => setTouchedItemKeys((prev) => new Set(prev).add(item.key))}
-                >
-                  <option value="">Select a plan…</option>
-                  <optgroup label="Membership">
-                    {membershipPlans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — ₹{p.price}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Add-on">
-                    {addonPlans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — ₹{p.price}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-                {showErrors && errors.plan_id && <p className="renew-error">{errors.plan_id}</p>}
-
-                <label htmlFor={`start-${item.key}`}>Start date</label>
-                <input
-                  id={`start-${item.key}`}
-                  type="date"
-                  value={item.start_date}
-                  onChange={(e) => updateItem(item.key, { start_date: e.target.value })}
-                  onBlur={() => setTouchedItemKeys((prev) => new Set(prev).add(item.key))}
-                />
-                {showErrors && errors.start_date && <p className="renew-error">{errors.start_date}</p>}
-
-                {showQuantity && (
-                  <>
-                    <span className="renew-field-label">Quantity</span>
-                    <div className="renew-quantity-row">
-                      {QUANTITY_PRESETS.map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          className={`renew-chip${item.quantity === preset ? ' renew-chip-selected' : ''}`}
-                          onClick={() => handleQuantityChange(item.key, preset)}
-                        >
-                          ×{preset}
-                        </button>
-                      ))}
-                      <input
-                        type="number"
-                        min={1}
-                        className="renew-quantity-custom"
-                        placeholder="Custom"
-                        value={item.quantity}
-                        onChange={(e) => handleQuantityChange(item.key, e.target.value === '' ? 1 : Number(e.target.value))}
-                      />
-                    </div>
-                    {showErrors && errors.quantity && <p className="renew-error">{errors.quantity}</p>}
-                  </>
-                )}
-
-                {showSharedMember && (
-                  <>
-                    <label htmlFor={`shared-${item.key}`}>Shared member (optional)</label>
+                <div className="renew-form-grid">
+                  <div className="renew-field">
+                    <label htmlFor={`plan-${item.key}`}>
+                      Plan
+                      <Req />
+                    </label>
                     <select
-                      id={`shared-${item.key}`}
-                      value={item.shared_member_id}
-                      onChange={(e) => updateItem(item.key, { shared_member_id: e.target.value ? Number(e.target.value) : '' })}
+                      id={`plan-${item.key}`}
+                      ref={(el) => {
+                        planSelectRefs.current[item.key] = el;
+                      }}
+                      value={item.plan_id}
+                      disabled={isSaving}
+                      className={showErrors && errors.plan_id ? 'renew-input-error' : ''}
+                      onChange={(e) => handlePlanChange(item.key, Number(e.target.value))}
+                      onBlur={() => touchItem(item.key)}
                     >
-                      <option value="">None</option>
-                      {sharedMemberOptions.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name} ({m.member_number})
+                      <option value="">Select a plan…</option>
+                      {categoryPlans.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {planOptionLabel(p)}
                         </option>
                       ))}
                     </select>
-                    {showErrors && errors.shared_member_id && <p className="renew-error">{errors.shared_member_id}</p>}
-                  </>
-                )}
+                    {showErrors && errors.plan_id && <p className="renew-error">{errors.plan_id}</p>}
+                  </div>
 
-                <label htmlFor={`amount-${item.key}`}>Amount paid</label>
-                <input
-                  id={`amount-${item.key}`}
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.amount_paid}
-                  onChange={(e) =>
-                    updateItem(item.key, {
-                      amount_paid: e.target.value === '' ? '' : Number(e.target.value),
-                      amountTouched: true,
-                    })
-                  }
-                  onBlur={() => setTouchedItemKeys((prev) => new Set(prev).add(item.key))}
-                />
-                {showErrors && errors.amount_paid && <p className="renew-error">{errors.amount_paid}</p>}
+                  <div className="renew-field">
+                    <label htmlFor={`start-${item.key}`}>
+                      Start date
+                      <Req />
+                    </label>
+                    <input
+                      id={`start-${item.key}`}
+                      type="date"
+                      value={item.start_date}
+                      disabled={isSaving}
+                      className={showErrors && errors.start_date ? 'renew-input-error' : ''}
+                      onChange={(e) => handleStartDateChange(item.key, e.target.value)}
+                      onBlur={() => touchItem(item.key)}
+                    />
+                    {showErrors && errors.start_date ? (
+                      <p className="renew-error">{errors.start_date}</p>
+                    ) : (
+                      <p className={`renew-helper${isPastStart ? ' renew-helper-warning' : ''}`}>{startHelperText}</p>
+                    )}
+                  </div>
 
-                {(endDatePreview || plan) && (
-                  <p className="renew-end-date-preview">
+                  {showQuantity && (
+                    <div className="renew-field">
+                      <span className="renew-field-label">Quantity</span>
+                      {item.isCustomQuantity ? (
+                        <div className="renew-quantity-custom-row">
+                          <input
+                            type="number"
+                            min={1}
+                            max={60}
+                            value={item.quantity}
+                            disabled={isSaving}
+                            onChange={(e) => handleQuantityCustomInput(item.key, Number(e.target.value))}
+                            onBlur={() => touchItem(item.key)}
+                          />
+                          <button type="button" className="renew-back-to-presets" onClick={() => backToPresets(item.key)}>
+                            back to presets
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="renew-quantity-row">
+                          {QUANTITY_PRESETS.map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              className={`renew-quantity-chip${item.quantity === preset ? ' renew-quantity-chip-selected' : ''}`}
+                              disabled={isSaving}
+                              onClick={() => handleQuantityPreset(item.key, preset)}
+                            >
+                              ×{preset}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className="renew-quantity-chip"
+                            disabled={isSaving}
+                            onClick={() => showCustomQuantity(item.key)}
+                          >
+                            Custom
+                          </button>
+                        </div>
+                      )}
+                      {showErrors && errors.quantity && <p className="renew-error">{errors.quantity}</p>}
+                    </div>
+                  )}
+
+                  <div className="renew-field">
+                    <label htmlFor={`amount-${item.key}`}>Amount paid (₹)</label>
+                    <input
+                      id={`amount-${item.key}`}
+                      type="text"
+                      inputMode="numeric"
+                      disabled={isSaving}
+                      className={showErrors && errors.amount_paid ? 'renew-input-error' : ''}
+                      value={
+                        amountFocusKey === item.key
+                          ? item.amount_paid === ''
+                            ? ''
+                            : String(item.amount_paid)
+                          : item.amount_paid === ''
+                            ? ''
+                            : item.amount_paid.toLocaleString('en-IN')
+                      }
+                      onFocus={() => setAmountFocusKey(item.key)}
+                      onChange={(e) => handleAmountChange(item.key, e.target.value.replace(/[^0-9]/g, ''))}
+                      onBlur={() => {
+                        setAmountFocusKey(null);
+                        touchItem(item.key);
+                      }}
+                    />
+                    {showErrors && errors.amount_paid ? (
+                      <p className="renew-error">{errors.amount_paid}</p>
+                    ) : (
+                      <p className="renew-helper">Defaults to price × quantity, editable.</p>
+                    )}
+                  </div>
+                </div>
+
+                {plan && (
+                  <p className="renew-end-preview">
                     <Calendar size={14} strokeWidth={2} />
-                    {endDatePreview ? `Ends ${formatDate(endDatePreview)} (computed on save)` : 'Never expires'}
+                    {isIndefinite ? (
+                      'Never expires'
+                    ) : (
+                      <>
+                        Ends <strong>{endDatePreview ? formatDate(endDatePreview) : '—'}</strong>{' '}
+                        <span className="renew-end-preview-muted">(computed on save)</span>
+                      </>
+                    )}
                   </p>
                 )}
+
+                {conflict && !item.overlapAcknowledged && (
+                  <div className="renew-overlap-warning">
+                    <AlertTriangle size={15} strokeWidth={2} className="renew-overlap-icon" />
+                    <div className="renew-overlap-body">
+                      <p>
+                        Overlaps with current <strong>{conflict.planName}</strong>
+                        {conflict.existingEndDate ? ` (till ${formatDate(conflict.existingEndDate)}).` : '.'}
+                      </p>
+                      <div className="renew-overlap-actions">
+                        <button type="button" className="renew-overlap-cancel" onClick={() => handleOverlapCancel(item.key)}>
+                          Cancel
+                        </button>
+                        <button type="button" className="renew-overlap-save" onClick={() => handleOverlapSaveAnyway(item.key)}>
+                          Save anyway
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {conflict && item.overlapAcknowledged && <p className="renew-overlap-acknowledged">Overlap acknowledged.</p>}
               </div>
             );
           })}
         </div>
 
-        <button type="button" className="renew-add-item" onClick={addItem}>
-          <Plus size={16} strokeWidth={2} />
-          Add Item
+        <button type="button" className="renew-add-item" disabled={isSaving} onClick={addItem}>
+          + Add another item
         </button>
 
-        <div className="renew-footer-card">
-          <div className="renew-footer-total">
-            <span>Total this visit</span>
-            <span className="renew-footer-total-amount">₹{totalThisVisit}</span>
+        {saveErrorKind === 'network' && (
+          <div className="renew-network-banner">
+            <WifiOff size={16} strokeWidth={2} />
+            <div className="renew-network-banner-body">
+              <p>Checkout couldn't be saved — network error. No payment was recorded; your items are kept.</p>
+              <button type="button" className="renew-retry-save" onClick={performSave}>
+                Retry save
+              </button>
+            </div>
           </div>
-          <p className={`renew-footer-gate${membershipItemCount === 1 ? ' renew-footer-gate-ok' : ''}`}>
-            {membershipItemCount === 1
-              ? '✓ Contains exactly one membership item'
-              : `A checkout must include exactly one membership-category item (${membershipItemCount} selected).`}
-          </p>
-          <div className="renew-actions">
-            <button type="button" className="renew-cancel" disabled={isSaving} onClick={() => navigate(`/members/${memberId}`)}>
-              <X size={18} strokeWidth={2} />
+        )}
+
+        <div className="renew-footer-card">
+          <div className="renew-footer-left">
+            <span className="renew-footer-label">Total this visit</span>
+            <p className="renew-footer-amount">{formatRupees(totalThisVisit)}</p>
+            <p className={`renew-footer-validity${membershipItemCount === 1 ? ' renew-footer-validity-ok' : ''}`}>{validityMessage}</p>
+          </div>
+          <div className="renew-footer-actions">
+            <button type="button" className="renew-footer-cancel" disabled={isSaving} onClick={handleCancelClick}>
               Cancel
             </button>
-            <button type="submit" className="renew-submit" disabled={!canSubmit}>
-              {isSaving ? <RefreshCw size={18} strokeWidth={2} className="renew-spin" /> : <Check size={18} strokeWidth={2} />}
+            <button type="submit" className="renew-footer-submit" disabled={!canSubmit}>
+              {isSaving && <RefreshCw size={16} strokeWidth={2} className="renew-spin" />}
               {isSaving ? 'Saving…' : 'Save checkout'}
             </button>
           </div>
         </div>
       </form>
 
-      {overlapConflicts && overlapConflicts.length > 0 && (
-        <div className="renew-overlap-backdrop">
-          <div className="renew-overlap-dialog">
-            <h2>Possible conflict</h2>
-            <ul>
-              {overlapConflicts.map((conflict, index) => (
-                <li key={index}>
-                  {conflict.planName} already runs {formatDate(conflict.existingStartDate)}
-                  {conflict.existingEndDate ? `–${formatDate(conflict.existingEndDate)}` : ' onward (indefinite)'} for this
-                  member.
-                </li>
-              ))}
-            </ul>
-            <div className="renew-overlap-actions">
-              <button type="button" className="renew-cancel" onClick={() => setOverlapConflicts(null)}>
-                Cancel
+      {discardConfirmOpen && (
+        <div className="renew-confirm-backdrop">
+          <div className="renew-confirm-dialog">
+            <h2>Discard this checkout?</h2>
+            <p>You've made changes that haven't been saved. Leaving now will discard them.</p>
+            <div className="renew-confirm-actions">
+              <button type="button" className="renew-footer-cancel" onClick={() => setDiscardConfirmOpen(false)}>
+                Keep editing
               </button>
-              <button type="button" className="renew-submit" onClick={handleSaveAnyway}>
-                Save anyway
+              <button type="button" className="renew-discard-confirm" onClick={() => navigate(`/members/${memberId}`)}>
+                Discard
               </button>
             </div>
           </div>

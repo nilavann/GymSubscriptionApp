@@ -19,13 +19,13 @@ export const memberRepository = {
   /** Live row count for the Settings hub's Data Management card (screens.md WSCR-11). */
   async getCount(): Promise<number> {
     const { count, error } = await supabase.from('members').select('id', { count: 'exact', head: true });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return count ?? 0;
   },
 
   async getById(id: number): Promise<Member | null> {
     const { data, error } = await supabase.from('members').select(MEMBER_SELECT).eq('id', id).maybeSingle();
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     if (!data) return null;
     const [resolved] = await resolvePhotoUrls([data as unknown as Member]);
     return resolved;
@@ -33,13 +33,13 @@ export const memberRepository = {
 
   async create(data: NewMember): Promise<Member> {
     const { data: created, error } = await supabase.from('members').insert(data).select(MEMBER_SELECT).single();
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return created as unknown as Member;
   },
 
   async update(id: number, data: UpdateMember): Promise<void> {
     const { error } = await supabase.from('members').update(data).eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
   /**

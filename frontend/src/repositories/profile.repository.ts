@@ -19,7 +19,7 @@ export const profileRepository = {
   /** Live row count for the Settings hub's Data Management card (screens.md WSCR-11). */
   async getCount(): Promise<number> {
     const { count, error } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return count ?? 0;
   },
 
@@ -31,7 +31,7 @@ export const profileRepository = {
       .eq('id', id)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return data;
   },
 
@@ -46,7 +46,7 @@ export const profileRepository = {
       .select('id, full_name, roles, is_active')
       .eq('is_active', true)
       .order('full_name');
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return (data ?? []) as unknown as Profile[];
   },
 
@@ -59,7 +59,7 @@ export const profileRepository = {
       .from('profiles_with_roles')
       .select('id, full_name, roles, is_active')
       .order('full_name');
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return (data ?? []) as unknown as Profile[];
   },
 

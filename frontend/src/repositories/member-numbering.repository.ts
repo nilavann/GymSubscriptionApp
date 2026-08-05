@@ -26,7 +26,7 @@ interface SequenceRow {
 export const memberNumberingRepository = {
   async getConfig(): Promise<MemberNumberConfig> {
     const { data, error } = await supabase.from('configuration').select('key, value').in('key', CONFIG_KEYS);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     const rows = (data ?? []) as ConfigRow[];
     const valueOf = (key: string, fallback: number) => {
       const row = rows.find((r) => r.key === key);
@@ -52,7 +52,7 @@ export const memberNumberingRepository = {
       p_increment: config.increment,
       p_padding_width: config.padding_width,
     });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
   /** Every active branch's counter — one row per branch, since the counter never resets

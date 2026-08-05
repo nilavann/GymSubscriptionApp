@@ -36,7 +36,7 @@ export const reportRepository = {
       .select(ITEM_SELECT)
       .gte('start_date', startDate)
       .lte('start_date', endDate);
-    if (itemsError) throw itemsError;
+    if (itemsError) throw new Error(itemsError.message);
     const rows = (items ?? []) as unknown as RawItem[];
     if (rows.length === 0) return [];
 

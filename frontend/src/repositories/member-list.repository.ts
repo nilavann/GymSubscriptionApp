@@ -16,7 +16,7 @@ export const memberListRepository = {
       .from('member_list_view')
       .select(MEMBER_LIST_SELECT)
       .order('date_of_joining', { ascending: false });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return resolvePhotoUrls((data ?? []) as unknown as MemberListRow[]);
   },
 };

@@ -58,6 +58,9 @@ export function MemberDetailPage() {
   const startInEditMode = location.pathname.endsWith('/edit');
   const { memberRepository, memberService, subscriptionRepository, planRepository, profileRepository, memberListRepository } =
     useServices();
+  /** Set by RenewSubscriptionPage on success navigation (renew-checkout-page.md §7's "toast" — no
+   * app-wide toast system exists yet, so a dismissible banner fills that role here). */
+  const [successMessage, setSuccessMessage] = useState<string | null>((location.state as { toast?: string } | null)?.toast ?? null);
 
   const [member, setMember] = useState<Member | null>(null);
   const [currentItems, setCurrentItems] = useState<MemberCurrentItem[]>([]);
@@ -351,6 +354,15 @@ export function MemberDetailPage() {
           Members
         </Link>
       </div>
+
+      {successMessage && (
+        <div className="member-detail-banner-success">
+          {successMessage}
+          <button type="button" className="member-detail-banner-dismiss" onClick={() => setSuccessMessage(null)} aria-label="Dismiss">
+            <X size={14} strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       {memberSaveError && <div className="member-detail-banner-error">{memberSaveError}</div>}
 
@@ -788,7 +800,7 @@ export function MemberDetailPage() {
                     return (
                       <>
                         <div className="member-detail-progress-track">
-                          <div className="member-detail-progress-fill" style={{ width: `${pct}%` }} />
+                          <div className="member-detail-progress-fill" style={{ transform: `scaleX(${pct / 100})` }} />
                         </div>
                         <p className="member-detail-progress-label">
                           {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}

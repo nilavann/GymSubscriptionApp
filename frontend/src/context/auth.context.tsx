@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase-client';
+import { supabase, SESSION_EXPIRED_EVENT } from '../lib/supabase-client';
 import { useServices } from './services.context';
 import { withTimeout } from '../lib/with-timeout';
 import type { AuthContextValue } from '../types/auth';
@@ -11,6 +11,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const NOT_INVITED_MESSAGE = "This email hasn't been invited — contact your admin.";
 const DEACTIVATED_MESSAGE = 'Your account has been deactivated. Contact an admin.';
 const VERIFY_ERROR_MESSAGE = "Couldn't verify your account — check your connection and try again.";
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
 
 // The profiles row is created by a database trigger a moment after auth.users
 // gets its row (invite-user flow / Google's first-ever sign-in). One short
@@ -157,6 +158,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [authService, profileRepository]);
+
+  // A 401 on any REST/RPC/Storage/Edge-Function call (authAwareFetch, lib/supabase-client.ts)
+  // means the access token itself is dead — mid-session, not just "not signed in yet". Clearing
+  // currentProfile here makes RequireAuth redirect to /login (same mechanism as the deactivated/
+  // not-invited cases above), and blockedMessage carries the reason there instead of whatever
+  // page was open showing a raw/generic fetch failure. signOut() is best-effort local cleanup —
+  // the server-side session is already invalid either way.
+  useEffect(() => {
+    function handleSessionExpired() {
+      setSession(null);
+      setCurrentProfile(null);
+      setBlockedMessage(SESSION_EXPIRED_MESSAGE);
+      authService.signOut().catch(() => {});
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, [authService]);
 
   async function updatePassword(newPassword: string) {
     await authService.updatePassword(newPassword);

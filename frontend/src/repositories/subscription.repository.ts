@@ -15,7 +15,7 @@ export const subscriptionRepository = {
   /** Live row count for the Settings hub's count-only Subscriptions card (screens.md WSCR-11). */
   async getCount(): Promise<number> {
     const { count, error } = await supabase.from('subscriptions').select('id', { count: 'exact', head: true });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return count ?? 0;
   },
 
@@ -25,7 +25,7 @@ export const subscriptionRepository = {
       .from('member_current_items')
       .select(CURRENT_ITEM_SELECT)
       .eq('member_id', memberId);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return (data ?? []) as unknown as MemberCurrentItem[];
   },
 
@@ -35,7 +35,7 @@ export const subscriptionRepository = {
       .select('id, member_id, payment_mode, notes, created_at')
       .eq('member_id', memberId)
       .order('created_at', { ascending: false });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return (data ?? []) as unknown as Subscription[];
   },
 
@@ -45,7 +45,7 @@ export const subscriptionRepository = {
       .from('subscription_items')
       .select('id, subscription_id, plan_id, member_id, shared_member_id, start_date, end_date, quantity, amount_paid')
       .in('subscription_id', subscriptionIds);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return (data ?? []) as unknown as SubscriptionItem[];
   },
 

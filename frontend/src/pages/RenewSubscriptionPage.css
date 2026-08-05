@@ -1,19 +1,33 @@
 .renew-page {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
+}
+
+.renew-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.375rem;
+}
+
+.renew-title-row h1 {
+  margin: 0;
+  font-size: 1.3125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .renew-back-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-el);
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 9px;
   background: var(--color-neutral-0);
   border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
-  margin-bottom: 0.75rem;
   transition: background-color 0.15s ease;
 }
 
@@ -21,15 +35,16 @@
   background: var(--color-surface-page);
 }
 
+/* Aligns under the heading, not the back button - 32px button + 10px gap. */
 .renew-subtitle {
-  margin: 0.25rem 0 1.25rem;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  margin: 0 0 1.125rem 2.625rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
 }
 
 .renew-skeleton {
   height: 400px;
-  border-radius: var(--radius-el);
+  border-radius: 16px;
   margin-top: 1rem;
   background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
   background-size: 400% 100%;
@@ -78,48 +93,174 @@
   color: var(--color-status-danger-text);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-el);
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
   font-size: 0.85rem;
 }
 
-.renew-items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.renew-item-card {
+/* Card shell - shared by the Payment card, every item card, and the footer. */
+.renew-card {
   background: var(--color-neutral-0);
   border: 1px solid var(--color-border-card);
   border-radius: 16px;
-  padding: 1.1rem 1.25rem;
+  padding: 1.25rem 1.375rem;
+  margin-bottom: 0.875rem;
+}
+
+.renew-section-title {
+  font-size: 0.71875rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.875rem;
+}
+
+.renew-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 0.875rem;
+  row-gap: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .renew-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.renew-field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.375rem;
+}
+
+.renew-field label,
+.renew-field-label {
+  display: block;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.renew-field-optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.renew-required {
+  color: var(--color-status-danger-text-deep);
+}
+
+.renew-field input[type='text'],
+.renew-field input[type='date'],
+.renew-field input[type='number'],
+.renew-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5625rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-input);
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+  outline: none;
+  min-height: 44px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.renew-field input:focus,
+.renew-field select:focus {
+  border-color: var(--tint-accent);
+  box-shadow: 0 0 0 3px var(--tint-focus-ring);
+}
+
+.renew-field input:disabled,
+.renew-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.renew-input-error {
+  border: 1.5px solid var(--color-status-danger-border) !important;
+  background: var(--color-status-danger-bg-subtle) !important;
+}
+
+.renew-error {
+  color: var(--color-status-danger-text-deep);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.renew-helper {
+  color: var(--color-text-muted);
+  font-size: 0.71875rem;
+  margin: 0;
+}
+
+.renew-helper-warning {
+  color: var(--color-status-warning-text-deep);
+}
+
+/* Payment mode segmented chips - three, filling the row. */
+.renew-payment-chip-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.renew-payment-chip {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.5rem 0;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.renew-payment-chip:hover:not(:disabled) {
+  border-color: var(--tint-accent);
+}
+
+.renew-payment-chip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.renew-payment-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.renew-payment-chip-selected {
+  border: 1.5px solid var(--tint-accent);
+  background: var(--tint-card-from);
+  color: var(--tint-accent);
+  font-weight: 600;
+}
+
+/* Item cards */
+.renew-items {
+  display: flex;
+  flex-direction: column;
 }
 
 .renew-item-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.renew-item-title {
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  margin-bottom: 0.875rem;
 }
 
 .renew-category-tag {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.7rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65625rem;
+  font-weight: 600;
 }
 
 .renew-category-tag-membership {
@@ -132,249 +273,320 @@
   color: var(--color-status-warning-text);
 }
 
-.renew-remove-item {
-  min-height: 44px;
-  min-width: 44px;
+.renew-delete-item {
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: none;
+  background: var(--color-neutral-0);
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-el);
-  color: var(--color-status-danger-text);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.renew-remove-item:hover {
-  background: var(--color-status-danger-bg-subtle);
-}
-
-.renew-item-card label,
-.renew-field-label {
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 600;
-  margin-top: 0.5rem;
-}
-
-.renew-item-card input,
-.renew-item-card select,
-.renew-item-card textarea,
-.renew-header-fields textarea {
-  background: var(--color-surface-input);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-el);
-  padding: 0.6rem 0.75rem;
-  font-size: 0.85rem;
-  color: var(--color-text-primary);
-  min-height: 44px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.renew-item-card input:focus,
-.renew-item-card select:focus,
-.renew-item-card textarea:focus,
-.renew-header-fields textarea:focus {
-  outline: none;
-  border-color: var(--tint-accent);
-  box-shadow: 0 0 0 3px var(--tint-focus-ring);
-}
-
-.renew-error {
-  color: var(--color-status-danger-text-deep);
-  font-size: 0.75rem;
-  margin: 0;
-}
-
-.renew-end-date-preview {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  border-radius: 8px;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
-  margin: 0.5rem 0 0;
-  padding: 0.4rem 0.6rem;
-  border: 1px dashed var(--color-border-default);
-  border-radius: var(--radius-el);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+.renew-delete-item:hover:not(:disabled) {
+  background: var(--color-status-danger-bg-subtle);
+  color: var(--color-status-danger-text-deep);
+}
+
+.renew-delete-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Quantity chips */
 .renew-quantity-row {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.renew-quantity-custom {
-  width: 90px;
-}
-
-.renew-chip-row {
-  display: flex;
-  gap: 0.5rem;
+  gap: 0.375rem;
   flex-wrap: wrap;
 }
 
-.renew-chip {
-  min-height: 44px;
-  padding: 0.4rem 0.9rem;
-  border-radius: var(--radius-el);
+.renew-quantity-chip {
+  padding: 0.375rem 0.6875rem;
+  border-radius: 999px;
   border: 1px solid var(--color-border-default);
   background: var(--color-neutral-0);
   color: var(--color-text-secondary);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
-.renew-chip:hover {
+.renew-quantity-chip:hover:not(:disabled) {
   border-color: var(--tint-accent);
 }
 
-.renew-chip:active {
+.renew-quantity-chip:active:not(:disabled) {
   transform: scale(0.96);
 }
 
-.renew-chip-selected {
-  background: var(--tint-pill-bg);
-  border-color: var(--tint-border);
-  color: var(--tint-accent);
-  font-weight: 700;
+.renew-quantity-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.renew-add-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  width: 100%;
-  justify-content: center;
-  background: var(--color-neutral-0);
-  border: 1.5px dashed var(--color-border-default);
-  border-radius: var(--radius-el);
-  padding: 0.6rem;
+.renew-quantity-chip-selected {
+  border: 1.5px solid var(--tint-accent);
+  background: var(--tint-card-from);
+  color: var(--tint-accent);
   font-weight: 600;
-  font-size: 0.85rem;
+}
+
+.renew-quantity-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.renew-quantity-custom-row input {
+  width: 80px;
+  flex: none;
+}
+
+.renew-back-to-presets {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--tint-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+/* End-date preview */
+.renew-end-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.875rem 0 0;
+  padding: 0.5625rem 0.75rem;
+  border-radius: 10px;
+  background: var(--color-surface-input);
+  border: 1px dashed var(--color-border-default);
+  font-size: 0.78125rem;
   color: var(--color-text-secondary);
+}
+
+.renew-end-preview-muted {
+  opacity: 0.6;
+}
+
+/* Overlap warning */
+.renew-overlap-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+  padding: 0.6875rem 0.875rem;
+  border-radius: 10px;
+  background: var(--color-status-warning-bg-subtle);
+  border: 1px solid var(--color-status-warning-border);
+}
+
+.renew-overlap-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-status-warning-text);
+}
+
+.renew-overlap-body p {
+  margin: 0;
+  font-size: 0.78125rem;
+  color: var(--color-status-warning-text-deep);
+  line-height: 1.45;
+}
+
+.renew-overlap-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.renew-overlap-cancel,
+.renew-overlap-save {
+  padding: 0.3125rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.renew-overlap-cancel {
+  border: 1px solid var(--color-status-warning-border);
+  background: var(--color-neutral-0);
+  color: var(--color-status-warning-text-deep);
+}
+
+.renew-overlap-cancel:hover {
+  background: var(--color-status-warning-bg-subtle);
+}
+
+.renew-overlap-save {
+  border: none;
+  background: var(--color-status-warning-text);
+  color: var(--color-text-inverse);
+}
+
+.renew-overlap-save:hover {
+  opacity: 0.92;
+}
+
+.renew-overlap-acknowledged {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Add another item */
+.renew-add-item {
+  width: 100%;
+  padding: 0.75rem 0;
+  border-radius: 14px;
+  border: 1.5px dashed var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
   margin-bottom: 1rem;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.renew-add-item:hover {
+.renew-add-item:hover:not(:disabled) {
   border-color: var(--tint-accent);
   color: var(--tint-accent);
 }
 
-.renew-header-fields {
-  border: 1px solid var(--color-border-card);
-  border-radius: 16px;
-  padding: 1.1rem 1.25rem;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  background: var(--color-neutral-0);
+.renew-add-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.renew-header-fields legend {
+/* Network-error banner */
+.renew-network-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--color-status-warning-bg-subtle);
+  border: 1px solid var(--color-status-warning-border);
+  color: var(--color-status-warning-text);
+  margin-bottom: 0.875rem;
+}
+
+.renew-network-banner-body p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-status-warning-text-deep);
+  line-height: 1.4;
+}
+
+.renew-retry-save {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.375rem;
+  color: var(--color-status-warning-text-deep);
+  font-size: 0.8125rem;
   font-weight: 700;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  padding: 0 0.35rem;
+  cursor: pointer;
+  text-decoration: underline;
+  min-height: 44px;
 }
 
-.renew-header-fields textarea {
-  resize: vertical;
-}
-
-/* Footer total card */
-
+/* Footer */
 .renew-footer-card {
-  background: var(--color-neutral-0);
-  border: 1px solid var(--color-border-card);
-  border-radius: 16px;
-  padding: 1.1rem 1.25rem;
-  margin-bottom: 2rem;
-}
-
-.renew-footer-total {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.375rem;
 }
 
-.renew-footer-total-amount {
-  font-size: 1.2rem;
+.renew-footer-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.renew-footer-amount {
+  margin: 0;
+  font-size: 1.1875rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
-.renew-footer-gate {
-  margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+.renew-footer-validity {
+  margin: 0.125rem 0 0;
+  font-size: 0.71875rem;
   color: var(--color-status-danger-text-deep);
 }
 
-.renew-footer-gate-ok {
+.renew-footer-validity-ok {
   color: var(--color-status-success-text);
 }
 
-.renew-actions {
+.renew-footer-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.625rem;
 }
 
-.renew-cancel,
-.renew-submit {
+.renew-footer-cancel,
+.renew-footer-submit {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
   min-height: 44px;
-  border-radius: var(--radius-el);
-  padding: 0.75rem 1.75rem;
-  font-size: 0.85rem;
+  border-radius: 10px;
+  padding: 0.5625rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
-.renew-cancel {
+.renew-footer-cancel {
   background: var(--color-neutral-0);
   border: 1px solid var(--color-border-default);
   color: var(--color-text-secondary);
 }
 
-.renew-cancel:hover:not(:disabled) {
+.renew-footer-cancel:hover:not(:disabled) {
   background: var(--color-surface-page);
 }
 
-.renew-cancel:disabled {
+.renew-footer-cancel:disabled {
   color: var(--color-text-disabled);
   cursor: not-allowed;
 }
 
-.renew-submit {
+.renew-footer-submit {
   background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
   color: var(--color-text-inverse);
   border: none;
-  box-shadow: 0 1px 3px var(--color-shadow);
+  box-shadow: 0 4px 10px var(--color-shadow);
 }
 
-.renew-submit:hover:not(:disabled) {
+.renew-footer-submit:hover:not(:disabled) {
   opacity: 0.92;
 }
 
-.renew-submit:disabled {
+.renew-footer-submit:disabled {
   background: var(--color-interactive-disabled-bg);
+  background-image: none;
   color: var(--color-interactive-disabled-text);
   cursor: not-allowed;
   box-shadow: none;
+  opacity: 0.5;
 }
 
 @keyframes renew-spin {
@@ -396,81 +608,88 @@
   }
 }
 
-/* Overlap warning dialog - full-width on mobile per subscription-management.md §3.3,
-   not a narrow centered modal that squeezes its own buttons. */
-.renew-overlap-backdrop {
+/* Discard-changes confirmation */
+.renew-confirm-backdrop {
   position: fixed;
   inset: 0;
   background: var(--color-backdrop);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 50;
-  padding: 0;
+  padding: 1.5rem;
 }
 
-.renew-overlap-dialog {
+.renew-confirm-dialog {
   background: var(--color-neutral-0);
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  border-radius: var(--radius-card);
   padding: 1.5rem;
   width: 100%;
-  max-width: 720px;
-  box-shadow: 0 -8px 24px var(--color-shadow);
-  animation: renew-overlap-in 0.2s ease;
+  max-width: 420px;
+  box-shadow: 0 20px 40px var(--color-shadow);
 }
 
-@keyframes renew-overlap-in {
-  from {
-    transform: translateY(16px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.renew-overlap-dialog h2 {
+.renew-confirm-dialog h2 {
   margin-top: 0;
 }
 
-.renew-overlap-dialog ul {
-  padding-left: 1.25rem;
+.renew-confirm-dialog p {
   color: var(--color-text-secondary);
 }
 
-.renew-overlap-actions {
+.renew-confirm-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1rem;
 }
 
-/* Denser row-per-item layout on desktop, per subscription-management.md §3.3 - fields
-   wrap onto a second line within the row rather than clipping or forcing a horizontal
-   scroll, never a literal table. */
-@media (min-width: 768px) {
-  .renew-item-card {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    column-gap: 1rem;
-    align-items: start;
+.renew-discard-confirm {
+  min-height: 44px;
+  border-radius: var(--radius-el);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: var(--color-status-danger-text-deep);
+  color: var(--color-text-inverse);
+  transition: opacity 0.15s ease;
+}
+
+.renew-discard-confirm:hover {
+  opacity: 0.9;
+}
+
+/* <= 860px: app-level bottom tab bar appears - clear it. */
+@media (max-width: 860px) {
+  .renew-page {
+    padding-bottom: 72px;
+  }
+}
+
+/* <= 640px: quantity chips grow for touch, footer stacks with buttons sharing the row. */
+@media (max-width: 640px) {
+  .renew-delete-item {
+    width: 36px;
+    height: 36px;
   }
 
-  .renew-item-header {
-    grid-column: 1 / -1;
+  .renew-quantity-chip {
+    padding: 0.5625rem 0.8125rem;
   }
 
-  .renew-end-date-preview {
-    grid-column: 1 / -1;
+  .renew-footer-card {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .renew-overlap-backdrop {
-    align-items: center;
-    padding: 1.5rem;
+  .renew-footer-actions {
+    width: 100%;
   }
 
-  .renew-overlap-dialog {
-    border-radius: var(--radius-card);
+  .renew-footer-cancel,
+  .renew-footer-submit {
+    flex: 1;
   }
 }

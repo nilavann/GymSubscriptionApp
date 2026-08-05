@@ -22,25 +22,25 @@ export const roleRepository = {
   /** Live row count for the Settings hub's Data Management card (screens.md WSCR-11). */
   async getCount(): Promise<number> {
     const { count, error } = await supabase.from('roles').select('id', { count: 'exact', head: true });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return count ?? 0;
   },
 
   async getAllActive(): Promise<Role[]> {
     const { data, error } = await supabase.from('roles').select(ROLE_SELECT).order('name');
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return (data ?? []) as unknown as Role[];
   },
 
   async create(data: NewRole): Promise<Role> {
     const { data: created, error } = await supabase.from('roles').insert(data).select(ROLE_SELECT).single();
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return created as unknown as Role;
   },
 
   async update(id: number, data: UpdateRole): Promise<void> {
     const { error } = await supabase.from('roles').update(data).eq('id', id);
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
   async delete(id: number): Promise<void> {

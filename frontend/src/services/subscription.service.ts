@@ -1,36 +1,38 @@
 import { addDays, todayDate } from '../lib/datetime';
-import type { Plan } from '../types/plan';
+import type { Plan, PlanCategory } from '../types/plan';
 import type { MemberCurrentItem } from '../types/member-current-item';
 
-/** One in-progress item in the checkout being built — see spec/frontend/subscription-management.md §2. */
+/** One in-progress item in the checkout being built — see frontend/src/renew-checkout-page.md §4. */
 export interface CheckoutItemDraft {
   key: string;
+  /** Fixed at creation — governs which plans the item's Plan select offers. */
+  category: PlanCategory;
   plan_id: number | '';
   start_date: string;
-  quantity: number | '';
+  quantity: number;
+  /** Whether the Quantity field is showing the custom number input instead of the preset chips. */
+  isCustomQuantity: boolean;
   amount_paid: number | '';
-  /** Once true, plan/quantity changes stop overwriting amount_paid — same "smart default,
-   * always overridable" rule the create-subscription Edge Function itself uses. */
-  amountTouched: boolean;
-  shared_member_id: number | '';
+  /** Set by the item's own "Save anyway" — silences its overlap warning until the item changes again. */
+  overlapAcknowledged: boolean;
 }
 
-export function newCheckoutItem(): CheckoutItemDraft {
+export function newCheckoutItem(category: PlanCategory): CheckoutItemDraft {
   return {
     key: crypto.randomUUID(),
+    category,
     plan_id: '',
     start_date: todayDate(),
     quantity: 1,
+    isCustomQuantity: false,
     amount_paid: '',
-    amountTouched: false,
-    shared_member_id: '',
+    overlapAcknowledged: false,
   };
 }
 
 /**
- * Renewal Start Date Default (spec/frontend/subscription-management.md §4) — per item,
- * scoped the same way the overlap check (below) is scoped: membership items look at any
- * current membership item; add-on items look at a current item of the same plan only.
+ * Renewal Start Date Default (§4) — a Membership item looks at any current membership item;
+ * an Add-on item looks at a current item of that same add-on plan only.
  */
 export function defaultStartDateForPlan(plan: Plan, currentItems: MemberCurrentItem[]): string {
   const candidates =
@@ -67,32 +69,22 @@ export interface CheckoutItemErrors {
   start_date?: string;
   quantity?: string;
   amount_paid?: string;
-  shared_member_id?: string;
 }
 
-/**
- * Per-item validation, client-side only, mirrors create-subscription's own checks for
- * instant feedback (backend spec §4 steps 3b/3e). `memberId` is the member this whole
- * checkout is for — needed to reject a shared_member_id that's just the member themself
- * (chk_subscription_item_shared_member_distinct enforces this server-side too).
- */
-export function validateCheckoutItem(item: CheckoutItemDraft, plan: Plan | undefined, memberId: number): CheckoutItemErrors {
+/** Per-item validation, client-side only, mirrors create-subscription's own checks for instant feedback. */
+export function validateCheckoutItem(item: CheckoutItemDraft, plan: Plan | undefined): CheckoutItemErrors {
   const errors: CheckoutItemErrors = {};
   if (item.plan_id === '') errors.plan_id = 'Select a plan';
   if (!item.start_date) errors.start_date = 'Select a start date';
 
   if (plan && plan.duration_days !== null) {
-    if (item.quantity === '' || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       errors.quantity = 'Enter a valid quantity';
     }
   }
 
   if (item.amount_paid === '' || item.amount_paid < 0) {
     errors.amount_paid = 'Enter a valid amount';
-  }
-
-  if (item.shared_member_id !== '' && item.shared_member_id === memberId) {
-    errors.shared_member_id = 'Shared member cannot be the same as the member this checkout is for';
   }
 
   return errors;
@@ -102,11 +94,27 @@ export function isCheckoutValid(itemErrors: CheckoutItemErrors[], membershipItem
   return membershipItemCount === 1 && itemErrors.every((errors) => Object.keys(errors).length === 0);
 }
 
-export interface OverlapConflict {
-  itemKey: string;
-  planName: string;
-  existingStartDate: string;
-  existingEndDate: string | null;
+/**
+ * Default state (§7): the Membership item is prefilled from the member's current membership,
+ * and an Add-on card is added for each add-on the member currently has, so "Renew" reads as
+ * "renew what they already have" rather than a blank form.
+ */
+export function buildInitialCheckoutItems(currentItems: MemberCurrentItem[], plans: Plan[]): CheckoutItemDraft[] {
+  const planById = new Map(plans.map((p) => [p.id, p]));
+  const currentMembership = currentItems.find((item) => item.category === 'membership');
+  const currentAddons = currentItems.filter((item) => item.category === 'addon');
+
+  function prefill(category: PlanCategory, current: MemberCurrentItem | undefined): CheckoutItemDraft {
+    const item = newCheckoutItem(category);
+    const plan = current ? planById.get(current.plan_id) : undefined;
+    if (!plan) return item;
+    item.plan_id = plan.id;
+    item.start_date = defaultStartDateForPlan(plan, currentItems);
+    item.amount_paid = defaultAmountPaid(plan, item.quantity);
+    return item;
+  }
+
+  return [prefill('membership', currentMembership), ...currentAddons.map((addon) => prefill('addon', addon))];
 }
 
 function rangesOverlap(aStart: string, aEnd: string | null, bStart: string, bEnd: string | null): boolean {
@@ -115,61 +123,46 @@ function rangesOverlap(aStart: string, aEnd: string | null, bStart: string, bEnd
   return aStart <= bEndOrInfinity && bStart <= aEndOrInfinity;
 }
 
+export interface ItemOverlapConflict {
+  planName: string;
+  existingEndDate: string | null;
+}
+
 /**
- * Overlap Warning (REQ-SUB-005/008, subscription-management.md §5) — entirely client-side,
- * no backend equivalent. Checks each item against the member's existing current items and
- * every other item already added in this same in-progress checkout.
+ * Overlap Warning (§4) — plan-scoped per the spec ("overlaps with an existing active
+ * subscription of the same plan"), checked against both the member's current items and
+ * every other item already in this same in-progress checkout. Returns the first conflict
+ * found; the UI only ever surfaces one at a time per item.
  */
-export function findOverlapConflicts(
+export function findItemOverlap(
+  item: CheckoutItemDraft,
   items: CheckoutItemDraft[],
   planById: Map<number, Plan>,
   currentItems: MemberCurrentItem[]
-): OverlapConflict[] {
-  const conflicts: OverlapConflict[] = [];
+): ItemOverlapConflict | null {
+  if (item.plan_id === '' || !item.start_date) return null;
+  const plan = planById.get(item.plan_id);
+  if (!plan) return null;
+  const endDate = previewEndDate(plan, item.start_date, item.quantity);
 
-  items.forEach((item, index) => {
-    if (item.plan_id === '' || !item.start_date) return;
-    const plan = planById.get(item.plan_id);
-    if (!plan) return;
-    const quantity = item.quantity === '' ? 1 : item.quantity;
-    const endDate = previewEndDate(plan, item.start_date, quantity);
+  const existingConflict = currentItems.find(
+    (existing) => existing.plan_id === item.plan_id && rangesOverlap(item.start_date, endDate, existing.start_date, existing.end_date)
+  );
+  if (existingConflict) {
+    return { planName: existingConflict.plan_name, existingEndDate: existingConflict.end_date };
+  }
 
-    const conflictsWithExisting = currentItems.filter((existing) =>
-      plan.category === 'membership' ? existing.category === 'membership' : existing.plan_id === plan.id
-    );
-    for (const existing of conflictsWithExisting) {
-      if (rangesOverlap(item.start_date, endDate, existing.start_date, existing.end_date)) {
-        conflicts.push({
-          itemKey: item.key,
-          planName: existing.plan_name,
-          existingStartDate: existing.start_date,
-          existingEndDate: existing.end_date,
-        });
-      }
+  for (const other of items) {
+    if (other.key === item.key || other.plan_id !== item.plan_id || !other.start_date) continue;
+    const otherPlan = planById.get(other.plan_id);
+    if (!otherPlan) continue;
+    const otherEndDate = previewEndDate(otherPlan, other.start_date, other.quantity);
+    if (rangesOverlap(item.start_date, endDate, other.start_date, otherEndDate)) {
+      return { planName: otherPlan.name, existingEndDate: otherEndDate };
     }
+  }
 
-    // Same in-progress checkout - only compare against earlier items to avoid reporting each pair twice.
-    for (let otherIndex = 0; otherIndex < index; otherIndex++) {
-      const other = items[otherIndex];
-      if (other.plan_id === '' || !other.start_date) continue;
-      const otherPlan = planById.get(other.plan_id);
-      if (!otherPlan) continue;
-      const sameScope = plan.category === 'membership' ? otherPlan.category === 'membership' : otherPlan.id === plan.id;
-      if (!sameScope) continue;
-      const otherQuantity = other.quantity === '' ? 1 : other.quantity;
-      const otherEndDate = previewEndDate(otherPlan, other.start_date, otherQuantity);
-      if (rangesOverlap(item.start_date, endDate, other.start_date, otherEndDate)) {
-        conflicts.push({
-          itemKey: item.key,
-          planName: otherPlan.name,
-          existingStartDate: other.start_date,
-          existingEndDate: otherEndDate,
-        });
-      }
-    }
-  });
-
-  return conflicts;
+  return null;
 }
 
 export type SubscriptionService = typeof subscriptionService;
@@ -181,5 +174,6 @@ export const subscriptionService = {
   defaultAmountPaid,
   validateCheckoutItem,
   isCheckoutValid,
-  findOverlapConflicts,
+  findItemOverlap,
+  buildInitialCheckoutItems,
 };

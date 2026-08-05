@@ -83,7 +83,7 @@ export const auditLogRepository = {
   /** Live row count for the Settings hub's Data Management card (screens.md WSCR-11). */
   async getCount(): Promise<number> {
     const { count, error } = await supabase.from('audit_log').select('id', { count: 'exact', head: true });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return count ?? 0;
   },
 
@@ -101,7 +101,7 @@ export const auditLogRepository = {
     if (filters.changedBy) query = query.eq('changed_by', filters.changedBy);
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     const rows = (data ?? []) as unknown as RawEntry[];
     const truncated = rows.length > MAX_ROWS;
     const page = truncated ? rows.slice(0, MAX_ROWS) : rows;
@@ -111,7 +111,7 @@ export const auditLogRepository = {
       changerIds.length > 0
         ? await supabase.from('profiles').select('id, full_name').in('id', changerIds)
         : { data: [], error: null };
-    if (profilesError) throw profilesError;
+    if (profilesError) throw new Error(profilesError.message);
     const nameMap = new Map(((profiles ?? []) as { id: string; full_name: string }[]).map((p) => [p.id, p.full_name]));
 
     return {
