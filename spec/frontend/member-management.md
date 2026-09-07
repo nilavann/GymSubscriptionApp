@@ -114,7 +114,7 @@ Same field set as Add Member (§3.1) — `handled_by_staff` included, same as it
 | Breakpoint | Layout |
 |---|---|
 | `< 768px` | Always stacked member cards, regardless of the view toggle below (a table doesn't fit a phone screen) — avatar, name, member number, plan · phone, expiry line, status badge, Renew/View actions |
-| `>= 768px` | User's chosen view (§View toggle below) — data table (Avatar+Name, Member #, Phone, Plan, Expiry, Status, Actions; sortable by column header) by default, or the same stacked cards used on mobile |
+| `>= 768px` | User's chosen view (§View toggle below) — data table (Avatar+Name, Member #, Phone, Plan, Expiry, Status, Actions; sortable by column header) by default, or the same cards used on mobile laid out as a grid (2 columns `768–1023px`, 3 columns `>= 1024px`) rather than a single full-width column — a lone full-width card per row would waste most of a desktop viewport |
 
 Member number was previously only usable via search (§Search below), not visible in the list itself — added as its own column/line since staff need it to cross-reference a member without opening their detail page (e.g. matching a paper receipt or a phone call asking "what's my member number").
 

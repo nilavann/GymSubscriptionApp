@@ -619,6 +619,14 @@
     display: none;
   }
 
+  /* Desktop Cards view is a grid, not the mobile single-column stack - a lone full-width
+     card per row would waste most of a desktop viewport's width. */
+  .members-page[data-view='cards'] .members-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
   .members-controls-row {
     align-items: center;
   }
@@ -708,5 +716,11 @@
 
   .members-table-actions-cell {
     width: 148px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .members-page[data-view='cards'] .members-cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
