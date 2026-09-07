@@ -57,7 +57,7 @@
 }
 
 .member-detail-back-link:hover {
-  color: var(--tint-accent);
+  color: var(--tint-ink);
 }
 
 .member-detail-header {
@@ -305,7 +305,7 @@
 .member-detail-inline-retry {
   background: none;
   border: none;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
@@ -406,7 +406,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   margin: 0 0 0.75rem;
 }
 
@@ -568,7 +568,7 @@
 .member-detail-chip-selected {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-weight: 700;
 }
 
@@ -646,17 +646,7 @@
   background: var(--color-status-danger-bg-subtle);
 }
 
-/* Current Membership / Add-ons */
-
-.member-detail-empty {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-}
+/* Current Add-ons / Subscription History */
 
 .member-detail-empty-inline {
   color: var(--color-text-secondary);
@@ -682,19 +672,6 @@
 
 .member-detail-add-sub-link:hover {
   background: var(--color-surface-page);
-}
-
-/* Current-membership card sits on the tint gradient with an accent section title
-   (frontend/mockups/README.md's Member Detail spec). */
-.member-detail-column-right > .member-detail-section:first-child {
-  background: linear-gradient(to bottom, var(--tint-card-from), var(--tint-card-to));
-  border-color: var(--tint-border);
-}
-
-.member-detail-item-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
 }
 
 .member-detail-item-card-top {
@@ -765,6 +742,53 @@
 
 .member-detail-renew-button:hover {
   opacity: 0.92;
+}
+
+.member-detail-renew-button-danger {
+  background: var(--color-status-danger-text);
+}
+
+/* Merged profile+membership card's lower strip (v2 - design_handoff_flexhub_v2/README.md
+   §4) - a full-width row wrapping onto its own line inside .member-detail-hero's flex-wrap
+   layout, its background/border switching on membership state (active/expired/no plan). */
+.member-detail-membership-strip {
+  flex-basis: 100%;
+  border-radius: var(--radius-el);
+  padding: 1rem;
+  margin-top: 0.25rem;
+}
+
+.member-detail-membership-strip-active {
+  background: linear-gradient(to bottom, var(--tint-card-from), var(--tint-card-to));
+  border: 1px solid var(--tint-border);
+}
+
+.member-detail-membership-strip-expired {
+  background: var(--color-status-danger-bg-subtle);
+  border: 1px solid var(--color-status-danger-border);
+}
+
+.member-detail-strip-blocked {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-status-danger-text);
+}
+
+.member-detail-membership-strip-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--color-neutral-300);
+  background: var(--color-neutral-75);
+}
+
+.member-detail-strip-empty-text {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 .member-detail-addon-list {
@@ -841,7 +865,7 @@
   background: none;
   border: none;
   font-size: 0.78rem;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   cursor: pointer;
   padding: 0 0.5rem;
 }

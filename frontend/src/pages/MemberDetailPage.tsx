@@ -451,6 +451,65 @@ export function MemberDetailPage() {
             </>
           )}
         </div>
+
+        {/* Merged profile+membership card (v2 - design_handoff_flexhub_v2/README.md §4):
+            a lower "strip" whose state (active/expired/no plan) follows the same
+            currentMembershipItem/status this page already derives - the header status
+            badge above uses the exact same status, so the two never disagree. */}
+        {!currentMembershipItem ? (
+          <div className="member-detail-membership-strip member-detail-membership-strip-none">
+            <p className="member-detail-strip-empty-text">No active membership</p>
+            <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
+              <Plus size={16} strokeWidth={2} />
+              Add membership
+            </Link>
+          </div>
+        ) : status === 'expired' ? (
+          <div className="member-detail-membership-strip member-detail-membership-strip-expired">
+            <div className="member-detail-item-card-top">
+              <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
+              <Link
+                to={`/members/${member.id}/renew`}
+                className="member-detail-renew-button member-detail-renew-button-danger"
+              >
+                Renew now
+              </Link>
+            </div>
+            <p className="member-detail-item-detail">
+              {formatDate(currentMembershipItem.start_date)} –{' '}
+              {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
+            </p>
+            <p className="member-detail-strip-blocked">Entry blocked at the gate</p>
+          </div>
+        ) : (
+          <div className="member-detail-membership-strip member-detail-membership-strip-active">
+            <div className="member-detail-item-card-top">
+              <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
+              <Link to={`/members/${member.id}/renew`} className="member-detail-renew-button">
+                Renew
+              </Link>
+            </div>
+            <p className="member-detail-item-detail">
+              {formatDate(currentMembershipItem.start_date)} –{' '}
+              {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
+            </p>
+            <p className="member-detail-item-amount">₹{currentMembershipItem.amount_paid}</p>
+            {currentMembershipItem.end_date &&
+              (() => {
+                const { pct, daysRemaining } = membershipProgress(currentMembershipItem.start_date, currentMembershipItem.end_date);
+                return (
+                  <>
+                    <div className="member-detail-progress-track">
+                      <div className="member-detail-progress-fill" style={{ transform: `scaleX(${pct / 100})` }} />
+                    </div>
+                    <p className="member-detail-progress-label">
+                      {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expiring'}
+                    </p>
+                  </>
+                );
+              })()}
+          </div>
+        )}
       </div>
 
       <div className="member-detail-columns">
@@ -782,49 +841,6 @@ export function MemberDetailPage() {
         </div>
 
         <div className="member-detail-column-right">
-          <section className="member-detail-section">
-            <h2 className="member-detail-section-title">Current Membership</h2>
-            {!currentMembershipItem ? (
-              <div className="member-detail-empty">
-                <p>No active membership</p>
-                <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
-                  <Plus size={16} strokeWidth={2} />
-                  Add Subscription
-                </Link>
-              </div>
-            ) : (
-              <div className="member-detail-item-card">
-                <div className="member-detail-item-card-top">
-                  <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
-                  <Link to={`/members/${member.id}/renew`} className="member-detail-renew-button">
-                    Renew
-                  </Link>
-                </div>
-                <p className="member-detail-item-detail">
-                  {formatDate(currentMembershipItem.start_date)} –{' '}
-                  {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
-                  {'  '}
-                  <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
-                </p>
-                <p className="member-detail-item-amount">₹{currentMembershipItem.amount_paid}</p>
-                {currentMembershipItem.end_date &&
-                  (() => {
-                    const { pct, daysRemaining } = membershipProgress(currentMembershipItem.start_date, currentMembershipItem.end_date);
-                    return (
-                      <>
-                        <div className="member-detail-progress-track">
-                          <div className="member-detail-progress-fill" style={{ transform: `scaleX(${pct / 100})` }} />
-                        </div>
-                        <p className="member-detail-progress-label">
-                          {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}
-                        </p>
-                      </>
-                    );
-                  })()}
-              </div>
-            )}
-          </section>
-
           {currentAddonItems.length > 0 && (
             <section className="member-detail-section">
               <h2 className="member-detail-section-title">Current Add-ons</h2>
