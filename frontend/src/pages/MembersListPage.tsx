@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, SlidersHorizontal, Pencil, RefreshCw, X, WifiOff } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, RefreshCw, Repeat, Eye, Table, LayoutGrid, X, WifiOff } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { formatDate } from '../lib/datetime';
@@ -18,6 +18,7 @@ const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
 type SortOption = 'join-date' | 'name' | 'expiry';
 type StatusPill = 'all' | MemberStatus;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
+type ViewMode = 'table' | 'cards';
 
 function matchesSearch(row: MemberListRow, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -41,6 +42,9 @@ export function MembersListPage() {
   const [search, setSearch] = useState('');
   const [statusPill, setStatusPill] = useState<StatusPill>('all');
   const [sort, setSort] = useState<SortOption>('join-date');
+  // Desktop-only preference (>=768px) - below that, cards render regardless of this state
+  // (a table doesn't fit a phone screen), see the CSS ".members-page[data-view] " gating.
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedGenders, setSelectedGenders] = useState<Gender[]>([]);
   const [selectedAddonPlanIds, setSelectedAddonPlanIds] = useState<number[]>([]);
@@ -179,7 +183,7 @@ export function MembersListPage() {
   const hasNoResults = !hasNoMembersAtAll && filteredRows.length === 0;
 
   return (
-    <div className="members-page">
+    <div className="members-page" data-view={viewMode}>
       <div className="members-page-header">
         <h1>Members</h1>
         <Link to="/members/new" className="members-add-link">
@@ -238,6 +242,29 @@ export function MembersListPage() {
                 Filters
                 {activeFilterCount > 0 && <span className="members-filter-toggle-count">{activeFilterCount}</span>}
               </button>
+
+              <div className="members-view-toggle" role="group" aria-label="View">
+                <button
+                  type="button"
+                  className={`members-view-toggle-btn${viewMode === 'table' ? ' members-view-toggle-btn-active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                  aria-pressed={viewMode === 'table'}
+                  aria-label="Table view"
+                  title="Table view"
+                >
+                  <Table size={16} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  className={`members-view-toggle-btn${viewMode === 'cards' ? ' members-view-toggle-btn-active' : ''}`}
+                  onClick={() => setViewMode('cards')}
+                  aria-pressed={viewMode === 'cards'}
+                  aria-label="Cards view"
+                  title="Cards view"
+                >
+                  <LayoutGrid size={16} strokeWidth={2} />
+                </button>
+              </div>
             </div>
 
             {(selectedGenders.length > 0 || selectedPlanIds.length > 0 || selectedAddonPlanIds.length > 0) && (
@@ -411,18 +438,33 @@ export function MembersListPage() {
                     <td>
                       <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
                     </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="members-edit-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/members/${row.id}/edit`);
-                        }}
-                        aria-label={`Edit ${row.name}`}
-                      >
-                        <Pencil size={14} strokeWidth={2} />
-                      </button>
+                    <td className="members-table-actions-cell">
+                      <div className="members-row-actions">
+                        <button
+                          type="button"
+                          className="members-row-renew"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/members/${row.id}/renew`);
+                          }}
+                          aria-label={`Renew ${row.name}`}
+                        >
+                          <Repeat size={14} strokeWidth={2} />
+                          Renew
+                        </button>
+                        <button
+                          type="button"
+                          className="members-row-view"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/members/${row.id}`);
+                          }}
+                          aria-label={`View ${row.name}`}
+                        >
+                          <Eye size={14} strokeWidth={2} />
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -476,24 +518,41 @@ function MemberCard({ row, onOpen, onEnlargePhoto }: { row: MemberListRow; onOpe
       <Avatar row={row} onEnlarge={onEnlargePhoto} />
       <div className="members-card-body">
         <div className="members-card-top">
-          <span className="members-card-name">{row.name}</span>
-          <button
-            type="button"
-            className="members-edit-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/members/${row.id}/edit`);
-            }}
-            aria-label={`Edit ${row.name}`}
-          >
-            <Pencil size={14} strokeWidth={2} />
-          </button>
+          <span className="members-card-name" title={row.name}>
+            {row.name}
+          </span>
         </div>
         <p className="members-card-number">{row.member_number}</p>
         <p className="members-card-secondary">{secondaryLine}</p>
         <div className="members-card-bottom">
           <span className={`members-card-expiry status-text-${status}`}>{expiryLine}</span>
           <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+        </div>
+        <div className="members-row-actions members-card-actions">
+          <button
+            type="button"
+            className="members-row-renew"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/members/${row.id}/renew`);
+            }}
+            aria-label={`Renew ${row.name}`}
+          >
+            <Repeat size={14} strokeWidth={2} />
+            Renew
+          </button>
+          <button
+            type="button"
+            className="members-row-view"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/members/${row.id}`);
+            }}
+            aria-label={`View ${row.name}`}
+          >
+            <Eye size={14} strokeWidth={2} />
+            View
+          </button>
         </div>
       </div>
     </div>
