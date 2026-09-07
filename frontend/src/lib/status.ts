@@ -1,7 +1,9 @@
 import { todayDate } from './datetime';
 import type { MemberListRow, MemberStatus } from '../types/member-list';
 
-const EXPIRING_SOON_THRESHOLD_DAYS = 7;
+// Exported (not just module-private) so lib/action-center.ts's amber-tier split (<=7d vs
+// 8-30d) reuses the same threshold instead of duplicating the constant.
+export const EXPIRING_SOON_THRESHOLD_DAYS = 7;
 
 function daysBetween(from: string, to: string): number {
   const [fy, fm, fd] = from.split('-').map(Number);

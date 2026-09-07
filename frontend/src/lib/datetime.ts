@@ -20,6 +20,14 @@ export function addDays(date: string, days: number): string {
   return result.toISOString().slice(0, 10);
 }
 
+/** Calendar-month arithmetic (negative `months` goes backward) — e.g. Action Center's "12 months ago" window bound. */
+export function addMonths(date: string, months: number): string {
+  const [year, month, day] = date.split('-').map(Number);
+  const result = new Date(Date.UTC(year, month - 1, day));
+  result.setUTCMonth(result.getUTCMonth() + months);
+  return result.toISOString().slice(0, 10);
+}
+
 /** UTC datetime (timestamptz) -> local human-readable string, e.g. "27 Jun 2026, 3:04 PM". */
 export function toLocalDisplay(utc: string): string {
   return new Date(utc).toLocaleString(undefined, {

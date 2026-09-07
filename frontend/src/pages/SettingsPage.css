@@ -24,7 +24,7 @@
   min-width: 52px;
   border-radius: var(--radius-tile);
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -74,7 +74,7 @@
 
 .settings-role-admin {
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
 }
 
 .settings-role-staff {
@@ -209,31 +209,17 @@
 }
 
 /* Tint preview dots — deliberately literal hexes (not the live --tint-* vars) so every
-   option shows its own color regardless of which tint is currently active. */
+   option shows its own color regardless of which tint is currently active. CTA is folded
+   into tint in v2 (design_handoff_flexhub_v2/README.md §Theming), so there's no separate
+   CTA swatch row/preview anymore. */
+.settings-theme-swatch[data-tint-preview='wild']::before {
+  background: #ff5a2c;
+}
 .settings-theme-swatch[data-tint-preview='sky']::before {
   background: #2563eb;
 }
 .settings-theme-swatch[data-tint-preview='violet']::before {
   background: #7c3aed;
-}
-.settings-theme-swatch[data-tint-preview='emerald']::before {
-  background: #059669;
-}
-.settings-theme-swatch[data-tint-preview='amber']::before {
-  background: #b45309;
-}
-.settings-theme-swatch[data-tint-preview='rose']::before {
-  background: #be123c;
-}
-
-.settings-theme-swatch[data-cta-preview='charcoal']::before {
-  background: linear-gradient(to bottom, #374151, #111827);
-}
-.settings-theme-swatch[data-cta-preview='orange']::before {
-  background: linear-gradient(to bottom, #f97316, #c2410c);
-}
-.settings-theme-swatch[data-cta-preview='blue']::before {
-  background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
 }
 
 /* Data Management cards */
@@ -286,7 +272,7 @@
   right: 1.1rem;
   font-weight: 700;
   font-size: 1.15rem;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-variant-numeric: tabular-nums;
 }
 

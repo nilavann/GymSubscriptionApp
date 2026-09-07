@@ -1,29 +1,30 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-// The three theme axes from frontend/mockups/README.md §Theming (tint / cta / radius) —
+// The two theme axes from design_handoff_flexhub_v2/README.md §Theming (tint / radius) —
 // implemented as a real runtime-switchable config (not baked into tokens.css as a single
-// fixed look), applied via data-tint/data-cta/data-radius attribute overrides in tokens.css.
-export type Tint = 'sky' | 'violet' | 'emerald' | 'amber' | 'rose';
-export type Cta = 'charcoal' | 'orange' | 'blue';
-export type Radius = 'soft' | 'pill' | 'sharp';
+// fixed look), applied via data-tint/data-radius attribute overrides in tokens.css.
+//
+// v2 note: CTA is no longer an independent axis (each tint now owns its own CTA gradient),
+// and the `pill` radius option is gone — only `soft`/`sharp` remain. `emerald`/`amber`/`rose`
+// tints are gone too (v2 reserves those hues for membership status, not decoration); `wild`
+// is new and is the default.
+export type Tint = 'wild' | 'sky' | 'violet';
+export type Radius = 'soft' | 'sharp';
 
 export interface ThemeConfig {
   tint: Tint;
-  cta: Cta;
   radius: Radius;
 }
 
-const DEFAULT_THEME: ThemeConfig = { tint: 'sky', cta: 'charcoal', radius: 'soft' };
+const DEFAULT_THEME: ThemeConfig = { tint: 'wild', radius: 'soft' };
 
-const TINT_OPTIONS: Tint[] = ['sky', 'violet', 'emerald', 'amber', 'rose'];
-const CTA_OPTIONS: Cta[] = ['charcoal', 'orange', 'blue'];
-const RADIUS_OPTIONS: Radius[] = ['soft', 'pill', 'sharp'];
+const TINT_OPTIONS: Tint[] = ['wild', 'sky', 'violet'];
+const RADIUS_OPTIONS: Radius[] = ['soft', 'sharp'];
 
 const STORAGE_KEY = 'flexhub-theme';
 
 interface ThemeContextValue extends ThemeConfig {
   setTint: (tint: Tint) => void;
-  setCta: (cta: Cta) => void;
   setRadius: (radius: Radius) => void;
 }
 
@@ -33,16 +34,14 @@ function isTint(value: unknown): value is Tint {
   return typeof value === 'string' && (TINT_OPTIONS as string[]).includes(value);
 }
 
-function isCta(value: unknown): value is Cta {
-  return typeof value === 'string' && (CTA_OPTIONS as string[]).includes(value);
-}
-
 function isRadius(value: unknown): value is Radius {
   return typeof value === 'string' && (RADIUS_OPTIONS as string[]).includes(value);
 }
 
 // Reads a possibly-corrupt/older-shape localStorage value defensively — a bad or stale
-// value here should fall back to the default theme, never throw and break the whole app.
+// value here (including a pre-v2 tint like "emerald" or a pre-v2 "pill"/"cta" field) should
+// fall back to the default theme, never throw and break the whole app (README's "guard the
+// lookups" note — a stale stored preference must never white-screen the app).
 function loadStoredTheme(): ThemeConfig {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -50,7 +49,6 @@ function loadStoredTheme(): ThemeConfig {
     const parsed = JSON.parse(raw) as Partial<Record<keyof ThemeConfig, unknown>>;
     return {
       tint: isTint(parsed.tint) ? parsed.tint : DEFAULT_THEME.tint,
-      cta: isCta(parsed.cta) ? parsed.cta : DEFAULT_THEME.cta,
       radius: isRadius(parsed.radius) ? parsed.radius : DEFAULT_THEME.radius,
     };
   } catch {
@@ -64,7 +62,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-tint', theme.tint);
-    root.setAttribute('data-cta', theme.cta);
     root.setAttribute('data-radius', theme.radius);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
   }, [theme]);
@@ -72,7 +69,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const value: ThemeContextValue = {
     ...theme,
     setTint: (tint) => setTheme((prev) => ({ ...prev, tint })),
-    setCta: (cta) => setTheme((prev) => ({ ...prev, cta })),
     setRadius: (radius) => setTheme((prev) => ({ ...prev, radius })),
   };
 
@@ -85,4 +81,4 @@ export function useTheme(): ThemeContextValue {
   return ctx;
 }
 
-export { TINT_OPTIONS, CTA_OPTIONS, RADIUS_OPTIONS };
+export { TINT_OPTIONS, RADIUS_OPTIONS };

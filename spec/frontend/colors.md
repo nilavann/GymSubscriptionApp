@@ -1,131 +1,156 @@
 # UI Design Tokens — Color System — Web Edition
 
 > Part of: [SPEC-WEB.md](../../SPEC-WEB.md) | App: Fit&Fine Gym Subscription Manager (Web)
-> Implementation file: `web/src/styles/tokens.css` (CSS custom properties) + `web/src/constants/colors.ts` (typed TS export for use in JS/inline logic)
+> Implementation file: `frontend/src/styles/tokens.css`
+>
+> **Full rewrite (2026-09-05).** The previous version of this file described a brand-orange
+> token system (`--color-brand-*`, dark nav chrome, PIN-dot rules) that predates two
+> redesigns — the original FlexHub visual redesign (`29c0913`) and the v2 theme-axis rework
+> (`design_handoff_flexhub_v2/README.md`). None of that vocabulary exists in the codebase
+> anymore. This file now describes `tokens.css` as it actually stands.
 
-**Rule:** Never hardcode a hex value in a component file. Always use a CSS custom property (`var(--color-...)`) in stylesheets/CSS Modules, or the `Colors` object in TypeScript when a color must be read in JS (e.g. passed to a canvas/chart library).
+**Rule unchanged:** never hardcode a hex value in a component file. Use a CSS custom property (`var(--color-...)`) — every token below both works as `var(...)` in plain CSS and generates a matching Tailwind utility (`tokens.css`'s `@theme` block — see [styling.md](./styling.md) §3).
 
-The token **names and hex values are unchanged from the mobile app** ([spec/colors.md](../../spec/colors.md)) — this is the same brand, just a different rendering technology. Do not invent new colors without updating both spec files.
+---
+
+## 1. Fixed tokens (`@theme` block — same for every tint/radius choice)
 
 ```css
-/* web/src/styles/tokens.css */
-:root {
-  --color-brand-100: #FF9B70;
-  --color-brand-200: #FF6B35;
-  --color-brand-primary: #E8430A;
-  --color-brand-600: #C0230A;
-  --color-brand-800: #8C1505;
-  --color-brand-tint: #FFF0EA;
-  --color-brand-tint-border: #FFDCCC;
+--color-neutral-900: #111827; /* primary text */
+--color-neutral-600: #475569;
+--color-neutral-500: #6b7280; /* secondary text */
+--color-neutral-400: #9ca3af; /* muted text — disabled states only, see Usage Rules */
+--color-neutral-300: #d1d5db; /* disabled text */
+--color-neutral-200: #e5e7eb; /* control borders */
+--color-neutral-150: #f1f1f3; /* card borders */
+--color-neutral-100: #f5f5f6; /* row dividers */
+--color-neutral-75:  #f9fafb; /* input bg */
+--color-neutral-50:  #f3f4f6; /* page bg */
+--color-neutral-0:   #ffffff;
 
-  --color-neutral-900: #0D0D0D;
-  --color-neutral-800: #1E1E1E;
-  --color-neutral-600: #3A3A3A;
-  --color-neutral-400: #6B6B6B;
-  --color-neutral-200: #BBBBBB;
-  --color-neutral-100: #E0E0E0;
-  --color-neutral-50: #F5F5F5;
-  --color-neutral-0: #FFFFFF;
+/* Categorical/secondary palette — member avatars (lib/avatar.ts), deterministically hashed
+   by member id. Carries no brand or status meaning — never reused for anything semantic. */
+--color-data-1: #2563eb;
+--color-data-2: #7c3aed;
+--color-data-3: #059669;
+--color-data-4: #b45309;
+--color-data-5: #be123c;
+--color-data-6: #0891b2;
 
-  --color-status-success: #1A8C4E;
-  --color-status-success-bg: #E8F5EE;
-  --color-status-success-border: #A8D8BC;
-  --color-status-success-text: #146B3B; /* text on --color-status-success-bg; base success color is only ~3.8:1 there, this reaches ~5.9:1 */
-  --color-status-warning: #D97706;
-  --color-status-warning-text: #B45309;
-  --color-status-warning-bg: #FEF3E2;
-  --color-status-warning-border: #F9D08B;
-  --color-status-danger: #C0230A;
-  --color-status-danger-bg: #FDECEA;
-  --color-status-danger-border: #F4B2AA;
-  --color-status-neutral: #6B6B6B;
-  --color-status-neutral-bg: #F5F5F5;
-  --color-status-neutral-border: #BBBBBB;
+/* Status — a badge strength (chips/pills) and a lighter "subtle" strength (banners/summary
+   cards). Semantic-only — see Usage Rules. */
+--color-status-success-bg:        #dcfce7;
+--color-status-success-bg-subtle: #ecfdf5;
+--color-status-success-border:    #a7f3d0;
+--color-status-success-text:      #15803d;
+--color-status-success-text-deep: #047857;
 
-  --color-surface-background: #F5F5F5;
-  --color-surface-card: #FFFFFF;
-  --color-surface-elevated: #FFFFFF;
-  --color-surface-dark: #0D0D0D;
-  --color-surface-input: #F5F5F5;
-  --color-surface-brand-tint: #FFF0EA;
+--color-status-warning-bg:        #fef3c7;
+--color-status-warning-bg-subtle: #fffbeb;
+--color-status-warning-border:    #fde68a;
+--color-status-warning-text:      #b45309;
+--color-status-warning-text-deep: #92400e;
 
-  --color-text-primary: #0D0D0D;
-  --color-text-secondary: #3A3A3A;
-  --color-text-muted: #6B6B6B;
-  --color-text-disabled: #BBBBBB;
-  --color-text-inverse: #FFFFFF;
-  --color-text-brand: #E8430A;
-  --color-text-on-brand-tint: #8C1505;
+--color-status-danger-bg:        #fee2e2;
+--color-status-danger-bg-subtle: #fef2f2;
+--color-status-danger-border:    #fecaca;
+--color-status-danger-text:      #b91c1c;
+--color-status-danger-text-deep: #dc2626;
 
-  --color-border-default: #E0E0E0;
-  --color-border-strong: #BBBBBB;
-  --color-border-focus: #E8430A;
-  --color-border-brand-tint: #FFDCCC;
-  --color-border-on-dark: #3A3A3A;
+--color-status-neutral-bg:   #f3f4f6;
+--color-status-neutral-text: #6b7280;
 
-  --color-interactive-default: #E8430A;
-  --color-interactive-pressed: #C0230A;
-  --color-interactive-disabled: #BBBBBB;
-  --color-interactive-focus-ring: rgba(232, 67, 10, 0.18);
+--color-surface-page:  #f3f4f6;
+--color-surface-card:  #ffffff;
+--color-surface-input: #f9fafb;
 
-  --color-shadow: rgba(13, 13, 13, 0.35); /* elevation/drop-shadow color - use instead of a raw rgba(0,0,0,...) literal */
-}
+--color-text-primary:   #111827;
+--color-text-secondary: #6b7280;
+--color-text-muted:     #9ca3af;
+--color-text-disabled:  #d1d5db;
+--color-text-inverse:   #ffffff;
+
+--color-border-default: #e5e7eb;
+--color-border-card:    #f1f1f3;
+--color-border-divider: #f5f5f6;
+
+--color-interactive-disabled-bg:   #e5e7eb;
+--color-interactive-disabled-text: #9ca3af;
 ```
 
-```typescript
-// web/src/constants/colors.ts — mirrors tokens.css for JS/TS usage
-export const Colors = {
-  brand: { 100: '#FF9B70', 200: '#FF6B35', primary: '#E8430A', 600: '#C0230A', 800: '#8C1505', tint: '#FFF0EA', tintBorder: '#FFDCCC' },
-  neutral: { 900: '#0D0D0D', 800: '#1E1E1E', 600: '#3A3A3A', 400: '#6B6B6B', 200: '#BBBBBB', 100: '#E0E0E0', 50: '#F5F5F5', 0: '#FFFFFF' },
-  status: {
-    success: '#1A8C4E', successBg: '#E8F5EE', successBorder: '#A8D8BC', successText: '#146B3B',
-    warning: '#D97706', warningText: '#B45309', warningBg: '#FEF3E2', warningBorder: '#F9D08B',
-    danger: '#C0230A', dangerBg: '#FDECEA', dangerBorder: '#F4B2AA',
-    neutral: '#6B6B6B', neutralBg: '#F5F5F5', neutralBorder: '#BBBBBB',
-  },
-  shadow: 'rgba(13, 13, 13, 0.35)',
-  surface: { background: '#F5F5F5', card: '#FFFFFF', elevated: '#FFFFFF', dark: '#0D0D0D', input: '#F5F5F5', brandTint: '#FFF0EA' },
-  text: { primary: '#0D0D0D', secondary: '#3A3A3A', muted: '#6B6B6B', disabled: '#BBBBBB', inverse: '#FFFFFF', brand: '#E8430A', onBrandTint: '#8C1505' },
-  border: { default: '#E0E0E0', strong: '#BBBBBB', focus: '#E8430A', brandTint: '#FFDCCC', onDark: '#3A3A3A' },
-  interactive: { default: '#E8430A', pressed: '#C0230A', disabled: '#BBBBBB', focusRing: 'rgba(232,67,10,0.18)' },
-} as const;
-```
-
-`tokens.css` is imported once, globally, in `web/src/main.tsx`.
+There is no dark nav chrome, no `--color-surface-dark`, and no PIN-dot component in this app — the sidebar/tab bar are white (`--color-neutral-0`), and login is username/PIN over Supabase Auth rather than a native PIN-dot UI.
 
 ---
 
-## Component Color Rules
+## 2. Theme-axis tokens (tint × radius — runtime-switchable, `context/theme.context.tsx`)
 
-Same mapping as the mobile app, expressed as CSS custom properties instead of RN style objects:
+Two theme axes, defaulting to `wild + soft`. These live in a plain `:root` block (not `@theme`) so `ThemeProvider` can override them at runtime via `data-tint`/`data-radius` attributes on `<html>` — see [styling.md](./styling.md) §3.
 
-| Component           | Rule                                                                                    |
-|----------------------|--------------------------------------------------------------------------------------------|
-| Primary button       | bg=`--color-brand-600`, text=`--color-text-inverse`, hover/active=`--color-brand-800` (was `--color-brand-primary`/`--color-brand-600` — that pairing only reaches ~4.0:1 with white text at normal button-label sizes, short of AA 4.5:1; brand-600 reaches ~6:1) |
-| Secondary button     | bg=`--color-neutral-900`, text=`--color-text-inverse`, hover/active=`--color-neutral-800` |
-| Outline button       | bg=transparent, text=`--color-text-brand`, border=`--color-brand-primary`, hover bg=`--color-brand-tint` |
-| Ghost button          | bg=transparent, text=`--color-text-secondary`, border=`--color-neutral-200`, hover bg=`--color-neutral-50` |
-| Danger button         | bg=`--color-status-danger`, text=`--color-text-inverse`, hover=`--color-brand-800`        |
-| Input (default)       | bg=`--color-surface-input`, border=`--color-border-strong` 1.5px                          |
-| Input (focused)       | border=`--color-border-focus` 1.5px, box-shadow=`--color-interactive-focus-ring` 3px       |
-| Input (error)         | border=`--color-status-danger` 1.5px, bg=`--color-status-danger-bg`                       |
-| Input (disabled)      | border=`--color-neutral-100` 1px, bg=`--color-neutral-50`                                 |
-| Nav bar (mobile/desktop)| bg=`--color-surface-dark`, active=`--color-text-brand`, inactive=`--color-neutral-600`  |
-| Member status badge    | pill shape — bg + text + border from status tokens above                                  |
-| Screen background      | Always `--color-surface-background`                                                        |
-| Card surface           | Always `--color-surface-card` with `--color-border-default` 1px border                     |
+### 2.1 Tint — three options, four roles each
 
-There is no PIN-dot component in the web edition (login is email/password/OAuth, not PIN — see [app-shell.md](./app-shell.md)), so the mobile spec's PIN dot rules do not carry over.
+CTA is folded into tint (no separate CTA axis) — each tint owns its own CTA gradient, so no clashing tint/CTA pairs can be produced. Every tint exposes **four** color roles; using the right one is what keeps the UI at WCAG AA — never collapse them into a single "primary":
+
+| Role | Used for | Contrast requirement |
+|---|---|---|
+| `--tint-accent`  | Decorative fills only: progress bars, avatar tiles, toggle-on, chart bars | Vivid; never sits under small text |
+| `--tint-ink`     | Accent-colored text/icons on white or `--color-surface-page` | ≥4.5:1 on white |
+| `--tint-solid`   | Fills that carry **white** text: selected pills/tabs, count badges, CTAs that reuse the tint | ≥4.5:1 with `#fff` |
+| `--tint-on-pill` | Text on `--tint-pill-bg`: active nav label, applied filter chips, role badges | ≥4.5:1 on pillBg |
+
+| tint | card bg | border | accent | ink | solid | onPill | pillBg | cta |
+|---|---|---|---|---|---|---|---|---|
+| **wild** (default) | `#fff4f0` | `#ffdccf` | `#ff5a2c` | `#c2410c` | `#c2410c` | `#9a3412` | `#ffe4d9` | wild (own gradient) |
+| sky | `#eff6ff` | `#dbeafe` | `#2563eb` | `#1d4ed8` | `#1d4ed8` | `#1e3a8a` | `#dbeafe` | charcoal |
+| violet | `#f5f3ff` | `#ede9fe` | `#7c3aed` | `#6d28d9` | `#6d28d9` | `#5b21b6` | `#ede9fe` | charcoal (no dedicated violet gradient) |
+
+CTA gradients (`--cta-from`/`--cta-to`, button fills with white labels):
+- `wild` — `#c2410c` → `#9a3412`
+- `charcoal` — `#374151` → `#111827`
+
+Reading the theme object must guard the lookup with a fallback **on the object**, not the key, or a stale stored preference (an old `emerald`/`amber`/`rose` tint, or a pre-v2 `pill` radius) white-screens the app — see `theme.context.tsx`'s `isTint`/`isRadius`/`loadStoredTheme`.
+
+### 2.2 Radius — two options
+
+| radius | card | inputs/buttons (`el`) | tiles (`tile`) | pills |
+|---|---|---|---|---|
+| **soft** (default) | 28px | 12px | 16px | 999px |
+| sharp | 10px | 6px | 10px | 6px |
+
+There is no `pill` radius option anymore (v1 had three; v2 cut it to two).
 
 ---
 
-## Usage Rules
+## 3. Component Color Rules
 
-1. Import colors only from `tokens.css` (CSS) or `constants/colors.ts` (TS) — never hardcode hex in components.
-2. Only **one** primary (brand orange) CTA per screen. Secondary actions use black or outline.
-3. `status.*` tokens are semantic-only — never used decoratively.
-4. Never use `--color-text-brand` for body copy on white — only labels ≥ 14px bold, or links.
-5. All text on `--color-surface-dark` must use `--color-text-inverse` or `--color-text-brand`.
-6. Disabled elements: use `--color-interactive-disabled` fill — no opacity hacks.
-7. Admin screens share the same color system — no separate admin palette.
-8. Respect the user's OS-level reduced-motion/contrast preferences where feasible (e.g. `prefers-reduced-motion`) even though this token set has no dark-mode variant defined yet.
+| Component | Rule |
+|---|---|
+| Primary/CTA button | bg = `linear-gradient(var(--cta-from), var(--cta-to))`, text = `--color-text-inverse` |
+| Secondary/outline button | bg transparent, text = `--color-text-secondary`, border = `--color-border-default` |
+| Danger action | bg = `--color-status-danger-text` or `--color-status-danger-bg` fill depending on context (destructive buttons vs. inline banners) — never invented ad hoc |
+| Input (default) | bg = `--color-surface-input`, border = `--color-border-default` |
+| Input (focused) | border = `--tint-ink` (or tint-specific focus ring — `--tint-focus-ring`), box-shadow = `--tint-focus-ring` |
+| Input (disabled) | bg = `--color-interactive-disabled-bg`, text = `--color-interactive-disabled-text` |
+| Nav bar (mobile/desktop) | bg = `--color-neutral-0`, active = `--tint-accent` (text/icon), inactive = `--color-text-secondary` |
+| Member status badge | pill shape — bg/text from the matching `--color-status-*-bg`/`-text` pair |
+| Screen background | Always `--color-surface-page` |
+| Card surface | Always `--color-surface-card` with `--color-border-card` 1px border |
+
+---
+
+## 4. Usage Rules
+
+1. Import colors only from `tokens.css`'s custom properties — never hardcode hex in a component (arbitrary Tailwind values like `bg-[#c0230a]` are the same violation via a different door, see [styling.md](./styling.md) §3).
+2. Only one CTA-gradient action per screen; secondary actions use outline/ghost styling.
+3. `--color-status-*` tokens are semantic-only — never used decoratively (an avatar hash must never land on a status color by coincidence — this is exactly why the categorical `--color-data-*` palette exists separately, see `lib/avatar.ts`).
+4. `--color-text-muted` (`#9ca3af`) is for **disabled states only** — general secondary body text uses `--color-text-secondary` (`#6b7280`). This was a v1→v2 change (secondary text moved off `#9ca3af`); a full per-component audit of remaining `--color-text-muted` usage on non-disabled text is tracked as an open cleanup item, not yet complete everywhere.
+5. Every tint's four roles (§2.1) must be used per their contrast contract — `--tint-accent` never sits under small text; a component needing accent-colored text uses `--tint-ink` instead. A full per-component audit of pre-v2 `--tint-accent` usages that should be `--tint-ink`/`--tint-solid`/`--tint-on-pill` is an open cleanup item, picked up screen-by-screen as each is re-skinned to the v2 handoff (see `spec/frontend/action-center.md` for the first screen migrated under that plan).
+6. Admin screens share the same color system — no separate admin palette.
+7. Respect the user's OS-level reduced-motion/contrast preferences where feasible (`prefers-reduced-motion`) — this token set has no dark-mode variant defined.
+
+---
+
+## 5. Related docs
+
+- [styling.md](./styling.md) — how `tokens.css`'s `@theme` block plugs into Tailwind, and the breakpoint scale
+- [action-center.md](./action-center.md) — first screen built against the v2 tint/radius axis in this table
+- `frontend/src/context/theme.context.tsx` — the runtime tint/radius switcher these tokens back

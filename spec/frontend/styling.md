@@ -21,16 +21,28 @@
 
 ## 3. Theming — one source of truth, no hex duplicated
 
-`tokens.css`'s `@theme` block **is** the token file from [colors.md](./colors.md) — same names, same hex values, just wrapped in `@theme` instead of `:root`. Tailwind's `@theme` still emits every property as a real CSS custom property on `:root` under the hood, so:
+`tokens.css`'s `@theme` block **is** the fixed-token table from [colors.md](./colors.md) §1 — same names, same hex values, just wrapped in `@theme` instead of `:root`. Tailwind's `@theme` still emits every property as a real CSS custom property on `:root` under the hood, so:
 
-- **Existing plain CSS keeps working unchanged**: `var(--color-brand-600)` resolves exactly as before.
-- **New Tailwind utilities are generated for free**: any `--color-<name>` token automatically becomes `bg-<name>`, `text-<name>`, `border-<name>`, etc. — `--color-brand-600` → `bg-brand-600`/`text-brand-600`/`border-brand-600`.
+- **Existing plain CSS keeps working unchanged**: `var(--color-neutral-900)` resolves exactly as before.
+- **New Tailwind utilities are generated for free**: any `--color-<name>` token automatically becomes `bg-<name>`, `text-<name>`, `border-<name>`, etc. — `--color-neutral-900` → `bg-neutral-900`/`text-neutral-900`/`border-neutral-900`.
 
 **Tailwind's own default palette (`red-500`, `blue-600`, `gray-100`, `white`, `black`, ...) has been explicitly removed** (`--color-*: initial;` at the top of the `@theme` block, before this app's own tokens are declared). This isn't optional cleanup — without it, `bg-red-500` would be a silent, always-available escape hatch around the token system, defeating rule 14's "never hardcode a color" rule via a different door. If a utility class for a token doesn't exist, the token is missing from `tokens.css`, not "use Tailwind's stock color instead."
 
 **Adding a new color**: add it to `colors.md` first (per that file's own process), then add the same name/hex pair to `tokens.css`'s `@theme` block. Never add a color directly in a component file, whether as a hex value, an inline `style`, or an arbitrary Tailwind value (`bg-[#ff0000]`) — all three bypass the token file the same way.
 
 One token is deliberately **excluded** from `@theme`: `--color-shadow` (used only as a `box-shadow` color value). Tailwind would otherwise generate a `text-shadow` utility from it — a *color* utility that happens to share its class name with the real CSS `text-shadow` property, which reads as "applies a text shadow" but actually just sets `color`. It's declared as a plain `:root` custom property instead, right below `@theme`, so `var(--color-shadow)` still works everywhere it's already used.
+
+### 3.1 The tint/radius axis — plain `:root`, not `@theme`
+
+Beyond the fixed tokens above, `tokens.css` has a second block of tokens — tint (3 options) × radius (2 options), see [colors.md](./colors.md) §2 for the full value table — that are runtime-switchable via `ThemeProvider` (`context/theme.context.tsx`). These are declared in a **plain `:root` block**, not `@theme`, and overridden by attribute selectors:
+
+```css
+:root { --tint-accent: #ff5a2c; /* wild, default */ ... }
+:root[data-tint='sky'] { --tint-accent: #2563eb; ... }
+:root[data-radius='sharp'] { --radius-card: 10px; ... }
+```
+
+`@theme` only ever emits *default* values as real custom properties — it has no concept of a runtime override, so it's the wrong tool for anything `ThemeProvider` needs to flip via `data-tint`/`data-radius` attributes on `<html>`. Tailwind utilities (`bg-...`) only exist for `@theme` tokens; there is no `bg-tint-accent` utility — reach for `var(--tint-accent)` in plain CSS instead, same as `--color-shadow` above.
 
 ## 4. Breakpoints — three tiers, not two
 

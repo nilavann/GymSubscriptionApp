@@ -19,6 +19,23 @@ export const memberListRepository = {
     if (error) throw new Error(error.message);
     return resolvePhotoUrls((data ?? []) as unknown as MemberListRow[]);
   },
+
+  /**
+   * Action Center's bounded queue (spec/frontend/action-center.md) — a real Postgres-side
+   * filter via supabase-js, same view, same RLS, rather than fetching every member just to
+   * build a near-term-expiry queue. `from`/`to` arrive pre-computed (no date math here, per
+   * the layering rule — see lib/action-center.ts).
+   */
+  async getActionCenterQueue({ from, to }: { from: string; to: string }): Promise<MemberListRow[]> {
+    const { data, error } = await supabase
+      .from('member_list_view')
+      .select(MEMBER_LIST_SELECT)
+      .gte('current_membership_end_date', from)
+      .lte('current_membership_end_date', to)
+      .order('current_membership_end_date', { ascending: true });
+    if (error) throw new Error(error.message);
+    return resolvePhotoUrls((data ?? []) as unknown as MemberListRow[]);
+  },
 };
 
 export type MemberListRepository = typeof memberListRepository;

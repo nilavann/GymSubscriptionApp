@@ -16,6 +16,7 @@ import { LoginPage } from './pages/LoginPage';
 // (performance.md §2.4): LoginPage is the first thing an unauthenticated visitor needs,
 // and AppShell is needed on every authenticated route, so lazy-loading either only adds
 // a round-trip for zero splitting benefit.
+const ActionCenterPage = lazy(() => import('./pages/ActionCenterPage').then((m) => ({ default: m.ActionCenterPage })));
 const MembersListPage = lazy(() => import('./pages/MembersListPage').then((m) => ({ default: m.MembersListPage })));
 const AddMemberPage = lazy(() => import('./pages/AddMemberPage').then((m) => ({ default: m.AddMemberPage })));
 const MemberDetailPage = lazy(() => import('./pages/MemberDetailPage').then((m) => ({ default: m.MemberDetailPage })));
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <MembersListPage /> },
+      { path: '/action-center', element: <ActionCenterPage /> },
       { path: '/reports', element: <ReportsPage /> },
       {
         path: '/settings',

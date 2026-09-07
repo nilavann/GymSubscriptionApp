@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { Dumbbell } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
+import { useActionCenterCount } from '../lib/action-center';
 import { NAV_ITEMS } from './nav-items';
 import { AppFooter } from './AppFooter';
 import './AppShell.css';
@@ -15,7 +16,12 @@ import './AppShell.css';
  */
 export function AppShell() {
   const { currentProfile } = useAuth();
+  const actionCenterCount = useActionCenterCount();
   const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || currentProfile?.roles.includes('admin'));
+
+  function badgeFor(path: string): number | null {
+    return path === '/action-center' && actionCenterCount ? actionCenterCount : null;
+  }
 
   return (
     <div className="app-shell">
@@ -36,6 +42,7 @@ export function AppShell() {
           >
             {item.icon}
             <span>{item.label}</span>
+            {badgeFor(item.path) !== null && <span className="app-shell-nav-badge">{badgeFor(item.path)}</span>}
           </NavLink>
         ))}
       </nav>
@@ -55,7 +62,10 @@ export function AppShell() {
             end={item.path === '/'}
             className={({ isActive }) => `app-shell-tab${isActive ? ' app-shell-tab-active' : ''}`}
           >
-            {item.icon}
+            <span className="app-shell-tab-icon-wrap">
+              {item.icon}
+              {badgeFor(item.path) !== null && <span className="app-shell-nav-badge app-shell-nav-badge-tab">{badgeFor(item.path)}</span>}
+            </span>
             <span>{item.label}</span>
           </NavLink>
         ))}

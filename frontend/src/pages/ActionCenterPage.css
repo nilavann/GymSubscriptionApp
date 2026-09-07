@@ -1,0 +1,414 @@
+.action-center-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.action-center-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-center-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  max-width: 560px;
+}
+
+.action-center-reminders {
+  min-height: 44px;
+  background: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
+  border: none;
+  border-radius: var(--radius-el);
+  padding: 0 1.1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: not-allowed;
+  flex-shrink: 0;
+}
+
+/* Loading / error states — same shape as MembersListPage's, own classes since this page's
+   CSS is loaded independently of that one. */
+.action-center-skeleton {
+  height: 400px;
+  border-radius: var(--radius-el);
+  margin-top: 1rem;
+  background: linear-gradient(90deg, var(--color-neutral-50) 25%, var(--color-neutral-150) 37%, var(--color-neutral-50) 63%);
+  background-size: 400% 100%;
+  animation: action-center-shimmer 1.4s ease infinite;
+}
+
+@keyframes action-center-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.action-center-load-error {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-center-load-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-text);
+  margin-bottom: 0.5rem;
+}
+
+.action-center-load-error-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+}
+
+.action-center-load-error-body {
+  margin: 0;
+  font-size: 0.85rem;
+  max-width: 320px;
+}
+
+.action-center-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-el);
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.action-center-retry:hover {
+  opacity: 0.92;
+}
+
+/* Summary cards */
+.action-center-summary-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.action-center-summary-card {
+  flex: 1;
+  min-width: 180px;
+  border-radius: var(--radius-card);
+  padding: 0.9rem 1rem;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.action-center-summary-count {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.action-center-summary-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.action-center-summary-note {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.action-center-summary-warning {
+  background: var(--color-status-warning-bg-subtle);
+  border-color: var(--color-status-warning-border);
+  color: var(--color-status-warning-text-deep);
+}
+
+.action-center-summary-danger {
+  background: var(--color-status-danger-bg-subtle);
+  border-color: var(--color-status-danger-border);
+  color: var(--color-status-danger-text);
+}
+
+/* Filter tabs — deliberately just two, no "All" */
+.action-center-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-center-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.action-center-tab-active {
+  background: var(--tint-solid);
+  border-color: var(--tint-solid);
+  color: var(--color-text-inverse);
+}
+
+.action-center-tab-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+/* Empty state */
+.action-center-empty {
+  text-align: center;
+  padding: 2.75rem 1rem;
+  border: 1px dashed var(--color-neutral-300);
+  border-radius: var(--radius-card);
+  background: var(--color-neutral-75);
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.action-center-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-neutral-100);
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.action-center-empty-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.action-center-empty-body {
+  margin: 0;
+  font-size: 0.82rem;
+  max-width: 320px;
+}
+
+/* Carousel */
+.action-center-carousel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-center-arrow {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.action-center-arrow:hover {
+  background: var(--color-surface-page);
+}
+
+.action-center-scroller {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+.action-center-scroller::-webkit-scrollbar {
+  height: 8px;
+}
+
+.action-center-scroller::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+  border-radius: var(--radius-pill);
+}
+
+.action-center-card {
+  flex: 0 0 calc((100% - 32px) / 3);
+  min-width: 280px;
+  scroll-snap-align: start;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-el);
+  padding: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .action-center-card {
+    flex: 0 0 calc((100% - 16px) / 2);
+  }
+}
+
+@media (max-width: 760px) {
+  .action-center-card {
+    flex: 0 0 88%;
+  }
+}
+
+.action-center-card-header {
+  display: flex;
+  gap: 1rem;
+}
+
+.action-center-avatar,
+.action-center-avatar-img {
+  width: 76px;
+  height: 76px;
+  min-width: 76px;
+  border-radius: calc(var(--radius-tile) + 4px);
+  object-fit: cover;
+}
+
+.action-center-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-inverse);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.action-center-card-identity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.action-center-card-name {
+  font-weight: 700;
+  font-size: 0.97rem;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-center-card-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.action-center-pill {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.action-center-pill-urgent {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.action-center-pill-soon {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+}
+
+.action-center-pill-expired {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-text);
+}
+
+.action-center-card-plan {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.action-center-card-expiry {
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.action-center-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.action-center-card-renew,
+.action-center-card-view {
+  flex: 1;
+  min-height: 36px;
+  border-radius: var(--radius-el);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.action-center-card-renew {
+  border: none;
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
+  color: var(--color-text-inverse);
+}
+
+.action-center-card-view {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
+  color: var(--color-text-secondary);
+}
+
+.action-center-card-renew:hover,
+.action-center-card-view:hover {
+  opacity: 0.9;
+}

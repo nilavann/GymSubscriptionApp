@@ -15,6 +15,7 @@ Uses **React Router** (createBrowserRouter). Do not hand-roll routing or use fil
                               while a recovery session is pending
 
 /                         →  Members List           [home, all users]
+/action-center             →  Action Center           [all users] — see action-center.md
 /reports                  →  Reports                 [all users]
 /settings                 →  Settings hub             [admin only]
 
@@ -56,6 +57,7 @@ Session state comes from `useAuth()` (see [app-shell.md](./app-shell.md)) — th
 | `/login`          | Anyone (redirects away if already signed in, unless a password-recovery session is pending) |
 | `/reset-password` | Anyone with a pending password-recovery session; redirects everyone else away |
 | `/`                | All signed-in, active users |
+| `/action-center`   | All signed-in, active users |
 | `/reports`         | All signed-in, active users |
 | `/settings`        | `admin` role only |
 | `/members/*`       | All signed-in, active users |
@@ -98,16 +100,17 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 
 See [app-shell.md §3](./app-shell.md#3-responsive-layout-shell-websrccomponentsappshelltsx) for how these render differently by breakpoint — the item list itself is one source of truth:
 
-| Item      | Icon          | Route         | Visible to     |
-|-----------|---------------|----------------|------------------|
-| Members   | people icon   | `/`            | All users        |
-| Reports   | bar-chart icon| `/reports`     | All users        |
-| Settings  | settings/gear | `/settings`    | `admin` only     |
+| Item          | Icon                | Route            | Visible to     |
+|---------------|---------------------|-------------------|------------------|
+| Action Center | list-checks icon, count badge | `/action-center` | All users — first item, see [action-center.md](./action-center.md) |
+| Members       | people icon         | `/`               | All users        |
+| Reports       | bar-chart icon      | `/reports`        | All users        |
+| Settings      | settings/gear       | `/settings`       | `admin` only     |
 
-Staff users see 2 nav items. Admin users see 3.
+Staff users see 3 nav items. Admin users see 4.
 
-Nav bar/sidebar background: `var(--color-surface-dark)` (`#0D0D0D`)
-Active icon + label: `var(--color-text-brand)` (`#E8430A`)
-Inactive icon + label: `var(--color-neutral-600)` (`#3A3A3A`)
+Nav bar/sidebar background: `var(--color-neutral-0)` (white, desktop sidebar) / `var(--color-neutral-0)` (mobile bottom tab bar) — see [colors.md](./colors.md) for the current token set; this app has no dark nav chrome.
+Active icon + label: `var(--tint-accent)` (theme-dependent — wild/sky/violet, see [colors.md](./colors.md) §Theming)
+Inactive icon + label: `var(--color-text-secondary)` (`#6b7280`)
 
 Use any accessible icon set consistently across the app (e.g. `lucide-react`) — pick one and use it everywhere; this is an implementation choice, not a business rule, so it does not need to match the mobile app's `Ionicons`.

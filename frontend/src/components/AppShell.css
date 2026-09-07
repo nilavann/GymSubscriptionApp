@@ -111,7 +111,9 @@
 }
 
 .app-shell-tab-active {
-  color: var(--tint-accent);
+  /* Text/icon on white (tab bar bg is --color-neutral-0) — --tint-ink, not --tint-accent
+     (tokens.css's Accessibility contract: --tint-accent is decorative-fill only, never text). */
+  color: var(--tint-ink);
 }
 
 .app-shell-nav-item {
@@ -133,7 +135,8 @@
 }
 
 .app-shell-nav-item-active {
-  color: var(--tint-accent);
+  /* Text on --tint-pill-bg — --tint-on-pill per the Accessibility contract, not --tint-accent. */
+  color: var(--tint-on-pill);
   background: var(--tint-pill-bg);
   font-weight: 600;
 }
@@ -142,7 +145,37 @@
   /* Active item keeps its own tint on hover rather than picking up the plain hover state
      meant for inactive items - otherwise hovering the current page looks like it un-selects. */
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
+}
+
+/* Action Center queue-size badge — count carries white text, so --tint-solid per the
+   Accessibility contract (tokens.css), not --tint-accent. */
+.app-shell-nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--tint-solid);
+  color: var(--color-text-inverse);
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.app-shell-tab-icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.app-shell-nav-badge-tab {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  margin-left: 0;
 }
 
 @media (min-width: 768px) {

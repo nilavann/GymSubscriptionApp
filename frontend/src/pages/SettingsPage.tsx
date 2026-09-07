@@ -5,15 +5,14 @@ import { useAuth } from '../context/auth.context';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { AdminTabs } from '../components/AdminTabs';
-import { useTheme, TINT_OPTIONS, CTA_OPTIONS, RADIUS_OPTIONS, type Tint, type Cta, type Radius } from '../context/theme.context';
+import { useTheme, TINT_OPTIONS, RADIUS_OPTIONS, type Tint, type Radius } from '../context/theme.context';
 import './SettingsPage.css';
 
 const FETCH_TIMEOUT_MS = 10000;
 type PasswordResetState = 'idle' | 'sending' | 'sent' | 'error';
 
-const TINT_LABEL: Record<Tint, string> = { sky: 'Sky', violet: 'Violet', emerald: 'Emerald', amber: 'Amber', rose: 'Rose' };
-const CTA_LABEL: Record<Cta, string> = { charcoal: 'Charcoal', orange: 'Orange', blue: 'Blue' };
-const RADIUS_LABEL: Record<Radius, string> = { soft: 'Soft', pill: 'Pill', sharp: 'Sharp' };
+const TINT_LABEL: Record<Tint, string> = { wild: 'Wild', sky: 'Sky', violet: 'Violet' };
+const RADIUS_LABEL: Record<Radius, string> = { soft: 'Soft', sharp: 'Sharp' };
 
 /**
  * Settings hub (screens.md WSCR-11) — the one place admins reach Manage Plans, Manage
@@ -21,7 +20,7 @@ const RADIUS_LABEL: Record<Radius, string> = { soft: 'Soft', pill: 'Pill', sharp
  */
 export function SettingsPage() {
   const { currentProfile, session, signOut, resetPasswordForEmail } = useAuth();
-  const { tint, cta, radius, setTint, setCta, setRadius } = useTheme();
+  const { tint, radius, setTint, setRadius } = useTheme();
   const {
     memberRepository,
     planRepository,
@@ -109,23 +108,6 @@ export function SettingsPage() {
                   aria-pressed={tint === option}
                 >
                   {TINT_LABEL[option]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="settings-theme-group">
-            <span className="settings-theme-label">CTA color</span>
-            <div className="settings-theme-swatch-row">
-              {CTA_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={`settings-theme-swatch${cta === option ? ' settings-theme-swatch-active' : ''}`}
-                  data-cta-preview={option}
-                  onClick={() => setCta(option)}
-                  aria-pressed={cta === option}
-                >
-                  {CTA_LABEL[option]}
                 </button>
               ))}
             </div>

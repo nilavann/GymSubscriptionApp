@@ -1,10 +1,12 @@
-/* Design tokens — FlexHub visual redesign (see frontend/mockups/README.md, the design
-   handoff this file implements). Wrapped in Tailwind's `@theme` (not plain `:root`) so
-   every fixed token below both stays usable as `var(--color-text-primary)` in plain CSS
-   AND generates a matching Tailwind utility. Never hardcode a hex value in a component
-   file; use these tokens (or their Tailwind utility) instead.
+/* Design tokens — FlexHub visual redesign (see design_handoff_flexhub_v2/README.md, the
+   design handoff this file implements — v2 reworked the theme-axis section below; the rest
+   of this file is unchanged from the v1 redesign, frontend/mockups/README.md). Wrapped in
+   Tailwind's `@theme` (not plain `:root`) so every fixed token below both stays usable as
+   `var(--color-text-primary)` in plain CSS AND generates a matching Tailwind utility. Never
+   hardcode a hex value in a component file; use these tokens (or their Tailwind utility)
+   instead.
 
-   Theme-axis tokens (tint / cta / radius) live in a separate plain `:root` block below —
+   Theme-axis tokens (tint / radius) live in a separate plain `:root` block below —
    Tailwind's `@theme` only ever emits *default* values as real CSS custom properties, so
    putting the axis tokens there too still lets `:root[data-tint="violet"]` etc. override
    them at runtime via the normal CSS cascade (see ThemeProvider, context/theme.context.tsx). */
@@ -85,30 +87,46 @@
   --color-interactive-disabled-text: #9ca3af;
 }
 
-/* Theme-axis tokens — tint (5) x cta (3) x radius (3), matching the mockup's "small theme
-   config" (README §Theming). Plain :root, not @theme, since these are meant to be
-   overridden at runtime by attribute selectors (see below), not just Tailwind-generated
-   defaults. Defaults = sky + charcoal + soft, the mockup's stated default combo.
-   ThemeProvider (context/theme.context.tsx) sets data-tint/data-cta/data-radius on
-   <html> and persists the choice to localStorage. */
-:root {
-  /* tint: sky (default) */
-  --tint-card-from: #eff6ff;
-  --tint-card-to: #ffffff;
-  --tint-border: #dbeafe;
-  --tint-accent: #2563eb;
-  --tint-pill-bg: #dbeafe;
-  --tint-focus-ring: rgba(37, 99, 235, 0.18);
+/* Theme-axis tokens — tint (3) x radius (2), matching design_handoff_flexhub_v2/README.md
+   §Theming (tint / radius). Plain :root, not @theme, since these are meant to be overridden
+   at runtime by attribute selectors (see below), not just Tailwind-generated defaults.
+   Defaults = wild + soft, the v2 handoff's stated default combo. ThemeProvider
+   (context/theme.context.tsx) sets data-tint/data-radius on <html> and persists the choice
+   to localStorage.
 
-  /* cta: charcoal (default) */
-  --cta-from: #374151;
-  --cta-to: #111827;
+   CTA is no longer an independent axis — each tint owns its own CTA gradient (--cta-from/to)
+   so no clashing tint/CTA pairs can be produced (v2 README §Theming). Every tint also now
+   carries FOUR color roles, not one — using the right one is what keeps the UI at WCAG AA:
+     --tint-accent   decorative fills only (progress bars, avatar tiles, chart bars) — never
+                     sits under small text.
+     --tint-ink      accent-colored text/icons on white or --color-surface-page (>=4.5:1).
+     --tint-solid    fills that carry WHITE text (selected pills/tabs, count badges, CTAs
+                     that reuse the tint instead of --cta-from/to) (>=4.5:1 with #fff).
+     --tint-on-pill  text on --tint-pill-bg (active nav label, applied filter chips,
+                     role badges) (>=4.5:1 on pillBg).
+   Do not collapse these into a single "primary" color when re-skinning a screen — see
+   design_handoff_flexhub_v2/README.md §Accessibility contract. */
+:root {
+  /* tint: wild (default) */
+  --tint-card-from: #fff4f0;
+  --tint-card-to: #ffffff;
+  --tint-border: #ffdccf;
+  --tint-accent: #ff5a2c;
+  --tint-ink: #c2410c;
+  --tint-solid: #c2410c;
+  --tint-on-pill: #9a3412;
+  --tint-pill-bg: #ffe4d9;
+  --tint-focus-ring: rgba(255, 90, 44, 0.18);
+
+  /* cta: wild owns the orange/rust gradient (README §Theming CTA gradients) */
+  --cta-from: #c2410c;
+  --cta-to: #9a3412;
 
   /* radius: soft (default) */
   --radius-card: 28px;
   --radius-el: 12px; /* inputs/buttons */
   --radius-tile: 16px; /* tiles/icon buttons */
-  --radius-pill: 999px; /* chips/badges/avatars — constant across every radius option */
+  --radius-pill: 999px; /* chips/badges/avatars — varies by radius axis in v2, unlike v1 */
 
   /* Ambient card/overlay shadow and modal/drawer backdrop — exact rgba from the mockup's
      Design Tokens / Filter-drawer specs, both derived from neutral-900 (#111827). */
@@ -116,60 +134,43 @@
   --color-backdrop: rgba(17, 24, 39, 0.35);
 }
 
+:root[data-tint='sky'] {
+  --tint-card-from: #eff6ff;
+  --tint-card-to: #ffffff;
+  --tint-border: #dbeafe;
+  --tint-accent: #2563eb;
+  --tint-ink: #1d4ed8;
+  --tint-solid: #1d4ed8;
+  --tint-on-pill: #1e3a8a;
+  --tint-pill-bg: #dbeafe;
+  --tint-focus-ring: rgba(37, 99, 235, 0.18);
+
+  /* cta: charcoal (README table — sky's CTA is the neutral charcoal gradient, not blue) */
+  --cta-from: #374151;
+  --cta-to: #111827;
+}
+
 :root[data-tint='violet'] {
   --tint-card-from: #f5f3ff;
   --tint-card-to: #ffffff;
   --tint-border: #ede9fe;
   --tint-accent: #7c3aed;
+  --tint-ink: #6d28d9;
+  --tint-solid: #6d28d9;
+  --tint-on-pill: #5b21b6;
   --tint-pill-bg: #ede9fe;
   --tint-focus-ring: rgba(124, 58, 237, 0.18);
-}
 
-:root[data-tint='emerald'] {
-  --tint-card-from: #ecfdf5;
-  --tint-card-to: #ffffff;
-  --tint-border: #d1fae5;
-  --tint-accent: #059669;
-  --tint-pill-bg: #d1fae5;
-  --tint-focus-ring: rgba(5, 150, 105, 0.18);
-}
-
-:root[data-tint='amber'] {
-  --tint-card-from: #fffbeb;
-  --tint-card-to: #ffffff;
-  --tint-border: #fef3c7;
-  --tint-accent: #b45309;
-  --tint-pill-bg: #fef3c7;
-  --tint-focus-ring: rgba(180, 83, 9, 0.18);
-}
-
-:root[data-tint='rose'] {
-  --tint-card-from: #fff1f2;
-  --tint-card-to: #ffffff;
-  --tint-border: #ffe4e6;
-  --tint-accent: #be123c;
-  --tint-pill-bg: #ffe4e6;
-  --tint-focus-ring: rgba(190, 18, 60, 0.18);
-}
-
-:root[data-cta='orange'] {
-  --cta-from: #f97316;
-  --cta-to: #c2410c;
-}
-
-:root[data-cta='blue'] {
-  --cta-from: #3b82f6;
-  --cta-to: #1d4ed8;
-}
-
-:root[data-radius='pill'] {
-  --radius-card: 40px;
-  --radius-el: 999px;
-  --radius-tile: 999px;
+  /* cta: "violet → charcoal" per README table — no separate violet CTA gradient is defined
+     anywhere in the handoff, so this resolves to charcoal (the same fallback the handoff's
+     own `CTAS[tint.cta] ?? CTAS.charcoal` guard-lookups example demonstrates). */
+  --cta-from: #374151;
+  --cta-to: #111827;
 }
 
 :root[data-radius='sharp'] {
   --radius-card: 10px;
   --radius-el: 6px;
-  --radius-tile: 6px;
+  --radius-tile: 10px;
+  --radius-pill: 6px;
 }
