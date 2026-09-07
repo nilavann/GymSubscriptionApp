@@ -267,7 +267,8 @@ View + inline-edit, same toggle pattern as the rest of this page (§4.1's `isEdi
 | date_of_joining | Yes | Date picker |
 | gender | Yes | Male / Female / Other |
 | email | Yes | Format-validated if present, optional |
-| residential_address | Yes | Optional |
+| residential_address | Yes | Optional, full-width 3-row textarea (v2) |
+| pincode | Yes | Optional, 6 digits |
 | aadhaar_number | Yes | Optional, no format validation (per member-management.md) |
 | occupation | Yes | Optional |
 

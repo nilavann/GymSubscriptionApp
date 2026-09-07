@@ -26,6 +26,8 @@ interface MemberFieldsDraft {
   emergency_contact_relationship: string;
   email: string;
   residential_address: string;
+  /** 6-digit Indian postal code, optional — see spec/frontend/member-management.md §2. */
+  pincode: string;
   aadhaar_number: string;
   occupation: string;
   /** Profile id, or '' for "not set" — see member-detail.md §12. */
@@ -49,6 +51,7 @@ export type MemberEditFormErrors = Partial<Record<keyof MemberEditDraft, string>
 
 const PHONE_REGEX = /^\d{10}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PINCODE_REGEX = /^\d{6}$/;
 
 /** Shared by validateNewMember/validateMemberEdit — server-side CHECK constraints are the authoritative copy (member-management.md §7). */
 function validateMemberFields(form: MemberFieldsDraft): Partial<Record<keyof MemberFieldsDraft, string>> {
@@ -93,6 +96,10 @@ function validateMemberFields(form: MemberFieldsDraft): Partial<Record<keyof Mem
     errors.email = 'Enter a valid email address';
   }
 
+  if (form.pincode.trim() && !PINCODE_REGEX.test(form.pincode.trim())) {
+    errors.pincode = 'Must be exactly 6 digits';
+  }
+
   return errors;
 }
 
@@ -126,6 +133,7 @@ function draftToMemberFieldsUpdate(form: MemberFieldsDraft) {
     emergency_contact_relationship: form.emergency_contact_relationship.trim(),
     email: form.email.trim() || null,
     residential_address: form.residential_address.trim() || null,
+    pincode: form.pincode.trim() || null,
     aadhaar_number: form.aadhaar_number.trim() || null,
     occupation: form.occupation.trim() || null,
     handled_by_staff: form.handled_by_staff || null,
@@ -153,6 +161,7 @@ export function editDraftFromMember(member: Member): MemberEditDraft {
     emergency_contact_relationship: member.emergency_contact_relationship,
     email: member.email ?? '',
     residential_address: member.residential_address ?? '',
+    pincode: member.pincode ?? '',
     aadhaar_number: member.aadhaar_number ?? '',
     occupation: member.occupation ?? '',
     handled_by_staff: member.handled_by_staff ?? '',

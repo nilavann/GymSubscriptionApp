@@ -13,7 +13,7 @@ import type { Member, NewMember, UpdateMember } from '../types/member';
  * NewMember/UpdateMember (types/member.ts) for why those aren't even accepted as inputs.
  */
 const MEMBER_SELECT =
-  'id, name, phone, date_of_birth, date_of_joining, gender, weight_kg, height_cm, under_doctor_care, doctor_care_details, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, email, residential_address, aadhaar_number, occupation, photo_url, photo_thumbnail_url, branch_id, member_number, handled_by_staff, created_by' as const;
+  'id, name, phone, date_of_birth, date_of_joining, gender, weight_kg, height_cm, under_doctor_care, doctor_care_details, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, email, residential_address, pincode, aadhaar_number, occupation, photo_url, photo_thumbnail_url, branch_id, member_number, handled_by_staff, created_by' as const;
 
 export const memberRepository = {
   /** Live row count for the Settings hub's Data Management card (screens.md WSCR-11). */

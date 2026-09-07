@@ -511,6 +511,12 @@
   min-height: 44px;
 }
 
+.member-detail-field textarea,
+.member-detail-section textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
 .member-detail-field input:focus,
 .member-detail-field select:focus,
 .member-detail-field textarea:focus {

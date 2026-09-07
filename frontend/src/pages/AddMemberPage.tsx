@@ -45,6 +45,7 @@ function emptyDraft(handledByStaffId: string): NewMemberDraft {
     emergency_contact_relationship: '',
     email: '',
     residential_address: '',
+    pincode: '',
     aadhaar_number: '',
     occupation: '',
     handled_by_staff: handledByStaffId,
@@ -502,12 +503,25 @@ export function AddMemberPage() {
               />
             </div>
 
+            <div className="add-member-field">
+              <label htmlFor="pincode">Pincode</label>
+              <input
+                id="pincode"
+                inputMode="numeric"
+                placeholder="6-digit pincode"
+                value={form.pincode}
+                onChange={(e) => updateField('pincode', sanitizeDigits(e.target.value, 6))}
+                onBlur={() => handleBlur('pincode')}
+              />
+              {showError('pincode') && <p className="add-member-error">{errors.pincode}</p>}
+            </div>
+
             <div className="add-member-field add-member-field-span-2">
               <label htmlFor="residential_address">Residential address</label>
               <textarea
                 id="residential_address"
-                rows={4}
-                placeholder="Street, city, state"
+                rows={3}
+                placeholder="Door / flat no, street, area, city, state"
                 value={form.residential_address}
                 onChange={(e) => updateField('residential_address', e.target.value)}
               />

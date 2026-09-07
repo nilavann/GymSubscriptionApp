@@ -468,6 +468,7 @@ export function MemberDetailPage() {
                   <ViewField label="Email" value={member.email ?? '—'} />
                   <ViewField label="Occupation" value={member.occupation ?? '—'} />
                   <ViewField label="Aadhaar number" value={member.aadhaar_number ?? '—'} />
+                  <ViewField label="Pincode" value={member.pincode ?? '—'} />
                   <ViewField label="Address" value={member.residential_address ?? '—'} span />
                 </dl>
               ) : (
@@ -573,11 +574,23 @@ export function MemberDetailPage() {
                       onChange={(e) => updateField('aadhaar_number', sanitizeDigits(e.target.value, 12))}
                     />
                   </div>
+                  <div className="member-detail-field">
+                    <label htmlFor="detail-pincode">Pincode (optional)</label>
+                    <input
+                      id="detail-pincode"
+                      inputMode="numeric"
+                      value={memberForm.pincode}
+                      onChange={(e) => updateField('pincode', sanitizeDigits(e.target.value, 6))}
+                      onBlur={() => handleBlur('pincode')}
+                    />
+                    {showError('pincode') && <p className="member-detail-error">{memberErrors.pincode}</p>}
+                  </div>
                   <div className="member-detail-field member-detail-field-span-2">
                     <label htmlFor="detail-residential_address">Address (optional)</label>
                     <textarea
                       id="detail-residential_address"
-                      rows={4}
+                      rows={3}
+                      placeholder="Door / flat no, street, area, city, state"
                       value={memberForm.residential_address}
                       onChange={(e) => updateField('residential_address', e.target.value)}
                     />
