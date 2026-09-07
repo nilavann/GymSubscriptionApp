@@ -10,7 +10,6 @@
     "supabase": "supabase"
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.110.7",
     "supabase": "2.109.1"
   }
 }
