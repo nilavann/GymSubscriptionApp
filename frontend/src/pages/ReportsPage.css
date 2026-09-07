@@ -30,8 +30,8 @@
 }
 
 .reports-range-chip-active {
-  background: var(--tint-accent);
-  border-color: var(--tint-accent);
+  background: var(--tint-solid);
+  border-color: var(--tint-solid);
   color: var(--color-text-inverse);
 }
 
@@ -446,7 +446,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   white-space: nowrap;
 }
 

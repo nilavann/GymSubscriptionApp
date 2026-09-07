@@ -88,7 +88,8 @@
   min-height: 44px;
   margin: 1rem auto;
   border-radius: 50%;
-  background: var(--tint-accent);
+  /* Solid fill carrying white text - --tint-solid, not --tint-accent (Accessibility contract). */
+  background: var(--tint-solid);
   color: var(--color-text-inverse);
   border: 3px solid var(--color-text-inverse);
   cursor: pointer;

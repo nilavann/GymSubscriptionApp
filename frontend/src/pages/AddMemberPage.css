@@ -261,7 +261,7 @@
 .add-member-chip-selected {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-weight: 700;
 }
 

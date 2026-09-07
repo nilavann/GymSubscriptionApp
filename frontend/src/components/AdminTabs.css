@@ -25,7 +25,8 @@
 }
 
 .admin-tab-active {
-  background: var(--tint-accent);
-  border-color: var(--tint-accent);
+  /* Solid fill carrying white text - --tint-solid, not --tint-accent (Accessibility contract). */
+  background: var(--tint-solid);
+  border-color: var(--tint-solid);
   color: var(--color-text-inverse);
 }

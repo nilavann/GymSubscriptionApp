@@ -130,7 +130,7 @@ There is no `pill` radius option anymore (v1 had three; v2 cut it to two).
 | Input (default) | bg = `--color-surface-input`, border = `--color-border-default` |
 | Input (focused) | border = `--tint-ink` (or tint-specific focus ring — `--tint-focus-ring`), box-shadow = `--tint-focus-ring` |
 | Input (disabled) | bg = `--color-interactive-disabled-bg`, text = `--color-interactive-disabled-text` |
-| Nav bar (mobile/desktop) | bg = `--color-neutral-0`, active = `--tint-accent` (text/icon), inactive = `--color-text-secondary` |
+| Nav bar (mobile/desktop) | bg = `--color-neutral-0`, active = `--tint-ink` (text/icon on white) or `--tint-on-pill` (text on a `--tint-pill-bg` active-item background, e.g. the desktop sidebar's active row), inactive = `--color-text-secondary` |
 | Member status badge | pill shape — bg/text from the matching `--color-status-*-bg`/`-text` pair |
 | Screen background | Always `--color-surface-page` |
 | Card surface | Always `--color-surface-card` with `--color-border-card` 1px border |
@@ -143,7 +143,7 @@ There is no `pill` radius option anymore (v1 had three; v2 cut it to two).
 2. Only one CTA-gradient action per screen; secondary actions use outline/ghost styling.
 3. `--color-status-*` tokens are semantic-only — never used decoratively (an avatar hash must never land on a status color by coincidence — this is exactly why the categorical `--color-data-*` palette exists separately, see `lib/avatar.ts`).
 4. `--color-text-muted` (`#9ca3af`) is for **disabled states only** — general secondary body text uses `--color-text-secondary` (`#6b7280`). This was a v1→v2 change (secondary text moved off `#9ca3af`); a full per-component audit of remaining `--color-text-muted` usage on non-disabled text is tracked as an open cleanup item, not yet complete everywhere.
-5. Every tint's four roles (§2.1) must be used per their contrast contract — `--tint-accent` never sits under small text; a component needing accent-colored text uses `--tint-ink` instead. A full per-component audit of pre-v2 `--tint-accent` usages that should be `--tint-ink`/`--tint-solid`/`--tint-on-pill` is an open cleanup item, picked up screen-by-screen as each is re-skinned to the v2 handoff (see `spec/frontend/action-center.md` for the first screen migrated under that plan).
+5. Every tint's four roles (§2.1) must be used per their contrast contract — `--tint-accent` never sits under small text; a component needing accent-colored text uses `--tint-ink` (on white/`--color-surface-page`) or `--tint-on-pill` (on `--tint-pill-bg`) instead, and a solid fill carrying white text uses `--tint-solid`. **This audit is complete app-wide** (2026-09-07) — every `--tint-accent` usage left in the codebase is a border, a native `accent-color` (checkbox tint), a focus-ring companion, or one of the role table's explicitly-allowed decorative fills (progress bars, avatar tiles, toggle-on, chart bars, donut slices). A newly-added component must still follow the same rule; there's no longer a backlog to catch up on.
 6. Admin screens share the same color system — no separate admin palette.
 7. Respect the user's OS-level reduced-motion/contrast preferences where feasible (`prefers-reduced-motion`) — this token set has no dark-mode variant defined.
 
