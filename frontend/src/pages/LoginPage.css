@@ -83,6 +83,60 @@
   margin-bottom: 1rem;
 }
 
+/* Signed-out screen (v2) - replaces the form entirely inside .login-card, not a banner on
+   top of it. */
+.login-signed-out-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-text);
+  margin: 0 auto 1rem;
+}
+
+.login-signed-out-progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.login-signed-out-progress-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--tint-accent);
+  border-radius: 999px;
+  transform-origin: left;
+  animation-name: login-signed-out-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes login-signed-out-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-signed-out-progress-fill {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+.login-signed-out-cta {
+  margin-top: 0.5rem;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
@@ -186,7 +240,7 @@
 }
 
 .login-forgot-link:hover {
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   text-decoration: underline;
 }
 

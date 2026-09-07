@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [isInitialising, setIsInitialising] = useState(true);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
   const [authLinkError, setAuthLinkError] = useState<string | null>(null);
 
@@ -170,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setCurrentProfile(null);
       setBlockedMessage(SESSION_EXPIRED_MESSAGE);
+      setSessionExpired(true);
       authService.signOut().catch(() => {});
     }
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
@@ -186,6 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     isInitialising,
     blockedMessage,
+    sessionExpired,
+    clearSessionExpired: () => setSessionExpired(false),
     authLinkError,
     needsPasswordReset,
     signInWithPassword: authService.signInWithPassword,
