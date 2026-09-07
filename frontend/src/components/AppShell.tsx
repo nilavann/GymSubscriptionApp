@@ -1,9 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Dumbbell } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { useActionCenterCount } from '../lib/action-center';
 import { NAV_ITEMS } from './nav-items';
 import { AppFooter } from './AppFooter';
+import logo from '../assets/logo.png';
 import './AppShell.css';
 
 /**
@@ -27,9 +27,7 @@ export function AppShell() {
     <div className="app-shell">
       <nav className="app-shell-sidebar" aria-label="Main navigation">
         <div className="app-shell-brand-row">
-          <span className="app-shell-logo-tile" aria-hidden="true">
-            <Dumbbell size={18} strokeWidth={2} />
-          </span>
+          <img src={logo} alt="" className="app-shell-logo" aria-hidden="true" />
           <span className="app-shell-brand">Fit &amp; Fine</span>
         </div>
 

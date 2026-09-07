@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Mail, Lock, Dumbbell, Eye, EyeOff, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { LoadingView } from '../components/LoadingView';
 import { withTimeout } from '../lib/with-timeout';
+import logo from '../assets/logo.png';
 import './LoginPage.css';
 
 type ViewState = 'idle' | 'submitting' | 'reset-sent';
@@ -175,7 +176,7 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-badge" aria-hidden="true">
-          <Dumbbell size={26} strokeWidth={2} />
+          <img src={logo} alt="" className="login-badge-logo" />
         </div>
         <h1 className="login-brand">Welcome to Fit &amp; Fine</h1>
         <p className="login-subtitle">Sign in to manage members and subscriptions</p>

@@ -56,15 +56,12 @@
   padding: 0 1rem 1rem;
 }
 
-.app-shell-logo-tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-tile);
-  background: var(--color-neutral-900);
-  color: var(--color-neutral-0);
+/* Brand logo (v2 - design_handoff_flexhub_v2/README.md §3) - the PNG mark itself carries
+   its own color/shape, so unlike the dumbbell icon it replaced, it doesn't sit inside a
+   colored tile - just sized to the spec's 34px header height, aspect ratio preserved. */
+.app-shell-logo {
+  height: 34px;
+  width: auto;
   flex-shrink: 0;
 }
 

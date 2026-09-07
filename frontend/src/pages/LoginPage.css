@@ -22,13 +22,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 80px;
+  height: 80px;
   border-radius: var(--radius-tile);
   background: var(--color-neutral-0);
   color: var(--color-text-primary);
   box-shadow: 0 6px 16px var(--color-shadow);
   margin: 0 auto 1rem;
+}
+
+/* Brand logo (v2) - the PNG mark carries its own color/shape, sized to the spec's 64px
+   login-card height, aspect ratio preserved, inside the existing white tile above. */
+.login-badge-logo {
+  height: 64px;
+  width: auto;
 }
 
 @keyframes login-card-in {

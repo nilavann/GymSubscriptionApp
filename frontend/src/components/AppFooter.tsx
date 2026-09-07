@@ -1,4 +1,4 @@
-import { Dumbbell } from 'lucide-react';
+import logo from '../assets/logo.png';
 import './AppFooter.css';
 
 // frontend/mockups/README.md §Footer: logo + brand + tagline, a row of policy links, and a
@@ -11,9 +11,7 @@ export function AppFooter() {
     <footer className="app-footer">
       <div className="app-footer-inner">
         <div className="app-footer-brand-row">
-          <span className="app-footer-logo-tile" aria-hidden="true">
-            <Dumbbell size={16} strokeWidth={2} />
-          </span>
+          <img src={logo} alt="" className="app-footer-logo" aria-hidden="true" />
           <div>
             <span className="app-footer-brand">Fit &amp; Fine</span>
             <span className="app-footer-tagline">Fit &amp; Fine Gym member management · v1.0.0</span>
