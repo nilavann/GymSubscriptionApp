@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { useActionCenterCount } from '../lib/action-center';
 import { NAV_ITEMS } from './nav-items';
@@ -12,10 +13,12 @@ import './AppShell.css';
  * a signed-out visitor; /login has no access to this component at all.
  *
  * No persistent topbar (per frontend/mockups/README.md) — the brand mark lives at the
- * top of the sidebar itself, and sign-out lives on the Settings hub's Account section.
+ * top of the sidebar itself. Sign-out also lives on the Settings hub's Account section,
+ * but Settings is admin-only, so a Sign Out control lives here too — it's the only way a
+ * staff (non-admin) user can sign out at all.
  */
 export function AppShell() {
-  const { currentProfile } = useAuth();
+  const { currentProfile, signOut } = useAuth();
   const actionCenterCount = useActionCenterCount();
   const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || currentProfile?.roles.includes('admin'));
 
@@ -43,6 +46,11 @@ export function AppShell() {
             {badgeFor(item.path) !== null && <span className="app-shell-nav-badge">{badgeFor(item.path)}</span>}
           </NavLink>
         ))}
+
+        <button type="button" className="app-shell-nav-item app-shell-signout-button" onClick={() => signOut()}>
+          <LogOut size={20} strokeWidth={2} />
+          <span>Sign Out</span>
+        </button>
       </nav>
 
       <div className="app-shell-main">
@@ -67,6 +75,11 @@ export function AppShell() {
             <span>{item.label}</span>
           </NavLink>
         ))}
+
+        <button type="button" className="app-shell-tab app-shell-signout-button" onClick={() => signOut()}>
+          <LogOut size={20} strokeWidth={2} />
+          <span>Sign Out</span>
+        </button>
       </nav>
     </div>
   );

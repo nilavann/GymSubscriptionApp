@@ -163,6 +163,33 @@
   line-height: 1;
 }
 
+/* Shared button reset — the sidebar version (.app-shell-nav-item.app-shell-signout-button)
+   is a full-width row pinned to the bottom of the flex column; the mobile tab bar version
+   (.app-shell-tab.app-shell-signout-button) overrides width/margin back to a normal
+   inline flow item alongside the other tabs. */
+.app-shell-signout-button {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-status-danger-text);
+}
+
+.app-shell-signout-button:hover {
+  background: var(--color-status-danger-bg-subtle);
+  color: var(--color-status-danger-text);
+}
+
+.app-shell-nav-item.app-shell-signout-button {
+  width: calc(100% - 1.5rem);
+  text-align: left;
+  margin-top: auto;
+}
+
+.app-shell-tab.app-shell-signout-button {
+  width: auto;
+}
+
 .app-shell-tab-icon-wrap {
   position: relative;
   display: inline-flex;
