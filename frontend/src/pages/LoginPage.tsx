@@ -123,7 +123,7 @@ export function LoginPage() {
 
   // Already signed in with an active profile — no reason to see the login form.
   if (currentProfile) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/action-center" replace />;
   }
 
   const canSubmit = email.trim() !== '' && password !== '' && viewState !== 'submitting';

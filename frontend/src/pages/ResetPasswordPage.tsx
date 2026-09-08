@@ -78,7 +78,7 @@ export function ResetPasswordPage() {
   }
 
   if (viewState === 'done') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/action-center" replace />;
   }
 
   return (

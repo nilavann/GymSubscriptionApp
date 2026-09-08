@@ -128,7 +128,7 @@ const router = createBrowserRouter([
       },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <Navigate to="/action-center" replace /> },
 ]);
 
 export function App() {

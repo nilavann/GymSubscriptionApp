@@ -14,8 +14,8 @@ Uses **React Router** (createBrowserRouter). Do not hand-roll routing or use fil
                               email link, or redirected here from anywhere else in the app
                               while a recovery session is pending
 
-/                         →  Members List           [home, all users]
-/action-center             →  Action Center           [all users] — see action-center.md
+/                         →  Members List           [all users]
+/action-center             →  Action Center           [home, all users] — see action-center.md
 /reports                  →  Reports                 [all users]
 /settings                 →  Settings hub             [admin only]
 
@@ -43,7 +43,7 @@ Unlike the mobile app's separate "modal" screens (`member/add`, `member/[id]/ren
 
 On app load:
 - If no Supabase session exists → redirect to `/login`.
-- If a valid, active-profile session exists → redirect to `/` (Members List).
+- If a valid, active-profile session exists → redirect to `/action-center` (Action Center, the default tab).
 - If a password-recovery session is pending (`needsPasswordReset`, see [auth.md §4.3](./auth.md#43-reset-password-completion-req-auth-005)) → redirect to `/reset-password`, ahead of the two rules above.
 
 Session state comes from `useAuth()` (see [app-shell.md](./app-shell.md)) — there is no manual `localStorage` key to check; `supabase-js` owns session persistence.
