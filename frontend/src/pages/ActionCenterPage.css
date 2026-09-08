@@ -317,6 +317,15 @@
   font-size: 1.3rem;
 }
 
+.action-center-avatar-clickable {
+  cursor: zoom-in;
+  transition: transform 0.1s ease;
+}
+
+.action-center-avatar-clickable:hover {
+  transform: scale(1.08);
+}
+
 .action-center-card-identity {
   min-width: 0;
   display: flex;
