@@ -115,6 +115,18 @@ export function AddMemberPage() {
     setErrors(memberService.validateNewMember({ ...form }));
   }
 
+  /** Gender is chip buttons, not a native input — there's no separate blur event, so the
+   * value update and validation have to happen together against the same merged draft.
+   * (Calling updateField() then handleBlur('gender') back to back would validate against
+   * the pre-update `form` closure, since setForm's update hasn't committed yet — that
+   * flashed a spurious "Select a gender" error on the very first selection.) */
+  function selectGender(gender: Gender) {
+    const next = { ...form, gender };
+    setForm(next);
+    setTouched((prev) => ({ ...prev, gender: true }));
+    setErrors(memberService.validateNewMember(next));
+  }
+
   function handlePhotoSelected(file: File | undefined) {
     if (!file) return;
     setPhotoFile(file);
@@ -306,10 +318,7 @@ export function AddMemberPage() {
                     key={gender}
                     type="button"
                     className={`add-member-chip${form.gender === gender ? ' add-member-chip-selected' : ''}`}
-                    onClick={() => {
-                      updateField('gender', gender);
-                      handleBlur('gender');
-                    }}
+                    onClick={() => selectGender(gender)}
                   >
                     {gender}
                   </button>

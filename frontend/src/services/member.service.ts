@@ -69,13 +69,21 @@ function validateMemberFields(form: MemberFieldsDraft): Partial<Record<keyof Mem
   if (!form.date_of_joining) errors.date_of_joining = 'Date of joining is required';
   if (form.gender === '') errors.gender = 'Select a gender';
 
-  const weightKg = Number(form.weight_kg);
-  if (form.weight_kg.trim() === '' || Number.isNaN(weightKg) || weightKg < 1 || weightKg > 500) {
-    errors.weight_kg = 'Weight must be between 1 and 500 kg';
+  if (form.weight_kg.trim() === '') {
+    errors.weight_kg = 'Weight is required';
+  } else {
+    const weightKg = Number(form.weight_kg);
+    if (Number.isNaN(weightKg) || weightKg < 1 || weightKg > 500) {
+      errors.weight_kg = 'Weight must be between 1 and 500 kg';
+    }
   }
-  const heightCm = Number(form.height_cm);
-  if (form.height_cm.trim() === '' || Number.isNaN(heightCm) || heightCm < 1 || heightCm > 300) {
-    errors.height_cm = 'Height must be between 1.0 and 300.0 cm';
+  if (form.height_cm.trim() === '') {
+    errors.height_cm = 'Height is required';
+  } else {
+    const heightCm = Number(form.height_cm);
+    if (Number.isNaN(heightCm) || heightCm < 1 || heightCm > 300) {
+      errors.height_cm = 'Height must be between 1.0 and 300.0 cm';
+    }
   }
 
   if (form.under_doctor_care && !form.doctor_care_details.trim()) {
