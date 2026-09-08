@@ -87,6 +87,70 @@
   font-weight: 600;
 }
 
+/* Member summary card - who this checkout is for, at a glance. */
+.renew-member-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 0.875rem 1.125rem;
+  margin-bottom: 0.875rem;
+}
+
+.renew-member-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-tile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--color-text-inverse);
+}
+
+.renew-member-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.renew-member-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.renew-member-meta {
+  font-size: 0.78125rem;
+  color: var(--color-text-muted);
+}
+
+.status-badge {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.status-badge-active {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-text);
+}
+
+.status-badge-expiring {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+}
+
 .renew-banner-error {
   background: var(--color-status-danger-bg-subtle);
   border: 1px solid var(--color-status-danger-border);

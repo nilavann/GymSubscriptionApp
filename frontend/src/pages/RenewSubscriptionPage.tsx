@@ -4,6 +4,8 @@ import { ArrowLeft, Trash2, Calendar, AlertTriangle, WifiOff, RefreshCw } from '
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { formatDate, todayDate } from '../lib/datetime';
+import { getAvatarColor, getInitials } from '../lib/avatar';
+import { EXPIRING_SOON_THRESHOLD_DAYS } from '../lib/status';
 import type { Member } from '../types/member';
 import type { Plan } from '../types/plan';
 import type { MemberCurrentItem } from '../types/member-current-item';
@@ -43,6 +45,13 @@ function formatRupees(amount: number): string {
 function planOptionLabel(plan: Plan): string {
   const duration = plan.duration_days === null ? 'Never expires' : `${plan.duration_days} days`;
   return `${plan.name} · ${duration} · ₹${plan.price.toLocaleString('en-IN')}`;
+}
+
+/** Days from today to endDate (UTC calendar-date arithmetic, same approach as lib/status.ts). */
+function daysUntil(endDate: string): number {
+  const [ty, tm, td] = todayDate().split('-').map(Number);
+  const [ey, em, ed] = endDate.split('-').map(Number);
+  return Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
 }
 
 export function RenewSubscriptionPage() {
@@ -110,6 +119,18 @@ export function RenewSubscriptionPage() {
   const addonPlans = useMemo(() => plans.filter((p) => p.category === 'addon'), [plans]);
 
   const membershipItemCount = items.filter((item) => item.category === 'membership').length;
+
+  /** Drives the summary card up top — member_current_items is already filtered
+   * server-side to unexpired/indefinite rows, so a membership showing here is by
+   * definition not yet expired (see MemberDetailPage's identical assumption). */
+  const currentMembershipItem = currentItems.find((item) => item.category === 'membership') ?? null;
+  const currentMembershipDaysLeft = currentMembershipItem?.end_date ? daysUntil(currentMembershipItem.end_date) : null;
+  const currentMembershipBadge: 'active' | 'expiring' | null =
+    currentMembershipItem === null
+      ? null
+      : currentMembershipDaysLeft === null || currentMembershipDaysLeft > EXPIRING_SOON_THRESHOLD_DAYS
+        ? 'active'
+        : 'expiring';
 
   const itemErrors = useMemo(
     () => items.map((item) => validateCheckoutItem(item, item.plan_id === '' ? undefined : planById.get(item.plan_id))),
@@ -340,6 +361,29 @@ export function RenewSubscriptionPage() {
       <p className="renew-subtitle">
         {member ? `${member.name} · ${member.member_number} · ` : ''}one checkout, one or more items
       </p>
+
+      {member && (
+        <div className="renew-member-card">
+          <span className="renew-member-avatar" style={{ background: getAvatarColor(member.id) }}>
+            {getInitials(member.name)}
+          </span>
+          <div className="renew-member-info">
+            <span className="renew-member-name">{member.name}</span>
+            <span className="renew-member-meta">
+              {currentMembershipItem === null
+                ? 'No active membership'
+                : currentMembershipItem.end_date === null
+                  ? `${currentMembershipItem.plan_name} · never expires`
+                  : `${currentMembershipItem.plan_name} expires ${formatDate(currentMembershipItem.end_date)} · ${Math.max(0, currentMembershipDaysLeft ?? 0)} days left`}
+            </span>
+          </div>
+          {currentMembershipBadge && (
+            <span className={`status-badge status-badge-${currentMembershipBadge}`}>
+              {currentMembershipBadge === 'expiring' ? 'Expiring Soon' : 'Active'}
+            </span>
+          )}
+        </div>
+      )}
 
       {saveErrorKind === 'generic' && <div className="renew-banner-error">{saveErrorMessage}</div>}
 
