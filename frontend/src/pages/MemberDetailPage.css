@@ -272,22 +272,29 @@
   flex: 1;
 }
 
+.member-detail-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .member-detail-name {
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
-.member-detail-hero-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.member-detail-hero-meta-1 {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
 }
 
-.member-detail-number {
+.member-detail-hero-meta-2 {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
 }
 
 .member-detail-photo-status {
@@ -344,42 +351,36 @@
   color: var(--color-status-danger-text);
 }
 
-/* Layout columns */
+/* Layout */
 
-.member-detail-columns {
+.member-detail-main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.member-detail-column-left,
-.member-detail-column-right {
+/* Medical/Emergency contact (left) · Personal (right, collapsible) — member-detail-page
+   design §1's `.gm-detail-grid`: 1fr/1.15fr from 760px, single column below. This is a
+   narrower, purpose-built breakpoint for just this row (not the page's other 1024px tier)
+   per the design spec's own literal CSS. */
+.member-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 760px) {
+  .member-detail-grid {
+    grid-template-columns: 1fr 1.15fr;
+    align-items: start;
+  }
+}
+
+.member-detail-grid-col {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
-}
-
-/* Two columns only from the desktop tier (>= 1024px), not the tablet tier (768-1023px)
-   this project also has — see spec/frontend/rules.md's tier breakdown and styling.md §4
-   for the 768px-viewport math (AppShell's 240px sidebar + this column's 380px left
-   almost fully consumed the width, leaving ~88px for the right column) that makes this
-   page read as "overlapping" at tablet widths without this floor. Below 1024px this
-   page keeps the single-column mobile layout instead. */
-@media (min-width: 1024px) {
-  .member-detail-columns {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-
-  .member-detail-column-left {
-    width: 380px;
-    flex-shrink: 0;
-  }
-
-  .member-detail-column-right {
-    flex: 1;
-  }
 }
 
 /* Sections */
@@ -461,6 +462,21 @@
   word-break: break-word;
 }
 
+/* Personal card's progressive-disclosure toggle (member-detail-page design §6). */
+.member-detail-disclosure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--tint-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Edit mode fields */
 
 .member-detail-required {
@@ -523,28 +539,6 @@
   outline: none;
   border-color: var(--tint-accent);
   box-shadow: 0 0 0 3px var(--tint-focus-ring);
-}
-
-.member-detail-metrics-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.member-detail-metrics-row label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-.member-detail-metrics-row input {
-  background: var(--color-surface-input);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-el);
-  padding: 0.6rem 0.75rem;
-  font-size: 0.85rem;
-  min-height: 44px;
-  width: 100%;
 }
 
 .member-detail-chip-row {
@@ -775,6 +769,19 @@
   color: var(--color-status-danger-text);
 }
 
+.member-detail-strip-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tint-ink);
+}
+
+.member-detail-strip-label-expired {
+  color: var(--color-status-danger-text);
+}
+
 .member-detail-membership-strip-none {
   display: flex;
   flex-direction: column;
@@ -809,9 +816,33 @@
   font-size: 0.85rem;
 }
 
+.member-detail-addon-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.member-detail-addon-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .member-detail-addon-dates {
   color: var(--color-text-muted);
   font-size: 0.78rem;
+}
+
+.member-detail-addon-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--color-neutral-300);
+  background: var(--color-neutral-75);
+  border-radius: var(--radius-el);
 }
 
 /* Subscription History */
