@@ -5,13 +5,16 @@ import { useAuth } from '../context/auth.context';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
 import { AdminTabs } from '../components/AdminTabs';
+import { LegalLinks } from '../components/LegalLinks';
+import { getInitials } from '../lib/avatar';
+import { useIsTabletUp } from '../lib/use-media-query';
 import { useTheme, TINT_OPTIONS, RADIUS_OPTIONS, type Tint, type Radius } from '../context/theme.context';
 import './SettingsPage.css';
 
 const FETCH_TIMEOUT_MS = 10000;
 type PasswordResetState = 'idle' | 'sending' | 'sent' | 'error';
 
-const TINT_LABEL: Record<Tint, string> = { wild: 'Wild', sky: 'Sky', violet: 'Violet' };
+const TINT_LABEL: Record<Tint, string> = { amber: 'Amber', wild: 'Wild', sky: 'Sky', violet: 'Violet' };
 const RADIUS_LABEL: Record<Radius, string> = { soft: 'Soft', sharp: 'Sharp' };
 
 /**
@@ -21,6 +24,7 @@ const RADIUS_LABEL: Record<Radius, string> = { soft: 'Soft', sharp: 'Sharp' };
 export function SettingsPage() {
   const { currentProfile, session, signOut, resetPasswordForEmail } = useAuth();
   const { tint, radius, setTint, setRadius } = useTheme();
+  const isTabletUp = useIsTabletUp();
   const {
     memberRepository,
     planRepository,
@@ -54,7 +58,7 @@ export function SettingsPage() {
 
       <section className="settings-profile-card">
         <span className="settings-profile-avatar" aria-hidden="true">
-          {currentProfile?.full_name?.slice(0, 2).toUpperCase()}
+          {getInitials(currentProfile?.full_name ?? '')}
         </span>
         <div className="settings-profile-info">
           <span className="settings-profile-name">{currentProfile?.full_name}</span>
@@ -183,6 +187,9 @@ export function SettingsPage() {
           />
         </div>
       </section>
+
+      {/* The footer's phone counterpart — exactly one of the two renders (rules.md rule 33). */}
+      {!isTabletUp && <LegalLinks />}
     </div>
   );
 }

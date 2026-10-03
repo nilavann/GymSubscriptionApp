@@ -14,7 +14,16 @@ export function PhotoLightbox({ src, alt, onClose }: { src: string; alt: string;
 
   return (
     <div className="photo-lightbox-backdrop" role="dialog" aria-modal="true" aria-label={alt || 'Photo'} onClick={onClose}>
-      <button type="button" className="photo-lightbox-close" onClick={onClose} aria-label="Close">
+      {/* stopPropagation: the click would otherwise ALSO reach the backdrop's own onClose — two calls per tap. */}
+      <button
+        type="button"
+        className="photo-lightbox-close"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        aria-label="Close"
+      >
         <X size={22} strokeWidth={2} />
       </button>
       <img src={src} alt={alt} className="photo-lightbox-image" onClick={(e) => e.stopPropagation()} />

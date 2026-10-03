@@ -6,13 +6,16 @@ import { sanitizeDecimal } from '../lib/input-masks';
 import { AdminTabs } from '../components/AdminTabs';
 import type { Plan, PlanCategory } from '../types/plan';
 import type { PlanDraft, PlanFormErrors } from '../services/plan.service';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './ManagePlansPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
 type CategoryFilter = 'all' | PlanCategory;
 
 export function ManagePlansPage() {
+  const isTabletUp = useIsTabletUp();
   const { planRepository, planService } = useServices();
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -38,7 +41,7 @@ export function ManagePlansPage() {
       setPlans(data);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message === 'plans-timeout' || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message === 'plans-timeout' || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -107,7 +110,7 @@ export function ManagePlansPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('name')) {
         setSaveError('This name is already used by another plan.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setSaveError("Couldn't save this plan — check your connection and try again.");
       } else {
         setSaveError('Something went wrong saving this plan. Please try again.');
@@ -132,7 +135,7 @@ export function ManagePlansPage() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Failed to fetch') {
+      if (isNetworkError(message)) {
         setDeleteError("Couldn't delete this plan — check your connection and try again.");
       } else if (message) {
         // Includes the "Cannot delete — used by X subscription(s)" message from
@@ -322,66 +325,69 @@ export function ManagePlansPage() {
         </div>
       ) : (
         <>
-          <div className="plans-cards">
-            {filteredPlans.map((plan) => (
-              <div key={plan.id} className="plans-card">
-                <div className="plans-card-top">
-                  <span className="plans-card-name">{plan.name}</span>
-                  <span className={`plans-category-badge plans-category-${plan.category}`}>
-                    {plan.category === 'membership' ? 'Membership' : 'Add-on'}
-                  </span>
-                </div>
-                <p className="plans-card-detail">
-                  {plan.duration_days === null ? 'Never expires' : `${plan.duration_days} days`} · ₹{plan.price}
-                </p>
-                <div className="plans-card-actions">
-                  <button
-                    type="button"
-                    className="plans-edit-button"
-                    onClick={() => openEditForm(plan)}
-                    aria-label={`Edit ${plan.name}`}
-                  >
-                    <Pencil size={14} strokeWidth={2} />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="plans-delete-button"
-                    onClick={() => openDeleteConfirm(plan)}
-                    aria-label={`Delete ${plan.name}`}
-                  >
-                    <Trash2 size={14} strokeWidth={2} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <table className="plans-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Duration</th>
-                <th>Price</th>
-                <th>Max Members</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+          {isTabletUp ? (
+            <table className="plans-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Duration</th>
+                  <th>Price</th>
+                  <th>Max Members</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPlans.map((plan) => (
+                  <tr key={plan.id}>
+                    <td>{plan.name}</td>
+                    <td>
+                      <span className={`plans-category-badge plans-category-${plan.category}`}>
+                        {plan.category === 'membership' ? 'Membership' : 'Add-on'}
+                      </span>
+                    </td>
+                    <td>{plan.duration_days === null ? 'Never expires' : `${plan.duration_days} days`}</td>
+                    <td>₹{plan.price}</td>
+                    <td>{plan.category === 'membership' ? plan.max_members : '—'}</td>
+                    <td className="plans-table-actions">
+                      <button
+                        type="button"
+                        className="plans-edit-button"
+                        onClick={() => openEditForm(plan)}
+                        aria-label={`Edit ${plan.name}`}
+                      >
+                        <Pencil size={14} strokeWidth={2} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="plans-delete-button"
+                        onClick={() => openDeleteConfirm(plan)}
+                        aria-label={`Delete ${plan.name}`}
+                      >
+                        <Trash2 size={14} strokeWidth={2} />
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="plans-cards">
               {filteredPlans.map((plan) => (
-                <tr key={plan.id}>
-                  <td>{plan.name}</td>
-                  <td>
+                <div key={plan.id} className="plans-card">
+                  <div className="plans-card-top">
+                    <span className="plans-card-name">{plan.name}</span>
                     <span className={`plans-category-badge plans-category-${plan.category}`}>
                       {plan.category === 'membership' ? 'Membership' : 'Add-on'}
                     </span>
-                  </td>
-                  <td>{plan.duration_days === null ? 'Never expires' : `${plan.duration_days} days`}</td>
-                  <td>₹{plan.price}</td>
-                  <td>{plan.category === 'membership' ? plan.max_members : '—'}</td>
-                  <td className="plans-table-actions">
+                  </div>
+                  <p className="plans-card-detail">
+                    {plan.duration_days === null ? 'Never expires' : `${plan.duration_days} days`} · ₹{plan.price}
+                  </p>
+                  <div className="plans-card-actions">
                     <button
                       type="button"
                       className="plans-edit-button"
@@ -400,11 +406,11 @@ export function ManagePlansPage() {
                       <Trash2 size={14} strokeWidth={2} />
                       Delete
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </>
       )}
 

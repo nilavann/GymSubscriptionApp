@@ -45,21 +45,6 @@
   cursor: pointer;
 }
 
-.member-detail-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 44px;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.member-detail-back-link:hover {
-  color: var(--tint-ink);
-}
-
 .member-detail-header {
   display: flex;
   align-items: center;
@@ -325,31 +310,7 @@
   flex-shrink: 0;
 }
 
-/* Status badge - shared shape with Members List */
-
-.status-badge {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-
-.status-badge-active {
-  background: var(--color-status-success-bg);
-  color: var(--color-status-success-text);
-}
-
-.status-badge-expiring {
-  background: var(--color-status-warning-bg);
-  color: var(--color-status-warning-text);
-}
-
-.status-badge-expired {
-  background: var(--color-status-danger-bg);
-  color: var(--color-status-danger-text);
-}
+/* Status badges (.status-badge-*) live in styles/status.css — do not re-declare them here. */
 
 /* Layout */
 
@@ -962,4 +923,55 @@
 
 .member-detail-delete-dialog p {
   color: var(--color-text-secondary);
+}
+
+/* Phone layout (design_handoff_flexhub_mobile README, "Member Detail"). Pure styling on the same markup — it
+   must stay at the END of this file so it overrides the desktop rules above at equal specificity. Below 760px
+   (the same cut-off as the two-column grid): */
+@media (max-width: 759px) {
+  .member-detail-hero {
+    align-items: flex-start;
+  }
+
+  /* The identity text sits beside the avatar. Without this the actions row (Edit / Delete, flex-shrink: 0)
+     took half the card and the name and member number wrapped one word per line underneath it. */
+  .member-detail-hero-actions {
+    flex: 1 1 100%;
+  }
+
+  .member-detail-hero-actions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* "Renew CTA full width inside the membership strip": the plan name and Renew share a flex row on desktop.
+     display: contents lets them join the strip's own column, so Renew can drop to the bottom at full width. */
+  .member-detail-membership-strip-active,
+  .member-detail-membership-strip-expired {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .member-detail-membership-strip .member-detail-item-card-top {
+    display: contents;
+  }
+
+  .member-detail-membership-strip .member-detail-renew-button {
+    order: 1;
+    margin-top: 0.75rem;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  /* One column in the handoff's order: Personal, Medical, Emergency, Add-ons, Subscription history. The
+     profile form comes before the add-on and history cards, and the grid's right-hand column (Personal) before
+     its left-hand one (Medical, Emergency). Visual order only — the DOM, and so the desktop layout, is untouched. */
+  .member-detail-main > form {
+    order: -1;
+  }
+
+  .member-detail-grid {
+    display: flex;
+    flex-direction: column-reverse;
+  }
 }

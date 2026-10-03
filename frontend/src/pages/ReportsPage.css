@@ -9,10 +9,24 @@
 .reports-range-chips {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  /* README §Reports: range chips scroll horizontally, never wrap. max-width lets the row shrink to the
+     screen (it is a flex child of a wrapping header) and the padding/negative margin keep room for the
+     keyboard-focus ring inside the scroller. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+  padding: 4px;
+  margin: -4px;
+}
+
+.reports-range-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .reports-range-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
   min-height: 44px;
   padding: 0 0.9rem;
   border-radius: var(--radius-pill);

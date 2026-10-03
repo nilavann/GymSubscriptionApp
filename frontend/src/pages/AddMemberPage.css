@@ -106,6 +106,9 @@
 }
 
 .add-member-section {
+  /* A <fieldset> defaults to min-width: min-content, so it stretches to its widest child instead of
+     shrinking to the screen — it was 522px wide on a 390px phone. rules.md rule 16d. */
+  min-width: 0;
   border: 1px solid var(--color-border-card);
   border-radius: 16px;
   padding: 1.1rem 1.25rem;
@@ -165,6 +168,9 @@
 .add-member-section input,
 .add-member-section select,
 .add-member-section textarea {
+  /* An input's intrinsic width (size=20, ~230px at 16px type) is its min-content, which a grid/flex
+     track will not shrink below unless told to. */
+  min-width: 0;
   background: var(--color-surface-input);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-el);
@@ -208,11 +214,14 @@
 /* Body Metrics: side-by-side pair even on mobile - two short numeric fields fit fine. */
 .add-member-metrics-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr), not 1fr: a bare 1fr is minmax(auto, 1fr), so the tracks could not shrink below
+     the inputs' intrinsic width and the pair pushed the page wider than a phone. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .add-member-metrics-row > div {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;

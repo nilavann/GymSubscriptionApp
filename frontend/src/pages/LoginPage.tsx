@@ -166,8 +166,11 @@ export function LoginPage() {
     setError(null);
     try {
       await resetPasswordForEmail(email);
+    } catch {
+      // Deliberately swallowed: the user sees the same generic confirmation whether or not the send
+      // worked, so a failure can't be used to probe which emails are registered. (Without this catch
+      // the rejection escaped the click handler as an unhandled promise rejection.)
     } finally {
-      // Generic confirmation either way — never reveals whether the email exists.
       setViewState('reset-sent');
     }
   }

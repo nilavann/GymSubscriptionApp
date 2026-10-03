@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, SlidersHorizontal, RefreshCw, Repeat, Eye, Table, LayoutGrid, X, WifiOff } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
+import { useIsTabletUp } from '../lib/use-media-query';
 import { formatDate } from '../lib/datetime';
 import { deriveStatus, STATUS_LABEL, STATUS_BADGE_CLASS } from '../lib/status';
 import { getAvatarColor, getInitials } from '../lib/avatar';
@@ -12,6 +13,7 @@ import type { MemberListRow, MemberStatus } from '../types/member-list';
 import type { Gender } from '../types/member';
 import type { Plan } from '../types/plan';
 import './MembersListPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
@@ -34,6 +36,7 @@ function matchesSearch(row: MemberListRow, query: string): boolean {
 export function MembersListPage() {
   const { memberListRepository, planRepository } = useServices();
   const navigate = useNavigate();
+  const isTabletUp = useIsTabletUp();
 
   const [rows, setRows] = useState<MemberListRow[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -42,8 +45,8 @@ export function MembersListPage() {
   const [search, setSearch] = useState('');
   const [statusPill, setStatusPill] = useState<StatusPill>('all');
   const [sort, setSort] = useState<SortOption>('join-date');
-  // Desktop-only preference (>=768px) - below that, cards render regardless of this state
-  // (a table doesn't fit a phone screen), see the CSS ".members-page[data-view] " gating.
+  // Desktop-only preference (>=768px). Below that only cards are rendered (a table doesn't fit a phone
+  // screen) — see `showTable` below; the view toggle isn't rendered there either.
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedGenders, setSelectedGenders] = useState<Gender[]>([]);
@@ -62,7 +65,7 @@ export function MembersListPage() {
       setPlans(planRows);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -182,6 +185,11 @@ export function MembersListPage() {
   const hasNoMembersAtAll = rows.length === 0;
   const hasNoResults = !hasNoMembersAtAll && filteredRows.length === 0;
 
+  // Render exactly ONE of table / cards (rules.md rule 33) — not both with one hidden by CSS, which
+  // doubled every row's DOM and every member photo <img>. Page state (search, filters, sort, viewMode)
+  // lives above this switch, so resizing across 768px keeps it.
+  const showTable = isTabletUp && viewMode === 'table';
+
   return (
     <div className="members-page" data-view={viewMode}>
       <div className="members-page-header">
@@ -243,28 +251,7 @@ export function MembersListPage() {
                 {activeFilterCount > 0 && <span className="members-filter-toggle-count">{activeFilterCount}</span>}
               </button>
 
-              <div className="members-view-toggle" role="group" aria-label="View">
-                <button
-                  type="button"
-                  className={`members-view-toggle-btn${viewMode === 'table' ? ' members-view-toggle-btn-active' : ''}`}
-                  onClick={() => setViewMode('table')}
-                  aria-pressed={viewMode === 'table'}
-                  aria-label="Table view"
-                  title="Table view"
-                >
-                  <Table size={16} strokeWidth={2} />
-                </button>
-                <button
-                  type="button"
-                  className={`members-view-toggle-btn${viewMode === 'cards' ? ' members-view-toggle-btn-active' : ''}`}
-                  onClick={() => setViewMode('cards')}
-                  aria-pressed={viewMode === 'cards'}
-                  aria-label="Cards view"
-                  title="Cards view"
-                >
-                  <LayoutGrid size={16} strokeWidth={2} />
-                </button>
-              </div>
+              {isTabletUp && <ViewToggle viewMode={viewMode} onChange={setViewMode} />}
             </div>
 
             {(selectedGenders.length > 0 || selectedPlanIds.length > 0 || selectedAddonPlanIds.length > 0) && (
@@ -388,91 +375,22 @@ export function MembersListPage() {
         </div>
       )}
 
-      {filteredRows.length > 0 && (
-        <>
-          {/* Mobile: stacked cards. Desktop: data table. Both read the same filteredRows -
-              toggled purely by CSS media query (rules.md rule 16), same pattern as AppShell. */}
+      {filteredRows.length > 0 &&
+        (showTable ? (
+          <MembersTable rows={filteredRows} onSort={setSort} onEnlargePhoto={enlargePhoto} />
+        ) : (
           <div className="members-cards">
             {filteredRows.map((row) => (
-              <MemberCard key={row.id} row={row} onOpen={() => navigate(`/members/${row.id}`)} onEnlargePhoto={() => enlargePhoto(row)} />
+              <MemberCard
+                key={row.id}
+                row={row}
+                compact={!isTabletUp}
+                onOpen={() => navigate(`/members/${row.id}`)}
+                onEnlargePhoto={() => enlargePhoto(row)}
+              />
             ))}
           </div>
-
-          <table className="members-table">
-            <thead>
-              <tr>
-                <th>
-                  <button type="button" className="members-sort-header" onClick={() => setSort('name')}>
-                    Name
-                  </button>
-                </th>
-                <th>Member #</th>
-                <th>Phone</th>
-                <th>Plan</th>
-                <th>
-                  <button type="button" className="members-sort-header" onClick={() => setSort('expiry')}>
-                    Expiry
-                  </button>
-                </th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((row) => {
-                const status = deriveStatus(row);
-                return (
-                  <tr key={row.id} className="members-table-row" onClick={() => navigate(`/members/${row.id}`)}>
-                    <td>
-                      <div className="members-table-name-cell">
-                        <Avatar row={row} onEnlarge={() => enlargePhoto(row)} />
-                        <span>{row.name}</span>
-                      </div>
-                    </td>
-                    <td className="members-table-number">{row.member_number}</td>
-                    <td>{row.phone}</td>
-                    <td>{row.current_membership_plan_name ?? 'No plan'}</td>
-                    <td>
-                      {row.current_membership_end_date ? formatDate(row.current_membership_end_date) : '—'}
-                    </td>
-                    <td>
-                      <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
-                    </td>
-                    <td className="members-table-actions-cell">
-                      <div className="members-row-actions">
-                        <button
-                          type="button"
-                          className="members-row-renew"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/members/${row.id}/renew`);
-                          }}
-                          aria-label={`Renew ${row.name}`}
-                        >
-                          <Repeat size={14} strokeWidth={2} />
-                          Renew
-                        </button>
-                        <button
-                          type="button"
-                          className="members-row-view"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/members/${row.id}`);
-                          }}
-                          aria-label={`View ${row.name}`}
-                        >
-                          <Eye size={14} strokeWidth={2} />
-                          View
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
-      )}
+        ))}
 
       {lightboxMember?.photo_url && (
         <PhotoLightbox src={lightboxMember.photo_url} alt={lightboxMember.name} onClose={() => setLightboxMember(null)} />
@@ -488,6 +406,8 @@ function Avatar({ row, onEnlarge }: { row: MemberListRow; onEnlarge: () => void 
       <img
         src={row.photo_thumbnail_url}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="members-avatar-img members-avatar-clickable"
         onClick={(e) => {
           e.stopPropagation();
@@ -503,7 +423,51 @@ function Avatar({ row, onEnlarge }: { row: MemberListRow; onEnlarge: () => void 
   );
 }
 
-function MemberCard({ row, onOpen, onEnlargePhoto }: { row: MemberListRow; onOpen: () => void; onEnlargePhoto: () => void }) {
+/** The Table/Cards switch — desktop only (>= 768px). On a phone only cards exist, so it isn't rendered. */
+function ViewToggle({ viewMode, onChange }: { viewMode: ViewMode; onChange: (mode: ViewMode) => void }) {
+  return (
+    <div className="members-view-toggle" role="group" aria-label="View">
+      <button
+        type="button"
+        className={`members-view-toggle-btn${viewMode === 'table' ? ' members-view-toggle-btn-active' : ''}`}
+        onClick={() => onChange('table')}
+        aria-pressed={viewMode === 'table'}
+        aria-label="Table view"
+        title="Table view"
+      >
+        <Table size={16} strokeWidth={2} />
+      </button>
+      <button
+        type="button"
+        className={`members-view-toggle-btn${viewMode === 'cards' ? ' members-view-toggle-btn-active' : ''}`}
+        onClick={() => onChange('cards')}
+        aria-pressed={viewMode === 'cards'}
+        aria-label="Cards view"
+        title="Cards view"
+      >
+        <LayoutGrid size={16} strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * One member as a card. `compact` is the phone layout, per design_handoff_flexhub_mobile/README.md
+ * §Members: name + status pill on the first row, then member #, "Plan · Phone" and the expiry — and no
+ * action buttons: the whole card opens Member Detail, which has the full-width Renew button. The desktop
+ * Cards view (not compact) keeps its Renew/View buttons.
+ */
+function MemberCard({
+  row,
+  compact,
+  onOpen,
+  onEnlargePhoto,
+}: {
+  row: MemberListRow;
+  compact: boolean;
+  onOpen: () => void;
+  onEnlargePhoto: () => void;
+}) {
   const status = deriveStatus(row);
   const navigate = useNavigate();
   const secondaryLine = `${row.current_membership_plan_name ?? 'No plan'} · ${row.phone}`;
@@ -512,49 +476,159 @@ function MemberCard({ row, onOpen, onEnlargePhoto }: { row: MemberListRow; onOpe
       ? `Expired ${formatDate(row.current_membership_end_date)}`
       : `Expires ${formatDate(row.current_membership_end_date)}`
     : '—';
+  const badge = <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>;
 
   return (
-    <div className="members-card" onClick={onOpen} role="button" tabIndex={0}>
+    <div
+      className={`members-card${compact ? ' members-card-compact' : ''}`}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        // Only the card itself: Enter/Space on the Renew/View buttons inside must not also open the member.
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
       <Avatar row={row} onEnlarge={onEnlargePhoto} />
       <div className="members-card-body">
         <div className="members-card-top">
           <span className="members-card-name" title={row.name}>
             {row.name}
           </span>
+          {compact && badge}
         </div>
         <p className="members-card-number">{row.member_number}</p>
         <p className="members-card-secondary">{secondaryLine}</p>
-        <div className="members-card-bottom">
-          <span className={`members-card-expiry status-text-${status}`}>{expiryLine}</span>
-          <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
-        </div>
-        <div className="members-row-actions members-card-actions">
-          <button
-            type="button"
-            className="members-row-renew"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/members/${row.id}/renew`);
-            }}
-            aria-label={`Renew ${row.name}`}
-          >
-            <Repeat size={14} strokeWidth={2} />
-            Renew
-          </button>
-          <button
-            type="button"
-            className="members-row-view"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/members/${row.id}`);
-            }}
-            aria-label={`View ${row.name}`}
-          >
-            <Eye size={14} strokeWidth={2} />
-            View
-          </button>
-        </div>
+        {compact ? (
+          <p className="members-card-expiry-line">{expiryLine}</p>
+        ) : (
+          <>
+            <div className="members-card-bottom">
+              <span className={`members-card-expiry status-text-${status}`}>{expiryLine}</span>
+              {badge}
+            </div>
+            <div className="members-row-actions members-card-actions">
+              <button
+                type="button"
+                className="members-row-renew"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/members/${row.id}/renew`);
+                }}
+                aria-label={`Renew ${row.name}`}
+              >
+                <Repeat size={14} strokeWidth={2} />
+                Renew
+              </button>
+              <button
+                type="button"
+                className="members-row-view"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/members/${row.id}`);
+                }}
+                aria-label={`View ${row.name}`}
+              >
+                <Eye size={14} strokeWidth={2} />
+                View
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+/** The desktop data table (>= 768px, Table view). Rendered INSTEAD OF the card list, never beside it. */
+function MembersTable({
+  rows,
+  onSort,
+  onEnlargePhoto,
+}: {
+  rows: MemberListRow[];
+  onSort: (sort: SortOption) => void;
+  onEnlargePhoto: (row: MemberListRow) => void;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <table className="members-table">
+      <thead>
+        <tr>
+          <th>
+            <button type="button" className="members-sort-header" onClick={() => onSort('name')}>
+              Name
+            </button>
+          </th>
+          <th>Member #</th>
+          <th>Phone</th>
+          <th>Plan</th>
+          <th>
+            <button type="button" className="members-sort-header" onClick={() => onSort('expiry')}>
+              Expiry
+            </button>
+          </th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => {
+          const status = deriveStatus(row);
+          return (
+            <tr key={row.id} className="members-table-row" onClick={() => navigate(`/members/${row.id}`)}>
+              <td>
+                <div className="members-table-name-cell">
+                  <Avatar row={row} onEnlarge={() => onEnlargePhoto(row)} />
+                  <span>{row.name}</span>
+                </div>
+              </td>
+              <td className="members-table-number">{row.member_number}</td>
+              <td>{row.phone}</td>
+              <td>{row.current_membership_plan_name ?? 'No plan'}</td>
+              <td>
+                {row.current_membership_end_date ? formatDate(row.current_membership_end_date) : '—'}
+              </td>
+              <td>
+                <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
+              </td>
+              <td className="members-table-actions-cell">
+                <div className="members-row-actions">
+                  <button
+                    type="button"
+                    className="members-row-renew"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/members/${row.id}/renew`);
+                    }}
+                    aria-label={`Renew ${row.name}`}
+                  >
+                    <Repeat size={14} strokeWidth={2} />
+                    Renew
+                  </button>
+                  <button
+                    type="button"
+                    className="members-row-view"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/members/${row.id}`);
+                    }}
+                    aria-label={`View ${row.name}`}
+                  >
+                    <Eye size={14} strokeWidth={2} />
+                    View
+                  </button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

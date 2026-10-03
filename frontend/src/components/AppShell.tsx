@@ -1,10 +1,13 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
-import { useAuth } from '../context/auth.context';
+import { Outlet, ScrollRestoration, useMatches } from 'react-router-dom';
+import { useServices } from '../context/services.context';
 import { useActionCenterCount } from '../lib/action-center';
-import { NAV_ITEMS } from './nav-items';
+import { shouldHideTabBar } from '../lib/route-handle';
+import { useIsTabletUp } from '../lib/use-media-query';
 import { AppFooter } from './AppFooter';
-import logo from '../assets/logo.png';
+import { MobileHeader } from './MobileHeader';
+import { useVisibleNavItems } from './nav-items';
+import { SidebarNav } from './SidebarNav';
+import { TabBar } from './TabBar';
 import './AppShell.css';
 
 /**
@@ -12,75 +15,42 @@ import './AppShell.css';
  * inside <RequireAuth> in App.tsx, so the nav bar/sidebar structurally cannot render for
  * a signed-out visitor; /login has no access to this component at all.
  *
- * No persistent topbar (per frontend/mockups/README.md) — the brand mark lives at the
- * top of the sidebar itself. Sign-out also lives on the Settings hub's Account section,
- * but Settings is admin-only, so a Sign Out control lives here too — it's the only way a
- * staff (non-admin) user can sign out at all.
+ * RENDER EXACTLY ONE navigation structure (rules.md rule 33, CLAUDE.md "Responsive rendering
+ * rules"):
+ *   >= 768px  sidebar + footer
+ *   <  768px  header + bottom tab bar (the bar is left out on drill-in routes — `hideTabBar`)
+ * The switch is `useIsTabletUp()` — the same px query the CSS uses — rather than mounting both and
+ * hiding one with CSS, which would run both subtrees and leave two "Main navigation" landmarks.
  */
 export function AppShell() {
-  const { currentProfile, signOut } = useAuth();
-  const actionCenterCount = useActionCenterCount();
-  const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || currentProfile?.roles.includes('admin'));
-
-  function badgeFor(path: string): number | null {
-    return path === '/action-center' && actionCenterCount ? actionCenterCount : null;
-  }
+  const { memberListRepository } = useServices();
+  // Fetched ONCE, here, in the one component that is always mounted, and passed down as a prop. Had
+  // the tab bar owned this, it would refetch every time it remounted (leaving a drill-in screen,
+  // rotating across 768px) — CLAUDE.md "Responsive rendering rules" #3.
+  const actionCenterCount = useActionCenterCount(memberListRepository);
+  const items = useVisibleNavItems();
+  const isTabletUp = useIsTabletUp();
+  const hideTabBar = shouldHideTabBar(useMatches());
+  const showTabBar = !isTabletUp && !hideTabBar;
 
   return (
-    <div className="app-shell">
-      <nav className="app-shell-sidebar" aria-label="Main navigation">
-        <div className="app-shell-brand-row">
-          <img src={logo} alt="" className="app-shell-logo" aria-hidden="true" />
-          <span className="app-shell-brand">Fit &amp; Fine</span>
-        </div>
+    <div className="app-shell" data-tabbar={showTabBar ? 'on' : 'off'}>
+      {/* On a phone the WINDOW scrolls and React Router doesn't reset it on navigation, so a page
+          opened from mid-list inherits the old offset (clamped to the new page's height — 25px
+          down on WebKit). Window scroll only: at >= 768px the scroll container is .app-shell-main,
+          which this doesn't touch (same behaviour as before). See e2e/scroll.spec.ts. */}
+      <ScrollRestoration />
 
-        {visibleItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            className={({ isActive }) => `app-shell-nav-item${isActive ? ' app-shell-nav-item-active' : ''}`}
-          >
-            {item.icon}
-            <span>{item.label}</span>
-            {badgeFor(item.path) !== null && <span className="app-shell-nav-badge">{badgeFor(item.path)}</span>}
-          </NavLink>
-        ))}
-
-        <button type="button" className="app-shell-nav-item app-shell-signout-button" onClick={() => signOut()}>
-          <LogOut size={20} strokeWidth={2} />
-          <span>Sign Out</span>
-        </button>
-      </nav>
+      {isTabletUp ? <SidebarNav items={items} actionCenterCount={actionCenterCount} /> : <MobileHeader />}
 
       <div className="app-shell-main">
         <main className="app-shell-content">
           <Outlet />
         </main>
-        <AppFooter />
+        {isTabletUp && <AppFooter />}
       </div>
 
-      <nav className="app-shell-tabbar" aria-label="Main navigation">
-        {visibleItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            className={({ isActive }) => `app-shell-tab${isActive ? ' app-shell-tab-active' : ''}`}
-          >
-            <span className="app-shell-tab-icon-wrap">
-              {item.icon}
-              {badgeFor(item.path) !== null && <span className="app-shell-nav-badge app-shell-nav-badge-tab">{badgeFor(item.path)}</span>}
-            </span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-
-        <button type="button" className="app-shell-tab app-shell-signout-button" onClick={() => signOut()}>
-          <LogOut size={20} strokeWidth={2} />
-          <span>Sign Out</span>
-        </button>
-      </nav>
+      {showTabBar && <TabBar items={items} actionCenterCount={actionCenterCount} />}
     </div>
   );
 }

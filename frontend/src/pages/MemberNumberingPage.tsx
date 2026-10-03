@@ -6,7 +6,9 @@ import { sanitizeDigits } from '../lib/input-masks';
 import { AdminTabs } from '../components/AdminTabs';
 import type { ConfigDraft, ConfigFormErrors } from '../services/member-numbering.service';
 import type { MemberNumberConfig, BranchSequence } from '../types/member-numbering';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './MemberNumberingPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
@@ -30,6 +32,7 @@ function formatMemberNumber(code: string, sequence: number, width: number): stri
  * member actually registered.
  */
 export function MemberNumberingPage() {
+  const isTabletUp = useIsTabletUp();
   const { memberNumberingRepository, memberNumberingService } = useServices();
 
   const [config, setConfig] = useState<MemberNumberConfig | null>(null);
@@ -58,7 +61,7 @@ export function MemberNumberingPage() {
       setSequences(rows);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -85,7 +88,7 @@ export function MemberNumberingPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       setConfigSaveError(
-        message === 'Failed to fetch'
+        isNetworkError(message)
           ? "Couldn't save these settings — check your connection and try again."
           : 'Something went wrong saving these settings. Please try again.'
       );
@@ -130,7 +133,7 @@ export function MemberNumberingPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       setEditError(
-        message === 'Failed to fetch' ? "Couldn't save — check your connection and try again." : message || 'Something went wrong. Please try again.'
+        isNetworkError(message) ? "Couldn't save — check your connection and try again." : message || 'Something went wrong. Please try again.'
       );
     } finally {
       setIsSavingSequence(false);
@@ -200,111 +203,114 @@ export function MemberNumberingPage() {
 
         {loadState === 'loaded' && config && (
           <>
-            <div className="member-numbering-cards">
-              {sequences.map((seq) => (
-                <div key={seq.branch_id} className="member-numbering-card">
-                  <div className="member-numbering-card-top">
-                    <span className="member-numbering-card-name">{seq.branch_name}</span>
-                    <span className="member-numbering-card-code">{seq.branch_code}</span>
-                  </div>
-                  <p className="member-numbering-card-row">
-                    Last issued: {seq.last_sequence === null ? 'None yet' : formatMemberNumber(seq.branch_code, seq.last_sequence, config.padding_width)}
-                  </p>
-                  {editingBranchId === seq.branch_id ? (
-                    <div className="member-numbering-edit-row">
-                      <input
-                        inputMode="numeric"
-                        value={editValue}
-                        onChange={(e) => setEditValue(sanitizeDigits(e.target.value, 8))}
-                        disabled={isSavingSequence}
-                      />
-                      <button type="button" className="member-numbering-icon-button" disabled={isSavingSequence} onClick={cancelEdit}>
-                        <X size={16} strokeWidth={2} />
-                      </button>
-                      <button
-                        type="button"
-                        className="member-numbering-icon-button member-numbering-icon-button-primary"
-                        disabled={isSavingSequence}
-                        onClick={() => handleSaveSequence(seq)}
-                      >
-                        {isSavingSequence ? <RefreshCw size={16} strokeWidth={2} className="member-numbering-spin" /> : <Check size={16} strokeWidth={2} />}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="member-numbering-card-row">
-                      Next: <strong>{formatMemberNumber(seq.branch_code, seq.next_sequence, config.padding_width)}</strong>
-                      <button type="button" className="member-numbering-edit-link" onClick={() => startEdit(seq)}>
-                        <Pencil size={14} strokeWidth={2} />
-                        Edit
-                      </button>
-                    </p>
-                  )}
-                  {editingBranchId === seq.branch_id && editError && <p className="member-numbering-field-error">{editError}</p>}
-                </div>
-              ))}
-            </div>
-
-            <table className="member-numbering-table">
-              <thead>
-                <tr>
-                  <th>Branch</th>
-                  <th>Last issued</th>
-                  <th>Next number</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+            {isTabletUp ? (
+              <table className="member-numbering-table">
+                <thead>
+                  <tr>
+                    <th>Branch</th>
+                    <th>Last issued</th>
+                    <th>Next number</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sequences.map((seq) => (
+                    <tr key={seq.branch_id}>
+                      <td>
+                        {seq.branch_name} <span className="member-numbering-table-code">({seq.branch_code})</span>
+                      </td>
+                      <td>{seq.last_sequence === null ? 'None yet' : formatMemberNumber(seq.branch_code, seq.last_sequence, config.padding_width)}</td>
+                      <td>
+                        {editingBranchId === seq.branch_id ? (
+                          <div className="member-numbering-edit-row">
+                            <input
+                              inputMode="numeric"
+                              value={editValue}
+                              onChange={(e) => setEditValue(sanitizeDigits(e.target.value, 8))}
+                              disabled={isSavingSequence}
+                            />
+                            {editError && <p className="member-numbering-field-error">{editError}</p>}
+                          </div>
+                        ) : (
+                          <strong>{formatMemberNumber(seq.branch_code, seq.next_sequence, config.padding_width)}</strong>
+                        )}
+                      </td>
+                      <td>
+                        {editingBranchId === seq.branch_id ? (
+                          <div className="member-numbering-table-actions">
+                            <button type="button" className="member-numbering-icon-button" disabled={isSavingSequence} onClick={cancelEdit}>
+                              <X size={16} strokeWidth={2} />
+                            </button>
+                            <button
+                              type="button"
+                              className="member-numbering-icon-button member-numbering-icon-button-primary"
+                              disabled={isSavingSequence}
+                              onClick={() => handleSaveSequence(seq)}
+                            >
+                              {isSavingSequence ? (
+                                <RefreshCw size={16} strokeWidth={2} className="member-numbering-spin" />
+                              ) : (
+                                <Check size={16} strokeWidth={2} />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <button type="button" className="member-numbering-edit-link" onClick={() => startEdit(seq)}>
+                            <Pencil size={14} strokeWidth={2} />
+                            Edit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="member-numbering-cards">
                 {sequences.map((seq) => (
-                  <tr key={seq.branch_id}>
-                    <td>
-                      {seq.branch_name} <span className="member-numbering-table-code">({seq.branch_code})</span>
-                    </td>
-                    <td>{seq.last_sequence === null ? 'None yet' : formatMemberNumber(seq.branch_code, seq.last_sequence, config.padding_width)}</td>
-                    <td>
-                      {editingBranchId === seq.branch_id ? (
-                        <div className="member-numbering-edit-row">
-                          <input
-                            inputMode="numeric"
-                            value={editValue}
-                            onChange={(e) => setEditValue(sanitizeDigits(e.target.value, 8))}
-                            disabled={isSavingSequence}
-                          />
-                          {editError && <p className="member-numbering-field-error">{editError}</p>}
-                        </div>
-                      ) : (
-                        <strong>{formatMemberNumber(seq.branch_code, seq.next_sequence, config.padding_width)}</strong>
-                      )}
-                    </td>
-                    <td>
-                      {editingBranchId === seq.branch_id ? (
-                        <div className="member-numbering-table-actions">
-                          <button type="button" className="member-numbering-icon-button" disabled={isSavingSequence} onClick={cancelEdit}>
-                            <X size={16} strokeWidth={2} />
-                          </button>
-                          <button
-                            type="button"
-                            className="member-numbering-icon-button member-numbering-icon-button-primary"
-                            disabled={isSavingSequence}
-                            onClick={() => handleSaveSequence(seq)}
-                          >
-                            {isSavingSequence ? (
-                              <RefreshCw size={16} strokeWidth={2} className="member-numbering-spin" />
-                            ) : (
-                              <Check size={16} strokeWidth={2} />
-                            )}
-                          </button>
-                        </div>
-                      ) : (
+                  <div key={seq.branch_id} className="member-numbering-card">
+                    <div className="member-numbering-card-top">
+                      <span className="member-numbering-card-name">{seq.branch_name}</span>
+                      <span className="member-numbering-card-code">{seq.branch_code}</span>
+                    </div>
+                    <p className="member-numbering-card-row">
+                      Last issued: {seq.last_sequence === null ? 'None yet' : formatMemberNumber(seq.branch_code, seq.last_sequence, config.padding_width)}
+                    </p>
+                    {editingBranchId === seq.branch_id ? (
+                      <div className="member-numbering-edit-row">
+                        <input
+                          inputMode="numeric"
+                          value={editValue}
+                          onChange={(e) => setEditValue(sanitizeDigits(e.target.value, 8))}
+                          disabled={isSavingSequence}
+                        />
+                        <button type="button" className="member-numbering-icon-button" disabled={isSavingSequence} onClick={cancelEdit}>
+                          <X size={16} strokeWidth={2} />
+                        </button>
+                        <button
+                          type="button"
+                          className="member-numbering-icon-button member-numbering-icon-button-primary"
+                          disabled={isSavingSequence}
+                          onClick={() => handleSaveSequence(seq)}
+                        >
+                          {isSavingSequence ? <RefreshCw size={16} strokeWidth={2} className="member-numbering-spin" /> : <Check size={16} strokeWidth={2} />}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="member-numbering-card-row">
+                        Next: <strong>{formatMemberNumber(seq.branch_code, seq.next_sequence, config.padding_width)}</strong>
                         <button type="button" className="member-numbering-edit-link" onClick={() => startEdit(seq)}>
                           <Pencil size={14} strokeWidth={2} />
                           Edit
                         </button>
-                      )}
-                    </td>
-                  </tr>
+                      </p>
+                    )}
+                    {editingBranchId === seq.branch_id && editError && <p className="member-numbering-field-error">{editError}</p>}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
           </>
         )}
       </section>

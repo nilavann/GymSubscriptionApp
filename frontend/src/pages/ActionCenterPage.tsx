@@ -9,6 +9,7 @@ import { getAvatarColor, getInitials } from '../lib/avatar';
 import { PhotoLightbox } from '../components/PhotoLightbox';
 import type { MemberListRow } from '../types/member-list';
 import './ActionCenterPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type ActionCenterTab = 'expiring' | 'expired';
@@ -52,7 +53,7 @@ export function ActionCenterPage() {
       setRows(queue);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }

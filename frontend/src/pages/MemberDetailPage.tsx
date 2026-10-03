@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   Pencil,
   X,
   Check,
@@ -14,6 +13,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { BackLink } from '../components/BackLink';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import { PhotoLightbox } from '../components/PhotoLightbox';
 import { withTimeout } from '../lib/with-timeout';
@@ -30,6 +30,7 @@ import type { MemberListRow } from '../types/member-list';
 import type { PaymentMode, Subscription, SubscriptionItem } from '../types/subscription';
 import type { MemberEditDraft, MemberEditFormErrors } from '../services/member.service';
 import './MemberDetailPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
@@ -160,7 +161,7 @@ export function MemberDetailPage() {
         setIsEditingMember(true);
       }
     } catch (err) {
-      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadErrorKind(isTimeoutOrNetwork ? 'network' : 'generic');
       setLoadError(isTimeoutOrNetwork ? NETWORK_ERROR_MESSAGE : GENERIC_ERROR_MESSAGE);
     } finally {
@@ -234,7 +235,7 @@ export function MemberDetailPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('phone')) {
         setMemberSaveError('This phone number is already used by another member.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setMemberSaveError("Couldn't save this member — check your connection and try again.");
       } else {
         setMemberSaveError('Something went wrong saving this member. Please try again.');
@@ -267,7 +268,7 @@ export function MemberDetailPage() {
       navigate('/', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Failed to fetch') {
+      if (isNetworkError(message)) {
         setDeleteError("Couldn't delete this member — check your connection and try again.");
       } else if (message) {
         // Includes the "Cannot delete — used by X subscription/add-on record(s)" message
@@ -311,7 +312,7 @@ export function MemberDetailPage() {
       );
       setEditingSubscriptionId(null);
     } catch (err) {
-      const message = err instanceof Error && err.message === 'Failed to fetch';
+      const message = err instanceof Error && isNetworkError(err);
       setHistoryEditError(
         message ? "Couldn't save — check your connection and try again." : 'Something went wrong saving. Please try again.'
       );
@@ -333,10 +334,7 @@ export function MemberDetailPage() {
       <div className="member-detail-page">
         <div className="member-detail-load-error">
           <p>{loadError}</p>
-          <Link to="/" className="member-detail-back-link">
-            <ArrowLeft size={16} strokeWidth={2} />
-            Back to Members
-          </Link>
+          <BackLink to="/">Back to Members</BackLink>
         </div>
       </div>
     );
@@ -398,10 +396,7 @@ export function MemberDetailPage() {
   return (
     <div className="member-detail-page">
       <div className="member-detail-header">
-        <Link to="/" className="member-detail-back-link">
-          <ArrowLeft size={16} strokeWidth={2} />
-          Members
-        </Link>
+        <BackLink to="/">Members</BackLink>
       </div>
 
       {successMessage && (

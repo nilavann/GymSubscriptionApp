@@ -150,10 +150,22 @@
 .members-pill-row {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  /* README §Members: the status pills scroll horizontally if they overflow and never wrap to a
+     second line. The padding + equal negative margin leave room inside the scroll container for the
+     2px keyboard-focus ring + offset, which overflow-x would otherwise clip. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  margin: -4px;
+}
+
+.members-pill-row::-webkit-scrollbar {
+  display: none;
 }
 
 .members-pill {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -406,43 +418,7 @@
   text-decoration: underline;
 }
 
-/* Status badges - shared by cards and table */
-
-.status-badge {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-
-.status-badge-active {
-  background: var(--color-status-success-bg);
-  color: var(--color-status-success-text);
-}
-
-.status-badge-expiring {
-  background: var(--color-status-warning-bg);
-  color: var(--color-status-warning-text);
-}
-
-.status-badge-expired {
-  background: var(--color-status-danger-bg);
-  color: var(--color-status-danger-text);
-}
-
-.status-text-active {
-  color: var(--color-text-muted);
-}
-
-.status-text-expiring {
-  color: var(--color-status-warning-text);
-}
-
-.status-text-expired {
-  color: var(--color-status-danger-text);
-}
+/* Status badges and status text (.status-badge-*, .status-text-*) live in styles/status.css. */
 
 /* Avatar */
 
@@ -534,7 +510,53 @@
 .members-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 10px;
+}
+
+.members-card:focus-visible {
+  outline: 2px solid var(--tint-ink);
+  outline-offset: 2px;
+}
+
+/* Phone card — design_handoff_flexhub_mobile/README.md §Members: white, radius 14, 1px stone border,
+   padding 14, gap 12; name 14.5/600, member # 12.5, "Plan · Phone" 13, expiry 12.5. Whole card taps to
+   Member Detail, so there are no action buttons here. */
+.members-card-compact {
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border-color: var(--color-border-default);
+  box-shadow: none;
+}
+
+.members-card-compact:hover {
+  box-shadow: none;
+}
+
+.members-card-compact .members-card-top {
+  gap: 8px;
+}
+
+.members-card-compact .members-card-name {
+  font-size: 14.5px;
+}
+
+.members-card-compact .members-card-number {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.members-card-compact .members-card-secondary {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.members-card-expiry-line {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
 }
 
 .members-card {
@@ -570,6 +592,9 @@
 }
 
 .members-card-name {
+  /* A flex child with white-space: nowrap won't shrink below its text unless told to (rules.md 16d) —
+     without this a long name pushes the status pill off the card instead of ellipsizing. */
+  min-width: 0;
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--color-text-primary);

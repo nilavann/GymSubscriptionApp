@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Trash2, Calendar, AlertTriangle, WifiOff, RefreshCw } from 'lucide-react';
+import { Trash2, Calendar, AlertTriangle, WifiOff, RefreshCw } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { BackLink } from '../components/BackLink';
 import { withTimeout } from '../lib/with-timeout';
 import { formatDate, todayDate } from '../lib/datetime';
 import { getAvatarColor, getInitials } from '../lib/avatar';
@@ -23,6 +24,7 @@ import {
   type ItemOverlapConflict,
 } from '../services/subscription.service';
 import './RenewSubscriptionPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const QUANTITY_PRESETS = [1, 2, 3, 6, 12];
@@ -104,7 +106,7 @@ export function RenewSubscriptionPage() {
       setIsDirty(false);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -279,7 +281,7 @@ export function RenewSubscriptionPage() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Failed to fetch') {
+      if (isNetworkError(message)) {
         setSaveErrorKind('network');
       } else {
         setSaveErrorKind('generic');
@@ -352,10 +354,8 @@ export function RenewSubscriptionPage() {
 
   return (
     <div className="renew-page">
+      <BackLink to={`/members/${memberId}`}>Member</BackLink>
       <div className="renew-title-row">
-        <Link to={`/members/${memberId}`} className="renew-back-link" aria-label="Back to member">
-          <ArrowLeft size={15} strokeWidth={2} />
-        </Link>
         <h1>Renew / Add Subscription</h1>
       </div>
       <p className="renew-subtitle">

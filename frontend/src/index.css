@@ -3,9 +3,10 @@
    @tailwindcss/vite processes. See spec/frontend/styling.md. */
 @import 'tailwindcss';
 @import './styles/tokens.css';
+@import './styles/status.css';
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-ui);
   line-height: 1.5;
   font-weight: 400;
   /* The design system is light throughout - cards, inputs, tables, the sidebar - so
@@ -27,12 +28,27 @@ body {
    per-page CSS file (styling.md's convention is per-page files stay
    independent) because every button/link in the app should get the same
    ring, and duplicating it in 15+ files would be the thing that drifts.
-   Reuses the same token every input's own :focus ring already uses, so
-   buttons/links and inputs share one consistent focus treatment. */
+   v3 Theme Sheet §Interaction: "Focus is always a 2px amber 700 ring with a 2px offset, on every
+   control" — a solid outline in --tint-ink (the AA-safe accent), not the translucent glow, so it
+   survives cheap/low-contrast panels. Text inputs keep their own soft --tint-focus-ring glow. */
 button:focus-visible,
 a:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--tint-focus-ring);
+  outline: 2px solid var(--tint-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* iOS Safari zooms the whole page when a focused text field has a computed font-size under 16px,
+   and doesn't zoom back out. Most form controls here are 0.85rem (13.6px) and are styled by class
+   selectors in per-page CSS, which outrank any element selector — so the only way to apply one
+   rule app-wide is !important. Scoped to phone widths (same px breakpoint as everything else);
+   checkboxes/radios/etc. have no text to zoom for. See CLAUDE.md "Mobile conventions". */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='submit']):not([type='button']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Same cross-cutting rationale as the focus ring above: every route-level

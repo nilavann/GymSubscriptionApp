@@ -6,12 +6,14 @@ import { useAuth } from '../context/auth.context';
 import { todayDate } from '../lib/datetime';
 import { withTimeout } from '../lib/with-timeout';
 import { sanitizeDigits, sanitizeDecimal } from '../lib/input-masks';
+import { BackLink } from '../components/BackLink';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import type { Branch } from '../types/branch';
 import type { Gender } from '../types/member';
 import type { Profile } from '../types/profile';
 import type { MemberFormErrors, NewMemberDraft } from '../services/member.service';
 import './AddMemberPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
@@ -90,7 +92,7 @@ export function AddMemberPage() {
       setProfiles(profileData);
       setBranchLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setBranchLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -162,7 +164,7 @@ export function AddMemberPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('phone')) {
         setSaveError('This phone number is already used by another member.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setSaveError("Couldn't save this member — check your connection and try again.");
       } else {
         setSaveError('Something went wrong saving this member. Please try again.');
@@ -201,6 +203,7 @@ export function AddMemberPage() {
 
   return (
     <div className="add-member-page">
+      <BackLink to="/">Members</BackLink>
       <h1>Add Member</h1>
       <p className="add-member-subtitle">Subscription is sold separately after the member is created.</p>
 

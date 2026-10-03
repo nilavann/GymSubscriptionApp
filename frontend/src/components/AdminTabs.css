@@ -1,12 +1,24 @@
 .admin-tabs {
   display: flex;
-  flex-wrap: wrap;
+  /* README §Settings: the sub-tab pills scroll horizontally and never wrap to a second row. Padding +
+     the equal negative margin keep the original spacing while leaving room inside the scroller for the
+     keyboard-focus ring, which overflow-x would otherwise clip. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
   gap: 0.5rem;
-  margin: 1rem 0 1.5rem;
+  padding: 4px;
+  margin: calc(1rem - 4px) -4px calc(1.5rem - 4px);
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-tab {
-  min-height: 40px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   padding: 0 1rem;
