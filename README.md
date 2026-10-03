@@ -110,6 +110,19 @@ supabase/
 
 5. Deploy. Once you have your Vercel domain, go back to Supabase → Authentication → URL Configuration and add it to the allowed **Site URL** / **Redirect URLs**.
 
+## Testing
+
+Three suites, one command each (details and the requirement-by-requirement coverage map are in [spec/test-traceability.md](spec/test-traceability.md)):
+
+```bash
+npm run test:frontend    # vitest + Testing Library: logic, services, auth context, every page against fake services
+npm run test:functions   # Deno: all Edge Functions, with supabase-js replaced by a scriptable fake (needs Deno 2.x)
+npm run test:db          # applies the real migrations to a throwaway local Postgres and runs SQL assertions (needs psql + a superuser)
+npm test                 # all three
+```
+
+Tests for behaviour the spec requires but the code doesn't yet deliver are kept (not skipped) and marked `GAP` — they pass while the gap exists and fail once it's fixed, so they must then be promoted to normal tests.
+
 ## Notes
 
 - `frontend/.env.local` is gitignored and never committed — each environment (local, Vercel) supplies its own Supabase URL/anon key.
