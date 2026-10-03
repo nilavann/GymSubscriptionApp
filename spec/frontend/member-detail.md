@@ -149,7 +149,7 @@ useEffect(() => {
       setHistory(historyData);
     } catch (err) {
       if (!active) return;
-      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadErrorKind(isTimeoutOrNetwork ? 'network' : 'generic');
       setLoadError(isTimeoutOrNetwork ? NETWORK_ERROR_MESSAGE : GENERIC_ERROR_MESSAGE);
     } finally {
@@ -196,6 +196,7 @@ Per [rules.md rule 16](./rules.md#ui--styling) — this page must work as well o
 | `>= 1024px` (desktop) | Two columns below the full-width Hero+strip: left (~360px, matching `AppShell`'s sidebar width) has Personal Details + Body Metrics + Doctor's Care + Emergency Contact; right (flexible width) has Current Add-ons + Subscription History. At this width there's `1024 − 240 (sidebar) − ~64 (padding) − 360 (left column) − 16 (gap) ≈ 344px` for the right column — healthy, not cramped. |
 
 Mobile/tablet-specific requirements, beyond the column collapse:
+- **Phone hero (`< 760px`).** The identity text (name, status, member number · phone · gender · joined) sits beside the avatar; Edit/Delete (or Cancel/Save while editing) drop to their own full-width row; inside the membership strip the Renew CTA is full width, last in the strip. The stacking order above is a CSS `order` on the same markup (the profile form is ordered before the add-on and history cards, and the grid's Personal column before Medical/Emergency) — desktop DOM order is untouched. `e2e/members.spec.ts` asserts the widths, the 44px minimums and the order.
 - Every tappable control — Edit/Save/Cancel, gender/plan/status chips, photo capture buttons, History row expand, Delete — has a minimum 44×44px touch target (rules.md rule 16).
 - Photo capture (§11) is *more* relevant on mobile than desktop (device camera) — the camera-capture path must be reachable and usable at the narrowest supported width (`~360px`), not just the file-upload fallback.
 - Renew/Add Subscription (§16) is a full routed page rather than a modal/sheet specifically so it renders full-width on mobile without a bottom-sheet library — see `subscription-management.md` §3, which follows this same mobile-first rule.

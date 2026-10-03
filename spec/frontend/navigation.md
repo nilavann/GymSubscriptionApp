@@ -109,8 +109,23 @@ See [app-shell.md §3](./app-shell.md#3-responsive-layout-shell-websrccomponents
 
 Staff users see 3 nav items. Admin users see 4.
 
-Nav bar/sidebar background: `var(--color-neutral-0)` (white, desktop sidebar) / `var(--color-neutral-0)` (mobile bottom tab bar) — see [colors.md](./colors.md) for the current token set; this app has no dark nav chrome.
-Active icon + label: `var(--tint-accent)` (theme-dependent — wild/sky/violet, see [colors.md](./colors.md) §Theming)
-Inactive icon + label: `var(--color-text-secondary)` (`#6b7280`)
+Nav bar/sidebar background: `var(--color-neutral-0)` (white) for both the desktop sidebar and the mobile bottom tab bar — see [colors.md](./colors.md) for the current token set; this app has no dark nav chrome.
+Inactive icon + label: `var(--color-text-secondary)`.
+Active: `var(--tint-ink)` text + icon on the mobile tab bar (no pill); `var(--tint-on-pill)` on a `var(--tint-pill-bg)` row in the desktop sidebar. Never `--tint-accent` — that is decorative-fill only and fails AA as text (colors.md §2.1).
+**Active is per section, not per exact path** (`isNavItemActive()` in `components/nav-items.tsx`): Members stays active on `/members/*`, Settings on `/plans /branches /users /roles /audit-log /member-numbering`.
+
+### Tab bar visibility (mobile)
+
+The mobile tab bar shows on Action Center, Members, Reports, Settings **and the admin sub-screens**; it is left out of the four member drill-in routes — `/members/new`, `/members/:id`, `/members/:id/renew`, `/members/:id/edit` — which show a back link instead. This is route data (`handle: { hideTabBar: true }` in `App.tsx`), not path-matching in a component; see [app-shell.md §3.4](./app-shell.md#34-tab-bar-visibility-is-route-data). It has no effect at `>= 768px`, where the sidebar is always shown.
+
+### Where Sign Out lives
+
+| Width | Sign Out |
+|---|---|
+| `>= 768px` | A row pinned to the bottom of the sidebar (all users) |
+| `< 768px` | The header's account menu — tap the avatar (all users). It is **not** a tab: the mobile tab bar stays at three items for staff, four for admins |
+| Any width, admins | Also in Settings > Account |
+
+Staff cannot reach Settings (admin-only), so the sidebar row / header menu is the only way a staff user can sign out. See [app-shell.md §3.1](./app-shell.md#31-mobile-header-mobileheadertsx--768px).
 
 Use any accessible icon set consistently across the app (e.g. `lucide-react`) — pick one and use it everywhere; this is an implementation choice, not a business rule, so it does not need to match the mobile app's `Ionicons`.

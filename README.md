@@ -110,7 +110,55 @@ supabase/
 
 5. Deploy. Once you have your Vercel domain, go back to Supabase → Authentication → URL Configuration and add it to the allowed **Site URL** / **Redirect URLs**.
 
+## Testing
+
+Two layers, both dev-only (nothing here ships to the browser). The binding rules are in [CLAUDE.md](CLAUDE.md#testing-rules-binding).
+
+```bash
+# from frontend/ (or from the repo root as `npm run test:frontend` / `npm run test:e2e:frontend`)
+npm run test             # Vitest + React Testing Library, jsdom — unit and component tests, one run
+npm run test:watch
+npm run test:coverage    # v8 coverage report (informational, no threshold)
+npm run typecheck        # app + colocated tests
+npm run typecheck:e2e    # Playwright does not typecheck specs, so this does
+npm run test:e2e         # Playwright: desktop Chrome, Pixel 7, iPhone 13 (WebKit)
+npm run test:e2e:ui      # Playwright UI mode, for debugging a spec
+```
+
+First run of the E2E suite on a machine: `npx playwright install chromium webkit` (browsers are cached outside the repo).
+
+**Unit/component tests** sit next to the code (`*.test.ts(x)`) and never touch Supabase: pages get fake services through `renderWithProviders(ui, { services: fakeServices({...}), auth: {...} })` (`frontend/src/test/`). A fake method that a test did not set up throws a named error instead of silently succeeding.
+
+**E2E tests** (`frontend/e2e/`) run against the **production build** (`vite build` + `vite preview`, not the dev server — StrictMode double-runs effects in dev, which would corrupt the render-once and request-count assertions). Supabase is replaced at the network layer by `e2e/fixtures/supabase-mock.ts`: PostgREST tables, Auth, Edge Functions, Postgres functions (`rpc`) and Storage are answered from in-memory data, and **any request nobody mocked fails the test**. Specs assert the requests the client sends — those payloads are the contract with the database and the Edge Functions.
+
+What this deliberately does **not** cover: RLS policies, triggers and Edge Function code (the mock fakes *answers*; verifying the server needs a real local Supabase — a planned follow-up), pixel-level visuals (`e2e/screens-visual.spec.ts` only produces screenshots for review), and iOS Safari's safe-area, focus-zoom and address-bar behaviour (Playwright WebKit does not reproduce them — check a Vercel preview on a real phone).
+
+### Coverage matrix
+
+| Area | Where | How it is tested |
+|---|---|---|
+| `lib/` helpers (14) | `src/lib/*.test.ts(x)` | Unit tests, one per file |
+| Services (9) | `src/services/*.service.test.ts` | Against fake repositories (`vi.mock`) — validation and orchestration |
+| Contexts (auth, services, theme) | `src/context/*.test.tsx` | Provider behaviour, storage keys, session lifecycle |
+| Components (16 + `nav-items`) | `src/components/*.test.tsx` | RTL; shell/nav assert exactly one navigation structure at 390 / 767 / 768 / 1024 |
+| Pages (16) | `src/pages/*.test.tsx` | RTL with fake services — loading / success / empty / error + retry, role gating, key interactions; list pages assert exactly one of table / cards |
+| Route table | `src/App.test.tsx` | The documented route set, guards, `hideTabBar` handles |
+| Repositories (10) | — (no unit tests) | Thin supabase-js wrappers; their queries and payloads are asserted through the E2E request log |
+| Shell, theme, scroll, overflow, render-once | `e2e/shell-responsive`, `theme`, `scroll`, `mobile-conventions`, `lists-render-once` | Real browsers and real CSS, three projects |
+| Sign-in, access, deep links | `e2e/smoke`, `auth` | Wrong password, deactivated and never-invited accounts, forgot password, a dead token mid-session, refresh on a deep URL (Google OAuth is unit-tested only) |
+| Members, Add / Edit / Delete member | `e2e/members` | List search/filter/open, create/edit/delete payloads, phone hero layout |
+| Renew checkout | `e2e/renew` | The exact `create-subscription` body, overlap warning, offline retry |
+| Action Center | `e2e/action-center` | Server-side queue window, tabs, badge, carousel snap, photo lightbox |
+| Reports | `e2e/reports` | Range presets as database filters, table vs cards content, independent retry |
+| Admin: Settings, Plans, Branches, Roles | `e2e/settings-admin` | Hub counts, role gating, CRUD payloads, delete guards |
+| Admin: Users, Invite | `e2e/admin-users` | Edge Function payloads, self-protection, soft delete / restore |
+| Admin: Audit Log, Member Numbering | `e2e/admin-audit-numbering` | Filters as requests, view-only, atomic settings RPC, sequence function |
+| Navigation under a slow connection | `e2e/navigation-race` | Back pressed while the next lazy screen is still loading |
+| Fonts | `e2e/fonts` | Only the Latin subsets download; body is Rubik, the brand wordmark Schibsted Grotesk |
+| Phone screens for review | `e2e/screens-visual` | Eight screens plus Login, attached to the report (not a gate) |
+
 ## Notes
 
 - `frontend/.env.local` is gitignored and never committed — each environment (local, Vercel) supplies its own Supabase URL/anon key.
+- `frontend/vercel.json` rewrites every path except `/assets/*` to `index.html`, so refreshing or opening a deep link like `/members/123` loads the SPA instead of a Vercel 404. `/assets/*` is excluded on purpose: a stale chunk from a previous deploy must still 404 so `ChunkLoadErrorBoundary` catches it.
 - Business rules that matter for security (subscription creation math, plan-deletion guards, audit fields) are enforced server-side via Edge Functions and Postgres triggers/RLS, not trusted from the client. See the "Server-Side Authority" table in [spec/architecture.md](spec/architecture.md).
