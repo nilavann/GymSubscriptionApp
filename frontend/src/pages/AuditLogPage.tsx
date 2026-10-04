@@ -7,7 +7,9 @@ import { AUDITED_TABLES } from '../repositories/audit-log.repository';
 import { AdminTabs } from '../components/AdminTabs';
 import type { AuditLogEntry, AuditOperation } from '../types/audit-log';
 import type { ManagedUser } from '../types/profile';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './AuditLogPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
@@ -29,6 +31,7 @@ function displayValue(value: string | null): string {
  * acceptance criteria. See spec/backend/domain-model.md §7 for what feeds this table.
  */
 export function AuditLogPage() {
+  const isTabletUp = useIsTabletUp();
   const { auditLogRepository, profileRepository } = useServices();
 
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -62,7 +65,7 @@ export function AuditLogPage() {
       setTruncated(page.truncated);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message === 'audit-log-timeout' || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message === 'audit-log-timeout' || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -178,64 +181,67 @@ export function AuditLogPage() {
             <p className="audit-log-empty">No changes match these filters.</p>
           ) : (
             <>
-              <div className="audit-log-cards">
-                {entries.map((entry) => (
-                  <div key={entry.id} className="audit-log-card">
-                    <div className="audit-log-card-top">
-                      <span className={`audit-log-op-badge audit-log-op-${entry.operation}`}>
-                        {OPERATION_LABEL[entry.operation]}
-                      </span>
-                      <span className="audit-log-card-when">{toLocalDisplay(entry.changed_at)}</span>
-                    </div>
-                    <p className="audit-log-card-target">
-                      <strong>{entry.field_name}</strong> on {entry.table_name} #{entry.record_id}
-                    </p>
-                    <p className="audit-log-card-diff">
-                      <span className="audit-log-diff-old">{displayValue(entry.old_value)}</span>
-                      <span className="audit-log-diff-arrow">→</span>
-                      <span className="audit-log-diff-new">{displayValue(entry.new_value)}</span>
-                    </p>
-                    <p className="audit-log-card-who">{entry.changed_by_name}</p>
-                  </div>
-                ))}
-              </div>
-
-              <table className="audit-log-table">
-                <thead>
-                  <tr>
-                    <th>When</th>
-                    <th>Table</th>
-                    <th>Record</th>
-                    <th>Field</th>
-                    <th>Operation</th>
-                    <th>Old value</th>
-                    <th>New value</th>
-                    <th>Changed by</th>
-                  </tr>
-                </thead>
-                <tbody>
+              {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+              {isTabletUp ? (
+                <table className="audit-log-table">
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Table</th>
+                      <th>Record</th>
+                      <th>Field</th>
+                      <th>Operation</th>
+                      <th>Old value</th>
+                      <th>New value</th>
+                      <th>Changed by</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{toLocalDisplay(entry.changed_at)}</td>
+                        <td>{entry.table_name}</td>
+                        <td>{entry.record_id}</td>
+                        <td>{entry.field_name}</td>
+                        <td>
+                          <span className={`audit-log-op-badge audit-log-op-${entry.operation}`}>
+                            {OPERATION_LABEL[entry.operation]}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="audit-log-diff-old">{displayValue(entry.old_value)}</span>
+                        </td>
+                        <td>
+                          <span className="audit-log-diff-new">{displayValue(entry.new_value)}</span>
+                        </td>
+                        <td>{entry.changed_by_name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="audit-log-cards">
                   {entries.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>{toLocalDisplay(entry.changed_at)}</td>
-                      <td>{entry.table_name}</td>
-                      <td>{entry.record_id}</td>
-                      <td>{entry.field_name}</td>
-                      <td>
+                    <div key={entry.id} className="audit-log-card">
+                      <div className="audit-log-card-top">
                         <span className={`audit-log-op-badge audit-log-op-${entry.operation}`}>
                           {OPERATION_LABEL[entry.operation]}
                         </span>
-                      </td>
-                      <td>
+                        <span className="audit-log-card-when">{toLocalDisplay(entry.changed_at)}</span>
+                      </div>
+                      <p className="audit-log-card-target">
+                        <strong>{entry.field_name}</strong> on {entry.table_name} #{entry.record_id}
+                      </p>
+                      <p className="audit-log-card-diff">
                         <span className="audit-log-diff-old">{displayValue(entry.old_value)}</span>
-                      </td>
-                      <td>
+                        <span className="audit-log-diff-arrow">→</span>
                         <span className="audit-log-diff-new">{displayValue(entry.new_value)}</span>
-                      </td>
-                      <td>{entry.changed_by_name}</td>
-                    </tr>
+                      </p>
+                      <p className="audit-log-card-who">{entry.changed_by_name}</p>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              )}
             </>
           )}
         </>

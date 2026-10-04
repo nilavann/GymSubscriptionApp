@@ -1,0 +1,5 @@
+/* Full-screen height lives here (not inline) so it can carry a vh fallback for dvh — CLAUDE.md "Mobile conventions". */
+.chunk-error {
+  min-height: 100vh;
+  min-height: 100dvh;
+}

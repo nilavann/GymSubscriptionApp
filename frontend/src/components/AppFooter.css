@@ -21,15 +21,11 @@
   gap: 0.6rem;
 }
 
-.app-footer-logo-tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-tile);
-  background: var(--color-surface-page);
-  color: var(--color-text-primary);
+/* Brand logo (v2) - the PNG mark carries its own color/shape, sized to the spec's 30px
+   footer height, aspect ratio preserved. */
+.app-footer-logo {
+  height: 30px;
+  width: auto;
   flex-shrink: 0;
 }
 

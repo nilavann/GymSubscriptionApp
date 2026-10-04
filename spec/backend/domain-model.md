@@ -167,6 +167,7 @@ Admin-managed catalog — **unified** for both gym membership plans and add-ons 
 | emergency_contact_relationship   | text      | No       | —       | |
 | email                            | text      | Yes      | NULL    | |
 | residential_address              | text      | Yes      | NULL    | |
+| pincode                          | text      | Yes      | NULL    | 6-digit postal code; format-validated client-side only (PINCODE_REGEX), no DB check |
 | aadhaar_number                   | text      | Yes      | NULL    | No format validation specified yet |
 | occupation                       | text      | Yes      | NULL    | |
 | photo_url                        | text      | Yes      | NULL    | Original, uncompressed upload |
@@ -404,6 +405,7 @@ erDiagram
         text emergency_contact_relationship
         text email
         text residential_address
+        text pincode
         text aadhaar_number
         text occupation
         text photo_url
@@ -506,6 +508,7 @@ Passed from the client to Supabase Edge Functions (see [edge-functions.md](./edg
 | `branch_id` | `number` | Yes |
 | `email` | `string \| null` | No |
 | `residential_address` | `string \| null` | No |
+| `pincode` | `string \| null` | No |
 | `aadhaar_number` | `string \| null` | No |
 | `occupation` | `string \| null` | No |
 | `photo_url` | `string \| null` | No |

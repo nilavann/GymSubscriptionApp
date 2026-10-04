@@ -78,6 +78,8 @@ export interface AuthContextValue {
   session: Session | null;          // raw Supabase session (has the user's email), or null
   isInitialising: boolean;
   blockedMessage: string | null;    // set on a blocked sign-in (deactivated / not invited)
+  sessionExpired: boolean;          // set only when a live session went stale mid-use (401) - drives WSCR-01's signed-out screen (v2), not the plain error banner
+  clearSessionExpired(): void;      // called by WSCR-01 once it's done showing that screen
   authLinkError: string | null;     // set once on mount if the URL carries a rejected/expired auth-link error
   needsPasswordReset: boolean;      // true from a PASSWORD_RECOVERY auth event until updatePassword() succeeds
   signInWithPassword(email: string, password: string): Promise<void>;
@@ -94,6 +96,8 @@ export interface AuthContextValue {
 | `session` | `Session \| null` | Supabase Auth session object, source of the user's email and auth id |
 | `isInitialising` | `boolean` | `true` while the initial session check + profile fetch is in flight |
 | `blockedMessage` | `string \| null` | Set once, briefly, on a blocked sign-in attempt so WSCR-01 can render it |
+| `sessionExpired` | `boolean` | `true` only for the "a live session went stale mid-use" path (a 401 from `authAwareFetch`, `lib/supabase-client.ts`'s `SESSION_EXPIRED_EVENT`) — distinct from every other `blockedMessage` cause (deactivated, not invited, verify error), which are about a *sign-in attempt* itself, not an already-authenticated session going bad. WSCR-01 uses this (not `blockedMessage`) to decide whether to show the dedicated "You're signed out" screen (v2 — `design_handoff_flexhub_v2/README.md` §1) in place of the form, instead of the plain error banner. Never set by a manual Settings sign-out, which calls `signOut()` directly, not through this path. |
+| `clearSessionExpired` | function | WSCR-01 calls this once it's done showing the signed-out screen — either after ~2.5s auto-transition, or immediately via its "Sign in again" button — so a later re-render doesn't show it again |
 | `authLinkError` | `string \| null` | Set once on mount if the URL carries a Supabase Auth redirect error (`#error=...&error_description=...` — a rejected/expired/already-used password-reset, invite, or OAuth link). Parsed before `detectSessionInUrl` consumes the hash, then the error params are stripped from the visible URL. Distinct from `blockedMessage`: this is about the link never producing a session at all, not a valid session belonging to a blocked account. WSCR-01 and WSCR-13 both display it. |
 | `needsPasswordReset` | `boolean` | `true` from the moment Supabase's `PASSWORD_RECOVERY` auth event fires (recovery-link click) until `updatePassword()` succeeds. `RequireAuth` redirects every other route to WSCR-13 while this is true — a recovery session can only be used to set a new password, never to skip straight into the app. Reset back to `false` on sign-out (or any session going to `null`), so a stale flag from an earlier recovery attempt can never block a later, ordinary sign-in. |
 | `signInWithPassword` | function | Delegates to `AuthService.signInWithPassword` (REQ-AUTH-001) |

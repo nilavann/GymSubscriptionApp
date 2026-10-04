@@ -1,10 +1,22 @@
-/* Mobile-first: content column + fixed bottom tab bar (< 768px). The >= 768px override
-   below switches to a fixed-width sidebar + fluid content grid (no separate topbar at
-   either tier — see frontend/mockups/README.md, the sidebar itself carries the brand mark). */
+/* AppShell layout. AppShell renders exactly ONE navigation structure (see AppShell.tsx), so the
+   sidebar rules below apply whenever a sidebar exists (>= 768px) and the header / tab-bar rules
+   whenever those exist (< 768px) — nothing here hides a second copy with display:none.
+
+   Mobile (< 768px): a header (MobileHeader.css), the content column, and a fixed bottom tab bar
+   (design_handoff_flexhub_mobile/README.md §Mobile shell). >= 768px: a fixed-width sidebar + fluid
+   content grid (no separate topbar — the sidebar itself carries the brand mark). The 768px grid
+   below uses the SAME px breakpoint as lib/use-media-query.ts, so CSS and the JS switch can't disagree. */
 
 .app-shell {
+  /* dvh tracks the mobile browser's collapsing address bar; vh is the fallback for older engines. */
   min-height: 100vh;
-  background: var(--color-surface-page);
+  min-height: 100dvh;
+  background-color: var(--color-surface-page);
+  /* v3 page background: an 18px dot grid (README §Mobile shell). Decorative and very low contrast,
+     so it sits behind white cards without competing with content. */
+  background-image: radial-gradient(var(--color-surface-dots) 1px, transparent 1px);
+  background-size: 18px 18px;
+  background-position: -1px -1px;
   display: flex;
   flex-direction: column;
 }
@@ -22,9 +34,14 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem;
-  /* Reserve space so the fixed mobile bottom tab bar never hides the last item. */
-  padding-bottom: calc(1.5rem + 64px);
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
   animation: app-shell-content-fade-in 0.2s ease;
+}
+
+/* Reserve space so the fixed bottom tab bar (64px + the home-indicator inset) never hides the last
+   item. Only while the bar is actually mounted — drill-in screens and >= 768px don't get dead space. */
+.app-shell[data-tabbar='on'] .app-shell-content {
+  padding-bottom: calc(1.5rem + 64px + env(safe-area-inset-bottom));
 }
 
 @keyframes app-shell-content-fade-in {
@@ -44,9 +61,16 @@
   }
 }
 
-/* Desktop sidebar — hidden on mobile, shown at >= 768px below. */
+/* ---- Sidebar (>= 768px) ------------------------------------------------------------------- */
+
 .app-shell-sidebar {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--color-neutral-0);
+  border-right: 1px solid var(--color-border-default);
+  padding-top: 1.25rem;
+  overflow-y: auto;
 }
 
 .app-shell-brand-row {
@@ -56,64 +80,20 @@
   padding: 0 1rem 1rem;
 }
 
-.app-shell-logo-tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-tile);
-  background: var(--color-neutral-900);
-  color: var(--color-neutral-0);
+/* Brand logo (v2 - design_handoff_flexhub_v2/README.md §3) - the PNG mark itself carries
+   its own color/shape, so unlike the dumbbell icon it replaced, it doesn't sit inside a
+   colored tile - just sized to the spec's 34px header height, aspect ratio preserved. */
+.app-shell-logo {
+  height: 34px;
+  width: auto;
   flex-shrink: 0;
 }
 
 .app-shell-brand {
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--color-text-primary);
-}
-
-/* Mobile bottom tab bar */
-.app-shell-tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--color-neutral-0);
-  border-top: 1px solid var(--color-border-default);
-  display: flex;
-  justify-content: space-around;
-  padding: 0.4rem 0;
-  box-shadow: 0 -2px 8px var(--color-shadow);
-  z-index: 10;
-}
-
-.app-shell-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  color: var(--color-text-muted);
-  text-decoration: none;
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.35rem 0.75rem;
-  min-width: 44px;
-  min-height: 44px;
-  justify-content: center;
-  border-radius: var(--radius-el);
-  transition: color 0.15s ease, transform 0.1s ease;
-}
-
-.app-shell-tab:active {
-  transform: scale(0.94);
-}
-
-.app-shell-tab-active {
-  /* Text/icon on white (tab bar bg is --color-neutral-0) — --tint-ink, not --tint-accent
-     (tokens.css's Accessibility contract: --tint-accent is decorative-fill only, never text). */
-  color: var(--tint-ink);
 }
 
 .app-shell-nav-item {
@@ -148,6 +128,26 @@
   color: var(--tint-on-pill);
 }
 
+/* Sign Out: a full-width row pinned to the bottom of the sidebar's flex column. */
+.app-shell-signout-button {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-status-danger-text);
+}
+
+.app-shell-signout-button:hover {
+  background: var(--color-status-danger-bg-subtle);
+  color: var(--color-status-danger-text);
+}
+
+.app-shell-nav-item.app-shell-signout-button {
+  width: calc(100% - 1.5rem);
+  text-align: left;
+  margin-top: auto;
+}
+
 /* Action Center queue-size badge — count carries white text, so --tint-solid per the
    Accessibility contract (tokens.css), not --tint-accent. */
 .app-shell-nav-badge {
@@ -166,33 +166,78 @@
   line-height: 1;
 }
 
+/* ---- Bottom tab bar (< 768px) -------------------------------------------------------------- */
+
+/* README §Mobile shell: fixed, full width, white, 1px top border, padding 8px 6px plus the
+   home-indicator inset; items share the width equally. z-index 10 = its slot in the layer scale. */
+.app-shell-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px max(6px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-left));
+  background: var(--color-neutral-0);
+  border-top: 1px solid var(--color-border-default);
+  z-index: 10;
+}
+
+.app-shell-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 4px 0;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 10.5px;
+  font-weight: 400;
+  border-radius: var(--radius-el);
+  transition: color 0.15s ease, transform 0.12s ease;
+}
+
+.app-shell-tab:active {
+  transform: translateY(1px);
+}
+
+.app-shell-tab-active {
+  /* Text/icon on white (tab bar bg is --color-neutral-0) — --tint-ink, not --tint-accent
+     (tokens.css's Accessibility contract: --tint-accent is decorative-fill only, never text).
+     No pill or background on the active tab (README). */
+  color: var(--tint-ink);
+  font-weight: 500;
+}
+
 .app-shell-tab-icon-wrap {
   position: relative;
   display: inline-flex;
 }
 
+/* README: min 16x16, danger red (#b91c1c), white 10px/700, offset top -6 / right -10. */
 .app-shell-nav-badge-tab {
   position: absolute;
   top: -6px;
   right: -10px;
   margin-left: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--color-status-danger-text);
+  font-size: 10px;
 }
+
+/* ---- >= 768px: sidebar + content grid ------------------------------------------------------- */
 
 @media (min-width: 768px) {
   .app-shell {
     display: grid;
     grid-template-columns: 240px 1fr;
     height: 100vh;
-  }
-
-  .app-shell-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    background: var(--color-neutral-0);
-    border-right: 1px solid var(--color-border-default);
-    padding-top: 1.25rem;
-    overflow-y: auto;
+    height: 100dvh;
   }
 
   .app-shell-main {
@@ -211,9 +256,5 @@
        grid/flex item that must be allowed to shrink below its content's natural size. */
     min-width: 0;
     width: 100%;
-  }
-
-  .app-shell-tabbar {
-    display: none;
   }
 }

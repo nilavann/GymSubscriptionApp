@@ -1,0 +1,17 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  /* A full 44px-tall touch target; the row's own width grows with the label. */
+  min-height: 44px;
+  padding-right: 0.75rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--tint-ink);
+}

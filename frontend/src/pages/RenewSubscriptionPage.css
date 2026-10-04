@@ -17,24 +17,6 @@
   color: var(--color-text-primary);
 }
 
-.renew-back-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border-radius: 9px;
-  background: var(--color-neutral-0);
-  border: 1px solid var(--color-border-default);
-  color: var(--color-text-secondary);
-  transition: background-color 0.15s ease;
-}
-
-.renew-back-link:hover {
-  background: var(--color-surface-page);
-}
-
 /* Aligns under the heading, not the back button - 32px button + 10px gap. */
 .renew-subtitle {
   margin: 0 0 1.125rem 2.625rem;
@@ -83,8 +65,52 @@
 }
 
 .renew-cancel-link {
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-weight: 600;
+}
+
+/* Member summary card - who this checkout is for, at a glance. */
+.renew-member-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  padding: 0.875rem 1.125rem;
+  margin-bottom: 0.875rem;
+}
+
+.renew-member-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-tile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--color-text-inverse);
+}
+
+.renew-member-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.renew-member-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.renew-member-meta {
+  font-size: 0.78125rem;
+  color: var(--color-text-muted);
 }
 
 .renew-banner-error {
@@ -237,7 +263,7 @@
 .renew-payment-chip-selected {
   border: 1.5px solid var(--tint-accent);
   background: var(--tint-card-from);
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-weight: 600;
 }
 
@@ -265,7 +291,7 @@
 
 .renew-category-tag-membership {
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
 }
 
 .renew-category-tag-addon {
@@ -332,7 +358,7 @@
 .renew-quantity-chip-selected {
   border: 1.5px solid var(--tint-accent);
   background: var(--tint-card-from);
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-weight: 600;
 }
 
@@ -352,7 +378,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -461,7 +487,7 @@
 
 .renew-add-item:hover:not(:disabled) {
   border-color: var(--tint-accent);
-  color: var(--tint-accent);
+  color: var(--tint-ink);
 }
 
 .renew-add-item:disabled {
@@ -662,23 +688,22 @@
 }
 
 /* <= 860px: app-level bottom tab bar appears - clear it. */
-@media (max-width: 860px) {
-  .renew-page {
-    padding-bottom: 72px;
-  }
-}
 
 /* <= 640px: quantity chips grow for touch, footer stacks with buttons sharing the row. */
-@media (max-width: 640px) {
+/* Touch targets: 44x44 on every phone-width screen (CLAUDE.md "Mobile conventions"). */
+@media (max-width: 767px) {
   .renew-delete-item {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
 
   .renew-quantity-chip {
+    min-height: 44px;
     padding: 0.5625rem 0.8125rem;
   }
+}
 
+@media (max-width: 640px) {
   .renew-footer-card {
     flex-direction: column;
     align-items: stretch;

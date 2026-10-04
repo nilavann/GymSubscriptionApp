@@ -7,6 +7,8 @@
   "scripts": {
     "dev:frontend": "npm --workspace frontend run dev",
     "build:frontend": "npm --workspace frontend run build",
+    "test:frontend": "npm --workspace frontend run test",
+    "test:e2e:frontend": "npm --workspace frontend run test:e2e",
     "supabase": "supabase"
   },
   "devDependencies": {

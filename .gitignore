@@ -42,6 +42,16 @@ Thumbs.db
 coverage/
 **/coverage/
 
+# Playwright artifacts
+playwright-report/
+**/playwright-report/
+test-results/
+**/test-results/
+blob-report/
+**/blob-report/
+playwright/.cache/
+**/playwright/.cache/
+
 # Temporary files
 .tmp/
 **/.tmp/

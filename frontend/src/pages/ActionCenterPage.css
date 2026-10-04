@@ -162,7 +162,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 0.9rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-default);
@@ -251,6 +251,14 @@
   background: var(--color-surface-page);
 }
 
+/* README §Action Center: swipe is the primary gesture on a phone — the arrows are a desktop affordance.
+   (Two stateless buttons, so CSS rather than a second render branch: rules.md rule 33.) */
+@media (max-width: 767px) {
+  .action-center-arrow {
+    display: none;
+  }
+}
+
 .action-center-scroller {
   flex: 1;
   min-width: 0;
@@ -317,6 +325,15 @@
   font-size: 1.3rem;
 }
 
+.action-center-avatar-clickable {
+  cursor: zoom-in;
+  transition: transform 0.1s ease;
+}
+
+.action-center-avatar-clickable:hover {
+  transform: scale(1.08);
+}
+
 .action-center-card-identity {
   min-width: 0;
   display: flex;
@@ -347,14 +364,17 @@
   font-weight: 700;
 }
 
+/* Same colors as the Members/Detail pills for the same member (styles/status.css): <= 7 days is
+   deriveStatus() "expiring" (amber); 8-30 days is "active" (neutral stone) — so a member never
+   shows two different pills on two screens. */
 .action-center-pill-urgent {
-  background: #ffedd5;
-  color: #c2410c;
+  background: var(--color-status-warning-bg-subtle);
+  color: var(--color-status-warning-text-deep);
 }
 
 .action-center-pill-soon {
-  background: var(--color-status-warning-bg);
-  color: var(--color-status-warning-text);
+  background: var(--color-status-active-bg);
+  color: var(--color-status-active-text);
 }
 
 .action-center-pill-expired {
@@ -384,7 +404,8 @@
 .action-center-card-renew,
 .action-center-card-view {
   flex: 1;
-  min-height: 36px;
+  /* 44px touch target (README §Action Center) — these are the screen's primary actions. */
+  min-height: 44px;
   border-radius: var(--radius-el);
   font-size: 0.8rem;
   font-weight: 600;

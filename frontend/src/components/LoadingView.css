@@ -7,6 +7,12 @@
   }
 }
 
+/* Full-screen height lives here (not inline) so it can carry a vh fallback for dvh — CLAUDE.md "Mobile conventions". */
+.loading-view {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .loading-view-spin {
   animation: loading-view-spin 0.8s linear infinite;
 }

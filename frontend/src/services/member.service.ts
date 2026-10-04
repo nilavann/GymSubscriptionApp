@@ -26,6 +26,8 @@ interface MemberFieldsDraft {
   emergency_contact_relationship: string;
   email: string;
   residential_address: string;
+  /** 6-digit Indian postal code, optional — see spec/frontend/member-management.md §2. */
+  pincode: string;
   aadhaar_number: string;
   occupation: string;
   /** Profile id, or '' for "not set" — see member-detail.md §12. */
@@ -49,6 +51,7 @@ export type MemberEditFormErrors = Partial<Record<keyof MemberEditDraft, string>
 
 const PHONE_REGEX = /^\d{10}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PINCODE_REGEX = /^\d{6}$/;
 
 /** Shared by validateNewMember/validateMemberEdit — server-side CHECK constraints are the authoritative copy (member-management.md §7). */
 function validateMemberFields(form: MemberFieldsDraft): Partial<Record<keyof MemberFieldsDraft, string>> {
@@ -66,13 +69,21 @@ function validateMemberFields(form: MemberFieldsDraft): Partial<Record<keyof Mem
   if (!form.date_of_joining) errors.date_of_joining = 'Date of joining is required';
   if (form.gender === '') errors.gender = 'Select a gender';
 
-  const weightKg = Number(form.weight_kg);
-  if (form.weight_kg.trim() === '' || Number.isNaN(weightKg) || weightKg < 1 || weightKg > 500) {
-    errors.weight_kg = 'Weight must be between 1 and 500 kg';
+  if (form.weight_kg.trim() === '') {
+    errors.weight_kg = 'Weight is required';
+  } else {
+    const weightKg = Number(form.weight_kg);
+    if (Number.isNaN(weightKg) || weightKg < 1 || weightKg > 500) {
+      errors.weight_kg = 'Weight must be between 1 and 500 kg';
+    }
   }
-  const heightCm = Number(form.height_cm);
-  if (form.height_cm.trim() === '' || Number.isNaN(heightCm) || heightCm < 1 || heightCm > 300) {
-    errors.height_cm = 'Height must be between 1.0 and 300.0 cm';
+  if (form.height_cm.trim() === '') {
+    errors.height_cm = 'Height is required';
+  } else {
+    const heightCm = Number(form.height_cm);
+    if (Number.isNaN(heightCm) || heightCm < 1 || heightCm > 300) {
+      errors.height_cm = 'Height must be between 1.0 and 300.0 cm';
+    }
   }
 
   if (form.under_doctor_care && !form.doctor_care_details.trim()) {
@@ -91,6 +102,10 @@ function validateMemberFields(form: MemberFieldsDraft): Partial<Record<keyof Mem
 
   if (form.email.trim() && !EMAIL_REGEX.test(form.email.trim())) {
     errors.email = 'Enter a valid email address';
+  }
+
+  if (form.pincode.trim() && !PINCODE_REGEX.test(form.pincode.trim())) {
+    errors.pincode = 'Must be exactly 6 digits';
   }
 
   return errors;
@@ -126,6 +141,7 @@ function draftToMemberFieldsUpdate(form: MemberFieldsDraft) {
     emergency_contact_relationship: form.emergency_contact_relationship.trim(),
     email: form.email.trim() || null,
     residential_address: form.residential_address.trim() || null,
+    pincode: form.pincode.trim() || null,
     aadhaar_number: form.aadhaar_number.trim() || null,
     occupation: form.occupation.trim() || null,
     handled_by_staff: form.handled_by_staff || null,
@@ -153,6 +169,7 @@ export function editDraftFromMember(member: Member): MemberEditDraft {
     emergency_contact_relationship: member.emergency_contact_relationship,
     email: member.email ?? '',
     residential_address: member.residential_address ?? '',
+    pincode: member.pincode ?? '',
     aadhaar_number: member.aadhaar_number ?? '',
     occupation: member.occupation ?? '',
     handled_by_staff: member.handled_by_staff ?? '',

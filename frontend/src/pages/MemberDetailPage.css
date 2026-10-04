@@ -45,21 +45,6 @@
   cursor: pointer;
 }
 
-.member-detail-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 44px;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.member-detail-back-link:hover {
-  color: var(--tint-accent);
-}
-
 .member-detail-header {
   display: flex;
   align-items: center;
@@ -272,22 +257,29 @@
   flex: 1;
 }
 
+.member-detail-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .member-detail-name {
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
-.member-detail-hero-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.member-detail-hero-meta-1 {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
 }
 
-.member-detail-number {
+.member-detail-hero-meta-2 {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
 }
 
 .member-detail-photo-status {
@@ -305,7 +297,7 @@
 .member-detail-inline-retry {
   background: none;
   border: none;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
@@ -318,68 +310,38 @@
   flex-shrink: 0;
 }
 
-/* Status badge - shared shape with Members List */
+/* Status badges (.status-badge-*) live in styles/status.css — do not re-declare them here. */
 
-.status-badge {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
+/* Layout */
 
-.status-badge-active {
-  background: var(--color-status-success-bg);
-  color: var(--color-status-success-text);
-}
-
-.status-badge-expiring {
-  background: var(--color-status-warning-bg);
-  color: var(--color-status-warning-text);
-}
-
-.status-badge-expired {
-  background: var(--color-status-danger-bg);
-  color: var(--color-status-danger-text);
-}
-
-/* Layout columns */
-
-.member-detail-columns {
+.member-detail-main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.member-detail-column-left,
-.member-detail-column-right {
+/* Medical/Emergency contact (left) · Personal (right, collapsible) — member-detail-page
+   design §1's `.gm-detail-grid`: 1fr/1.15fr from 760px, single column below. This is a
+   narrower, purpose-built breakpoint for just this row (not the page's other 1024px tier)
+   per the design spec's own literal CSS. */
+.member-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 760px) {
+  .member-detail-grid {
+    grid-template-columns: 1fr 1.15fr;
+    align-items: start;
+  }
+}
+
+.member-detail-grid-col {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
-}
-
-/* Two columns only from the desktop tier (>= 1024px), not the tablet tier (768-1023px)
-   this project also has — see spec/frontend/rules.md's tier breakdown and styling.md §4
-   for the 768px-viewport math (AppShell's 240px sidebar + this column's 380px left
-   almost fully consumed the width, leaving ~88px for the right column) that makes this
-   page read as "overlapping" at tablet widths without this floor. Below 1024px this
-   page keeps the single-column mobile layout instead. */
-@media (min-width: 1024px) {
-  .member-detail-columns {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-
-  .member-detail-column-left {
-    width: 380px;
-    flex-shrink: 0;
-  }
-
-  .member-detail-column-right {
-    flex: 1;
-  }
 }
 
 /* Sections */
@@ -406,7 +368,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   margin: 0 0 0.75rem;
 }
 
@@ -461,6 +423,21 @@
   word-break: break-word;
 }
 
+/* Personal card's progressive-disclosure toggle (member-detail-page design §6). */
+.member-detail-disclosure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--tint-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Edit mode fields */
 
 .member-detail-required {
@@ -511,34 +488,18 @@
   min-height: 44px;
 }
 
+.member-detail-field textarea,
+.member-detail-section textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
 .member-detail-field input:focus,
 .member-detail-field select:focus,
 .member-detail-field textarea:focus {
   outline: none;
   border-color: var(--tint-accent);
   box-shadow: 0 0 0 3px var(--tint-focus-ring);
-}
-
-.member-detail-metrics-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.member-detail-metrics-row label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-.member-detail-metrics-row input {
-  background: var(--color-surface-input);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-el);
-  padding: 0.6rem 0.75rem;
-  font-size: 0.85rem;
-  min-height: 44px;
-  width: 100%;
 }
 
 .member-detail-chip-row {
@@ -562,7 +523,7 @@
 .member-detail-chip-selected {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-weight: 700;
 }
 
@@ -640,17 +601,7 @@
   background: var(--color-status-danger-bg-subtle);
 }
 
-/* Current Membership / Add-ons */
-
-.member-detail-empty {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-}
+/* Current Add-ons / Subscription History */
 
 .member-detail-empty-inline {
   color: var(--color-text-secondary);
@@ -676,19 +627,6 @@
 
 .member-detail-add-sub-link:hover {
   background: var(--color-surface-page);
-}
-
-/* Current-membership card sits on the tint gradient with an accent section title
-   (frontend/mockups/README.md's Member Detail spec). */
-.member-detail-column-right > .member-detail-section:first-child {
-  background: linear-gradient(to bottom, var(--tint-card-from), var(--tint-card-to));
-  border-color: var(--tint-border);
-}
-
-.member-detail-item-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
 }
 
 .member-detail-item-card-top {
@@ -761,6 +699,66 @@
   opacity: 0.92;
 }
 
+.member-detail-renew-button-danger {
+  background: var(--color-status-danger-text);
+}
+
+/* Merged profile+membership card's lower strip (v2 - design_handoff_flexhub_v2/README.md
+   §4) - a full-width row wrapping onto its own line inside .member-detail-hero's flex-wrap
+   layout, its background/border switching on membership state (active/expired/no plan). */
+.member-detail-membership-strip {
+  flex-basis: 100%;
+  border-radius: var(--radius-el);
+  padding: 1rem;
+  margin-top: 0.25rem;
+}
+
+.member-detail-membership-strip-active {
+  background: linear-gradient(to bottom, var(--tint-card-from), var(--tint-card-to));
+  border: 1px solid var(--tint-border);
+}
+
+.member-detail-membership-strip-expired {
+  background: var(--color-status-danger-bg-subtle);
+  border: 1px solid var(--color-status-danger-border);
+}
+
+.member-detail-strip-blocked {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-status-danger-text);
+}
+
+.member-detail-strip-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tint-ink);
+}
+
+.member-detail-strip-label-expired {
+  color: var(--color-status-danger-text);
+}
+
+.member-detail-membership-strip-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--color-neutral-300);
+  background: var(--color-neutral-75);
+}
+
+.member-detail-strip-empty-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
 .member-detail-addon-list {
   display: flex;
   flex-direction: column;
@@ -779,9 +777,33 @@
   font-size: 0.85rem;
 }
 
+.member-detail-addon-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.member-detail-addon-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .member-detail-addon-dates {
   color: var(--color-text-muted);
   font-size: 0.78rem;
+}
+
+.member-detail-addon-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--color-neutral-300);
+  background: var(--color-neutral-75);
+  border-radius: var(--radius-el);
 }
 
 /* Subscription History */
@@ -835,7 +857,7 @@
   background: none;
   border: none;
   font-size: 0.78rem;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   cursor: pointer;
   padding: 0 0.5rem;
 }
@@ -901,4 +923,55 @@
 
 .member-detail-delete-dialog p {
   color: var(--color-text-secondary);
+}
+
+/* Phone layout (design_handoff_flexhub_mobile README, "Member Detail"). Pure styling on the same markup — it
+   must stay at the END of this file so it overrides the desktop rules above at equal specificity. Below 760px
+   (the same cut-off as the two-column grid): */
+@media (max-width: 759px) {
+  .member-detail-hero {
+    align-items: flex-start;
+  }
+
+  /* The identity text sits beside the avatar. Without this the actions row (Edit / Delete, flex-shrink: 0)
+     took half the card and the name and member number wrapped one word per line underneath it. */
+  .member-detail-hero-actions {
+    flex: 1 1 100%;
+  }
+
+  .member-detail-hero-actions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* "Renew CTA full width inside the membership strip": the plan name and Renew share a flex row on desktop.
+     display: contents lets them join the strip's own column, so Renew can drop to the bottom at full width. */
+  .member-detail-membership-strip-active,
+  .member-detail-membership-strip-expired {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .member-detail-membership-strip .member-detail-item-card-top {
+    display: contents;
+  }
+
+  .member-detail-membership-strip .member-detail-renew-button {
+    order: 1;
+    margin-top: 0.75rem;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  /* One column in the handoff's order: Personal, Medical, Emergency, Add-ons, Subscription history. The
+     profile form comes before the add-on and history cards, and the grid's right-hand column (Personal) before
+     its left-hand one (Medical, Emergency). Visual order only — the DOM, and so the desktop layout, is untouched. */
+  .member-detail-main > form {
+    order: -1;
+  }
+
+  .member-detail-grid {
+    display: flex;
+    flex-direction: column-reverse;
+  }
 }

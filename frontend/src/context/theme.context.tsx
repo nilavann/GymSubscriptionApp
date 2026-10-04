@@ -4,11 +4,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 // implemented as a real runtime-switchable config (not baked into tokens.css as a single
 // fixed look), applied via data-tint/data-radius attribute overrides in tokens.css.
 //
-// v2 note: CTA is no longer an independent axis (each tint now owns its own CTA gradient),
-// and the `pill` radius option is gone — only `soft`/`sharp` remain. `emerald`/`amber`/`rose`
-// tints are gone too (v2 reserves those hues for membership status, not decoration); `wild`
-// is new and is the default.
-export type Tint = 'wild' | 'sky' | 'violet';
+// v2 note: CTA is no longer an independent axis (each tint owns its own CTA gradient), and the
+// `pill` radius option is gone — only `soft`/`sharp` remain.
+// v3 note: `amber` is the Stone & Amber theme (design_handoff_flexhub_mobile/) and is the default.
+// It is the same *name* v1 used for a decorative tint, which v2 dropped — hence the storage key
+// below is versioned, so a stale pre-v2 "amber" can never be mistaken for the v3 one.
+export type Tint = 'amber' | 'wild' | 'sky' | 'violet';
 export type Radius = 'soft' | 'sharp';
 
 export interface ThemeConfig {
@@ -16,12 +17,17 @@ export interface ThemeConfig {
   radius: Radius;
 }
 
-const DEFAULT_THEME: ThemeConfig = { tint: 'wild', radius: 'soft' };
+const DEFAULT_THEME: ThemeConfig = { tint: 'amber', radius: 'soft' };
 
-const TINT_OPTIONS: Tint[] = ['wild', 'sky', 'violet'];
+const TINT_OPTIONS: Tint[] = ['amber', 'wild', 'sky', 'violet'];
 const RADIUS_OPTIONS: Radius[] = ['soft', 'sharp'];
 
-const STORAGE_KEY = 'flexhub-theme';
+// Versioned: this provider writes the theme to localStorage on EVERY mount, so every device that
+// has ever opened the app already stores a value. Changing DEFAULT_THEME alone would therefore
+// never reach an existing user — bump this key whenever the default changes (CLAUDE.md "Mobile
+// conventions"). v3 intentionally drops earlier preferences so everyone lands on Stone & Amber;
+// they can pick another tint again in Settings > Appearance.
+const STORAGE_KEY = 'flexhub-theme-v3';
 
 interface ThemeContextValue extends ThemeConfig {
   setTint: (tint: Tint) => void;

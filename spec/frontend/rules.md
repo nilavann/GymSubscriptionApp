@@ -45,6 +45,8 @@ These rules apply to every file in `web/` and `supabase/`. They take priority ov
 
     Every tappable control has a minimum 44×44px touch target at every tier, matching the mobile bottom tab bar's own sizing ([app-shell.md §3.2](./app-shell.md#32-mobile-bottom-tab-bar)).
 
+    Where the mobile and desktop versions of a screen are **different markup** (sidebar vs tab bar, card list vs table), render exactly one — see rule 33. CSS media queries stay the tool for styling differences on markup that is the same at every width.
+
 ## Form Conventions
 
 Every create/edit form in the app follows the same shape — a screen-specific spec documents its own fields, not these conventions themselves.
@@ -133,3 +135,14 @@ This re-audit was a structural code check (grep for the specific `width` + `flex
 ## Performance
 
 32. **Every page in `App.tsx`'s route table is code-split** — `React.lazy(() => import(...))`, never a static top-of-file `import`, wrapped in one `Suspense` boundary at the router/shell level (reusing `LoadingView`, not a bespoke per-page loading state), which is itself wrapped in an error boundary (a failed chunk load — e.g. a stale tab after a redeploy — must show a "reload to get the latest version" message, never a blank crashed app). A static import of a page component bundles it (and its CSS) into the single chunk shipped on every route's first load, regardless of whether that page is the one being visited — see [performance.md](./performance.md) for the incident this was written up from and the full rationale, including what's deliberately exempt (`LoginPage`, `AppShell`) and what's deliberately NOT split (small repository/service files).
+
+## Responsive Rendering & Testing
+
+33. **Render exactly one version of anything that differs by breakpoint.** Alternate renderings of the same content or structure (sidebar vs tab bar vs mobile header, footer vs legal-links list, table vs card list) switch in JS with `useIsTabletUp()` (`web/src/lib/use-media-query.ts`) so React mounts one branch. Never mount both and hide one with `display: none` — the hidden copy still renders (double DOM, both subtrees' hooks and effects run, images fetch twice). CSS media queries remain the tool for pure styling differences (columns, padding, sizes) on markup that is identical at every width. Supporting constraints:
+    - JS and CSS gates use the same **px** query, `(min-width: 768px)`. The rem-based `--breakpoint-tablet: 48rem` token feeds Tailwind variants only and must not be used in JS (they diverge when the browser's default font size changes). See [styling.md §4](./styling.md#4-breakpoints--three-tiers-not-two).
+    - A hook that fetches is called once at an always-mounted level (`AppShell`) and passed down — never inside a branch that remounts on breakpoint/route change.
+    - Page state lives above the switched branch so a breakpoint change never loses it.
+    - Tab-bar visibility is route data (`handle: { hideTabBar: true }` + `useMatches()`), not path-matching in components.
+    - z-index scale: tab bar 10, mobile header 20, filter drawer 40, modals 50, camera modal 60, photo lightbox 70.
+34. **Mobile conventions.** Touch targets >= 44×44px; form controls 16px below 768px (iOS focus zoom); `100dvh` with a `100vh` fallback, never bare `100vh`; safe-area via `env(safe-area-inset-*)`; no hover-only information; no hex outside `tokens.css`; fonts only via `--font-ui` / `--font-display`; the theme storage key is versioned and must be bumped when a default changes; `.status-badge-*` is declared once, in a shared stylesheet.
+35. **Testing.** Unit/component tests use Vitest + React Testing Library (colocated `*.test.ts(x)`); E2E uses Playwright (`web/e2e/`, desktop + mobile projects, production build, Supabase network mocked — never a real project). Every new or changed component, page, hook, service or `lib/` helper ships a test in the same change; every user-facing flow/route change ships Playwright coverage on desktop **and** mobile; screens with alternate renderings assert exactly one is in the DOM at each width; services are tested with their repository module replaced by a typed fake (`vi.mock`), pages/components via `renderWithProviders` with `fakeServices` (`web/src/test/`); unit tests never touch Supabase; no `.skip`/`.only` committed; no service-role key in any test or fixture. Dev-only testing dependencies satisfy rule 12 (zero bytes shipped, permissive licences). Playwright WebKit does not reproduce iOS Safari's safe-area/zoom/address-bar behaviour — check those on a Vercel preview. Full detail: CLAUDE.md "Testing rules".

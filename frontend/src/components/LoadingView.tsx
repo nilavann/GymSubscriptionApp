@@ -6,8 +6,8 @@ import './LoadingView.css';
 export function LoadingView() {
   return (
     <div
+      className="loading-view"
       style={{
-        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

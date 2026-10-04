@@ -22,6 +22,8 @@ export interface Member {
   emergency_contact_relationship: string;
   email: string | null;
   residential_address: string | null;
+  /** 6-digit postal code, optional. */
+  pincode: string | null;
   aadhaar_number: string | null;
   occupation: string | null;
   /**
@@ -70,6 +72,7 @@ export interface NewMember {
   branch_id: number;
   email: string | null;
   residential_address: string | null;
+  pincode: string | null;
   aadhaar_number: string | null;
   occupation: string | null;
   /**
@@ -112,6 +115,7 @@ export type UpdateMember = Partial<
     | 'emergency_contact_relationship'
     | 'email'
     | 'residential_address'
+    | 'pincode'
     | 'aadhaar_number'
     | 'occupation'
   >

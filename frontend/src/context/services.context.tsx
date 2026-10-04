@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { authService, type AuthService } from '../services/auth.service';
 import { memberService, type MemberService } from '../services/member.service';
 import { subscriptionService, type SubscriptionService } from '../services/subscription.service';
@@ -62,8 +62,14 @@ const defaultServices: Services = {
 
 const ServicesContext = createContext<Services>(defaultServices);
 
-export function ServicesProvider({ children }: { children: ReactNode }) {
-  return <ServicesContext.Provider value={defaultServices}>{children}</ServicesContext.Provider>;
+/**
+ * `services` is the test seam (CLAUDE.md "Testing rules"): a partial override merged over the
+ * real services, so a test can inject fakes without touching Supabase. The app itself
+ * (App.tsx) never passes it.
+ */
+export function ServicesProvider({ children, services }: { children: ReactNode; services?: Partial<Services> }) {
+  const value = useMemo<Services>(() => (services ? { ...defaultServices, ...services } : defaultServices), [services]);
+  return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>;
 }
 
 export function useServices(): Services {

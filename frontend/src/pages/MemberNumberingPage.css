@@ -249,7 +249,7 @@
   gap: 0.3rem;
   background: none;
   border: none;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;

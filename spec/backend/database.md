@@ -169,6 +169,7 @@ create table if not exists members (
   emergency_contact_relationship  text not null,
   email                           text,
   residential_address             text,
+  pincode                         text,
   aadhaar_number                  text,
   occupation                      text,
   photo_url                       text,

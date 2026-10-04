@@ -8,7 +8,9 @@ import { AdminTabs } from '../components/AdminTabs';
 import type { ManagedUser } from '../types/profile';
 import type { Role } from '../types/role';
 import type { EditUserDraft, EditUserFormErrors } from '../services/user.service';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './ManageUsersPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
@@ -20,6 +22,7 @@ type ActiveDialog =
 
 /** Manage Users (screens.md WSCR-09) — admin-only, list source is list-users (edge-functions.md §5), not a direct profiles read. */
 export function ManageUsersPage() {
+  const isTabletUp = useIsTabletUp();
   const { currentProfile } = useAuth();
   const { userService, roleRepository } = useServices();
   const location = useLocation();
@@ -49,7 +52,7 @@ export function ManageUsersPage() {
       setUsers(data);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message === 'users-timeout' || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message === 'users-timeout' || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -104,7 +107,7 @@ export function ManageUsersPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       setSaveError(
-        message === 'Failed to fetch' ? "Couldn't save — check your connection and try again." : "Couldn't update this user. Please try again."
+        isNetworkError(message) ? "Couldn't save — check your connection and try again." : "Couldn't update this user. Please try again."
       );
     } finally {
       setIsSaving(false);
@@ -121,7 +124,7 @@ export function ManageUsersPage() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      setConfirmError(message === 'Failed to fetch' ? "Couldn't save — check your connection and try again." : "Couldn't update this user. Please try again.");
+      setConfirmError(isNetworkError(message) ? "Couldn't save — check your connection and try again." : "Couldn't update this user. Please try again.");
     } finally {
       setIsConfirming(false);
     }
@@ -137,7 +140,7 @@ export function ManageUsersPage() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      setConfirmError(message === 'Failed to fetch' ? "Couldn't delete — check your connection and try again." : "Something went wrong deleting this user. Please try again.");
+      setConfirmError(isNetworkError(message) ? "Couldn't delete — check your connection and try again." : "Something went wrong deleting this user. Please try again.");
     } finally {
       setIsConfirming(false);
     }
@@ -153,7 +156,7 @@ export function ManageUsersPage() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      setConfirmError(message === 'Failed to fetch' ? "Couldn't restore — check your connection and try again." : "Something went wrong restoring this user. Please try again.");
+      setConfirmError(isNetworkError(message) ? "Couldn't restore — check your connection and try again." : "Something went wrong restoring this user. Please try again.");
     } finally {
       setIsConfirming(false);
     }
@@ -243,6 +246,7 @@ export function ManageUsersPage() {
               </button>
             ))}
           </div>
+          {touched && errors.roles && <p className="users-error">{errors.roles}</p>}
           {editingId === currentProfile?.id && <p className="users-hint">You can't change your own roles.</p>}
 
           <div className="users-form-actions">
@@ -258,46 +262,49 @@ export function ManageUsersPage() {
         </form>
       )}
 
-      <div className="users-cards">
-        {users.map((user) => (
-          <UserRow
-            key={user.id}
-            user={user}
-            isSelf={user.id === currentProfile?.id}
-            variant="card"
-            onEdit={() => openEditForm(user)}
-            onToggleActive={() => setDialog({ type: 'toggle-active', user })}
-            onDelete={() => setDialog({ type: 'delete', user })}
-            onRestore={() => setDialog({ type: 'restore', user })}
-          />
-        ))}
-      </div>
-
-      <table className="users-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+      {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+      {isTabletUp ? (
+        <table className="users-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <UserRow
+                key={user.id}
+                user={user}
+                isSelf={user.id === currentProfile?.id}
+                variant="row"
+                onEdit={() => openEditForm(user)}
+                onToggleActive={() => setDialog({ type: 'toggle-active', user })}
+                onDelete={() => setDialog({ type: 'delete', user })}
+                onRestore={() => setDialog({ type: 'restore', user })}
+              />
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="users-cards">
           {users.map((user) => (
             <UserRow
               key={user.id}
               user={user}
               isSelf={user.id === currentProfile?.id}
-              variant="row"
+              variant="card"
               onEdit={() => openEditForm(user)}
               onToggleActive={() => setDialog({ type: 'toggle-active', user })}
               onDelete={() => setDialog({ type: 'delete', user })}
               onRestore={() => setDialog({ type: 'restore', user })}
             />
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
 
       {dialog?.type === 'toggle-active' && (
         <div className="users-delete-backdrop">

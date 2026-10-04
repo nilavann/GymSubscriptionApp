@@ -66,8 +66,9 @@ Every screen re-fetches its data on route entry (see [rules.md](./rules.md)) —
 | Success | Supabase returns a session | `onAuthStateChange` fires (see [app-shell.md](./app-shell.md)), app redirects to `/` |
 | Failure | Supabase returns an error | Error banner shown, password field cleared, email kept |
 | Deactivated account | Profile fetch after login returns `is_active = false` | Immediately signed out again, error banner: "Your account has been deactivated. Contact an admin." |
+| Signed out (v2, new) | A previously-live session's access token expired mid-use (401 from `authAwareFetch`) | Not the error banner — a dedicated full-card "You're signed out" screen (green check, 4px progress bar, "Sign in again" button) replaces the form, auto-transitioning to the normal Idle state after ~2.5s. See [auth.md §3.1](./auth.md#31-authcontextvalue) (`sessionExpired`/`clearSessionExpired`) — this is the authoritative doc for this state, not repeated in the Layout/visual detail above (which predates the v2 redesign and is otherwise stale against the current implementation). |
 
-No PIN dots, no username field, no version string footer (not meaningful for a web app) — these are mobile-only elements from [spec/screens/login.md](../../spec/screens/login.md) that do not carry over.
+No PIN dots, no username field — these are mobile-only elements from [spec/screens/login.md](../../spec/screens/login.md) that do not carry over. (The "no version string footer" note above is itself stale — the current implementation does show a footer line, "Fit & Fine Gym · v1.0.0".)
 
 See [auth.md §2.5](./auth.md#25-non-functional-compliance-rulesmd-rules-16-29-31) for this screen's rules 16/29–31 compliance detail — not repeated here to avoid the two copies drifting apart.
 

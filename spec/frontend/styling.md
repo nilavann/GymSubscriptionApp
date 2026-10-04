@@ -66,6 +66,15 @@ Defined in `tokens.css`'s `@theme` block, replacing Tailwind's default `sm`/`md`
 
 Example: `<div class="flex flex-col tablet:flex-row desktop:gap-8">` — stacked by default, row from 768px up, extra gap from 1024px up.
 
+### CSS vs JS: who decides what renders
+
+Two mechanisms, one job each (rules.md rule 33):
+
+- **CSS media queries / `tablet:` `desktop:`** — pure styling on markup that is the same at every width (grid columns, padding, font size, hiding a trivial decoration).
+- **`useIsTabletUp()`** (`lib/use-media-query.ts`) — when the mobile and desktop versions are *different markup* (sidebar vs tab bar vs mobile header, footer vs legal links, card list vs table). React mounts exactly one branch. Never mount both and hide one with `display: none`: the hidden copy still renders, runs its hooks/effects, and fetches its images.
+
+The JS gate is the **px** query `(min-width: 768px)`, matching the page CSS (`@media (min-width: 768px)`). The `tablet: 48rem` token above is rem-based, so it equals 768px only at the browser's default font size — fine for Tailwind styling variants, wrong for deciding what renders. Using the same px value on both sides means JS and CSS can never disagree. Existing CSS gates such as `.members-table { display: none }` can stay once only one branch renders; they are then redundant, not harmful.
+
 ## 5. What "best practices" means day to day
 
 - **New components/screens**: prefer Tailwind utility classes for layout, spacing, and responsive behavior. Reach for the color utilities (`bg-brand-600`) over `var(--color-brand-600)` in a separate `.css` file when the two are equivalent — fewer files, the responsive variant and the color live next to each other in the JSX.

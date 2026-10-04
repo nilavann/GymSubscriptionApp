@@ -2,30 +2,6 @@
   max-width: 480px;
 }
 
-.invite-user-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 44px;
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 0.5rem;
-  transition: color 0.15s ease, transform 0.1s ease;
-}
-
-.invite-user-back-link:hover {
-  color: var(--tint-accent);
-}
-
-.invite-user-back-link:active {
-  transform: scale(0.97);
-}
-
 .invite-user-page h1 {
   margin: 0 0 1rem;
 }
@@ -119,7 +95,7 @@
 .invite-user-chip-selected {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-weight: 700;
 }
 
