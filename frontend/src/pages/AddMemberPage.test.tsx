@@ -1,201 +1,291 @@
-import '../test/page-mocks';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AddMemberPage } from './AddMemberPage';
 import { memberService as realMemberService } from '../services/member.service';
-import { adminProfile, fakeAuth, setAuth, setServices, staffProfile } from '../test/mocks';
-import { localDate, member } from '../test/fixtures';
+import { todayDate } from '../lib/datetime';
+import { fakeServices } from '../test/fakes';
+import { renderRoutes } from '../test/render';
+import { buildBranch, buildMember, buildProfile } from '../test/builders';
 
-const branches = [
-  { id: 1, name: 'Main Branch', code: 'MUM' },
-  { id: 2, name: 'Delhi', code: 'DEL' },
-];
-const profiles = [staffProfile, adminProfile];
+const BRANCHES = [buildBranch({ id: 1, name: 'Mumbai Central', code: 'MUM' }), buildBranch({ id: 2, name: 'Pune Camp', code: 'PUN' })];
+const ME = buildProfile({ id: 'me', full_name: 'Priya Sharma' });
+const STAFF = [ME, buildProfile({ id: 'ravi', full_name: 'Ravi Kumar' })];
 
-let create: ReturnType<typeof vi.fn>;
-
-function renderPage() {
-  return render(
-    <MemoryRouter initialEntries={['/members/new']}>
-      <Routes>
-        <Route path="/members/new" element={<AddMemberPage />} />
-        <Route path="/members/:id" element={<div>MEMBER DETAIL PAGE</div>} />
-      </Routes>
-    </MemoryRouter>
+function renderAdd(
+  options: {
+    getBranches?: ReturnType<typeof vi.fn>;
+    getProfiles?: ReturnType<typeof vi.fn>;
+    create?: ReturnType<typeof vi.fn>;
+  } = {}
+) {
+  const {
+    getBranches = vi.fn().mockResolvedValue(BRANCHES),
+    getProfiles = vi.fn().mockResolvedValue(STAFF),
+    create = vi.fn().mockResolvedValue({ member: buildMember({ id: 77 }), photoError: null }),
+  } = options;
+  const utils = renderRoutes(
+    [
+      { path: '/members/new', element: <AddMemberPage /> },
+      { path: '/', element: <p>Members screen</p> },
+      { path: '/members/:id', element: <p>Member detail screen</p> },
+    ],
+    {
+      route: '/members/new',
+      auth: { currentProfile: ME },
+      services: fakeServices({
+        branchRepository: { getAllActive: getBranches },
+        profileRepository: { getAllActive: getProfiles },
+        memberService: { ...realMemberService, create },
+      }),
+    }
   );
+  return { ...utils, getBranches, getProfiles, create };
 }
 
-const el = (id: string) => document.getElementById(id) as HTMLInputElement;
-const waitForForm = () => waitFor(() => expect(document.getElementById('name')).not.toBeNull());
-const submit = (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole('button', { name: /create member/i }));
+const ready = () => screen.findByRole('heading', { name: 'Add Member' });
+const field = (id: string) => document.getElementById(id) as HTMLInputElement;
+const chips = () => within(screen.getByRole('group', { name: /Gender/ }));
 
-async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
-  await waitForForm();
-  await user.type(el('name'), 'Priya Sharma');
-  await user.type(el('phone'), '9876543210');
-  await user.type(el('date_of_birth'), '1995-04-02');
-  await user.selectOptions(el('branch_id'), '1');
-  await user.click(screen.getByRole('button', { name: 'Female' }));
-  await user.type(el('weight_kg'), '60');
-  await user.type(el('height_cm'), '165');
-  await user.type(el('emergency_contact_name'), 'Ravi');
-  await user.type(el('emergency_contact_phone'), '9123456780');
-  await user.type(el('emergency_contact_relationship'), 'Brother');
+async function fillValid(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(field('name'), 'Neha Joshi');
+  await user.type(field('phone'), '9876543210');
+  fireEvent.change(field('date_of_birth'), { target: { value: '1996-03-14' } });
+  await user.selectOptions(field('branch_id'), '1');
+  await user.click(chips().getByRole('button', { name: 'Female' }));
+  await user.type(field('weight_kg'), '58.5');
+  await user.type(field('height_cm'), '162');
+  await user.type(field('emergency_contact_name'), 'Meera Joshi');
+  await user.type(field('emergency_contact_phone'), '9123456780');
+  await user.type(field('emergency_contact_relationship'), 'Mother');
 }
 
-describe('Add Member page (REQ-MEM-001/002/003)', () => {
-  beforeEach(() => {
-    vi.useRealTimers();
-    create = vi.fn().mockResolvedValue({ member: member({ id: 77 }), photoError: null });
-    setAuth(fakeAuth(staffProfile));
-    setServices({
-      memberService: { ...realMemberService, create } as never,
-      branchRepository: { getAllActive: vi.fn().mockResolvedValue(branches) } as never,
-      profileRepository: { getAllActive: vi.fn().mockResolvedValue(profiles) } as never,
-    });
+afterEach(() => {
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+});
+
+describe('AddMemberPage — loading and the back control', () => {
+  it('shows a skeleton while the branches load', () => {
+    renderAdd({ getBranches: vi.fn().mockReturnValue(new Promise(() => undefined)) });
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument();
   });
 
-  it('REQ-MEM-001: date_of_joining is pre-filled with today (browser local date)', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(localDate(2026, 7, 15));
-    renderPage();
-    await waitForForm();
-    expect(el('date_of_joining')).toHaveValue('2026-07-15');
+  it('a network failure offers Retry and recovers', async () => {
+    const getBranches = vi.fn().mockRejectedValueOnce(new Error('Failed to fetch')).mockResolvedValue(BRANCHES);
+    const { user } = renderAdd({ getBranches });
+    expect(await screen.findByText("Couldn't load this screen — check your connection and try again.")).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await ready()).toBeInTheDocument();
   });
 
-  it('REQ-MEM-003: "Handled by staff" defaults to the logged-in user and lists active staff/admin', async () => {
-    renderPage();
-    await waitForForm();
-    const select = el('handled_by_staff');
-    expect(select).toHaveValue(staffProfile.id);
-    expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual(expect.arrayContaining(['Sam Staff', 'Ada Admin']));
+  it('a generic failure never shows the raw error', async () => {
+    renderAdd({ getBranches: vi.fn().mockRejectedValue(new Error('PGRST raw')) });
+    expect(await screen.findByText('Something went wrong loading this screen. Please try again.')).toBeInTheDocument();
+    expect(screen.queryByText(/PGRST/)).not.toBeInTheDocument();
   });
 
-  it('REQ-MEM-003: handled_by can be changed before submit and is what gets saved', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await user.selectOptions(el('handled_by_staff'), adminProfile.id);
-    await fillValidForm(user);
-    await submit(user);
-    await waitFor(() => expect(create).toHaveBeenCalled());
-    expect(create.mock.calls[0][0].handled_by_staff).toBe(adminProfile.id);
+  it('has a back link to Members — this route hides the tab bar, so it is the way out on a phone', async () => {
+    renderAdd();
+    await ready();
+    expect(screen.getByRole('link', { name: 'Members' })).toHaveAttribute('href', '/');
+  });
+});
+
+describe('AddMemberPage — the form', () => {
+  it('has the seven handoff sections, in order', async () => {
+    renderAdd();
+    await ready();
+    const legends = Array.from(document.querySelectorAll('legend')).map((l) => l.textContent);
+    expect(legends).toEqual(['Identity', 'Body metrics', 'Medical', 'Emergency contact', 'Optional details', 'Staff record', 'Photo']);
   });
 
-  it('REQ-MEM-001: submitting an empty form is blocked and names the missing fields', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await submit(user);
-    expect(create).not.toHaveBeenCalled();
-    expect(await screen.findByText('Name is required')).toBeInTheDocument();
-    expect(screen.getByText('Phone is required')).toBeInTheDocument();
-    expect(screen.getByText('Date of birth is required')).toBeInTheDocument();
-    expect(screen.getByText('Select a branch')).toBeInTheDocument();
-    expect(screen.getByText('Select a gender')).toBeInTheDocument();
-    expect(screen.getByText('Emergency contact name is required')).toBeInTheDocument();
+  it('defaults joining date to today and "handled by" to the signed-in staff member', async () => {
+    renderAdd();
+    await ready();
+    expect(field('date_of_joining')).toHaveValue(todayDate());
+    expect(field('handled_by_staff')).toHaveValue('me');
+    const staffOptions = within(field('handled_by_staff')).getAllByRole('option').map((o) => o.textContent);
+    expect(staffOptions).toEqual(['Not set', 'Priya Sharma', 'Ravi Kumar']);
   });
 
-  it("REQ-MEM-001: doctor's-care explanation is hidden until Yes, then mandatory", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    expect(document.getElementById('doctor_care_details')).toBeNull();
+  it('lists the branches with their codes', async () => {
+    renderAdd();
+    await ready();
+    expect(within(field('branch_id')).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Select a branch…',
+      'Mumbai Central (MUM)',
+      'Pune Camp (PUN)',
+    ]);
+  });
+
+  it('offers gender as three chips, and the first selection does not flash a "Select a gender" error', async () => {
+    const { user } = renderAdd();
+    await ready();
+    expect(chips().getAllByRole('button').map((b) => b.textContent)).toEqual(['Male', 'Female', 'Other']);
+
+    await user.click(chips().getByRole('button', { name: 'Other' }));
+    expect(chips().getByRole('button', { name: 'Other' })).toHaveClass('add-member-chip-selected');
+    expect(screen.queryByText('Select a gender')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['phone', 'phone', '98a76-54 3210987', '9876543210'],
+    ['emergency phone', 'emergency_contact_phone', '91x23', '9123'],
+    ['pincode', 'pincode', '40a0001', '400001'],
+    ['aadhaar', 'aadhaar_number', '1234 5678 9012 99', '123456789012'],
+    ['weight (decimal mask)', 'weight_kg', '72.567', '72.56'],
+  ])('masks %s as it is typed', async (_label, id, typed, expected) => {
+    const { user } = renderAdd();
+    await ready();
+    await user.type(field(id), typed);
+    expect(field(id)).toHaveValue(expected);
+  });
+
+  it('numeric fields use the numeric/decimal keyboard on a phone', async () => {
+    renderAdd();
+    await ready();
+    expect(field('phone')).toHaveAttribute('inputmode', 'numeric');
+    expect(field('pincode')).toHaveAttribute('inputmode', 'numeric');
+    expect(field('weight_kg')).toHaveAttribute('inputmode', 'decimal');
+    expect(field('height_cm')).toHaveAttribute('inputmode', 'decimal');
+  });
+
+  it('marks required fields for assistive tech as well as visually', async () => {
+    renderAdd();
+    await ready();
+    expect(field('name')).toBeRequired();
+    expect(field('phone')).toBeRequired();
+    expect(field('email')).not.toBeRequired();
+  });
+
+  it('"Under doctor’s care" reveals a details box that becomes required', async () => {
+    const { user } = renderAdd();
+    await ready();
+    expect(field('doctor_care_details')).toBeNull();
     await user.click(screen.getByRole('switch'));
-    expect(document.getElementById('doctor_care_details')).not.toBeNull();
-    await fillValidForm(user);
-    await submit(user);
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    expect(field('doctor_care_details')).toBeInTheDocument();
+  });
+
+  it('the doctor’s-care toggle works from the keyboard (Enter and Space)', async () => {
+    const { user } = renderAdd();
+    await ready();
+    screen.getByRole('switch').focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    await user.keyboard(' ');
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  });
+});
+
+describe('AddMemberPage — saving', () => {
+  it('shows every missing required field on submit, scrolls to the first, and saves nothing', async () => {
+    const { user, create } = renderAdd();
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Create member' }));
+
+    for (const message of ['Name is required', 'Phone is required', 'Date of birth is required', 'Select a gender', 'Select a branch']) {
+      expect(screen.getByText(message)).toBeInTheDocument();
+    }
     expect(create).not.toHaveBeenCalled();
-    expect(await screen.findByText(/Details are required when under doctor's care/)).toBeInTheDocument();
-    await user.type(el('doctor_care_details'), 'Asthma');
-    await submit(user);
-    await waitFor(() => expect(create).toHaveBeenCalled());
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
-  it('REQ-MEM-001: a valid form creates the member and navigates to it', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await fillValidForm(user);
-    await submit(user);
-    expect(await screen.findByText('MEMBER DETAIL PAGE')).toBeInTheDocument();
-    expect(create.mock.calls[0][0]).toMatchObject({ name: 'Priya Sharma', phone: '9876543210', branch_id: 1, gender: 'Female' });
-  });
+  it('creates the member from a complete form and opens their page (replacing this entry in history)', async () => {
+    const { user, create, router } = renderAdd();
+    await ready();
+    await fillValid(user);
+    await user.click(screen.getByRole('button', { name: 'Create member' }));
 
-  it('REQ-MEM-001: the edited date_of_joining is saved instead of today', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await fillValidForm(user);
-    const doj = el('date_of_joining');
-    await user.clear(doj);
-    await user.type(doj, '2026-01-10');
-    await submit(user);
-    await waitFor(() => expect(create).toHaveBeenCalled());
-    expect(create.mock.calls[0][0].date_of_joining).toBe('2026-01-10');
-  });
-
-  it('REQ-MEM-001: a duplicate phone is reported as a validation-style error naming the conflict', async () => {
-    create.mockRejectedValue(new Error('duplicate key value violates unique constraint "idx_members_phone_active"'));
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await fillValidForm(user);
-    await submit(user);
-    expect(await screen.findByText('This phone number is already used by another member.')).toBeInTheDocument();
-    expect(screen.queryByText('MEMBER DETAIL PAGE')).toBeNull();
-  });
-
-  it('a network failure shows a connectivity message and keeps the form', async () => {
-    create.mockRejectedValue(new Error('Failed to fetch'));
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await fillValidForm(user);
-    await submit(user);
-    expect(await screen.findByText(/check your connection/i)).toBeInTheDocument();
-    expect(el('name')).toHaveValue('Priya Sharma');
-  });
-
-  it('phone input only accepts digits, max 10', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    const phone = el('phone');
-    await user.type(phone, '98a76-54321099');
-    expect(phone).toHaveValue('9876543210');
-  });
-
-  it('form data load failure shows retry', async () => {
-    setServices({
-      memberService: { ...realMemberService, create } as never,
-      branchRepository: { getAllActive: vi.fn().mockRejectedValueOnce(new Error('Failed to fetch')).mockResolvedValue(branches) } as never,
-      profileRepository: { getAllActive: vi.fn().mockResolvedValue(profiles) } as never,
+    expect(create).toHaveBeenCalledTimes(1);
+    const [draft, photo] = create.mock.calls[0];
+    expect(draft).toMatchObject({
+      name: 'Neha Joshi',
+      phone: '9876543210',
+      gender: 'Female',
+      branch_id: 1,
+      weight_kg: '58.5',
+      height_cm: '162',
+      handled_by_staff: 'me',
     });
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(await screen.findByRole('button', { name: /retry/i }));
-    await waitForForm();
+    expect(photo).toBeNull();
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/members/77'));
+    expect(router.state.historyAction).toBe('REPLACE');
   });
 
-  it('REQ-MEM-002: file upload and camera are both offered as photo sources', async () => {
-    renderPage();
-    await waitForForm();
-    expect(screen.getByRole('button', { name: /take photo/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /upload photo/i })).toBeInTheDocument();
+  it('still opens the member when only the PHOTO failed to upload (REQ-MEM-004)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const create = vi.fn().mockResolvedValue({ member: buildMember({ id: 5 }), photoError: 'photo failed' });
+    const { user, router } = renderAdd({ create });
+    await ready();
+    await fillValid(user);
+    await user.click(screen.getByRole('button', { name: 'Create member' }));
+
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/members/5'));
+    expect(warn).toHaveBeenCalledWith('photo failed');
   });
 
-  // REQ-MEM-004 AC: "...staff sees an error message stating the photo couldn't be uploaded, with the option to
-  // retry the photo upload afterward". AddMemberPage only console.warn()s the photoError and navigates away.
-  it.fails('SPEC GAP REQ-MEM-004: a photo upload failure at registration is shown to staff (not just logged)', async () => {
-    create.mockResolvedValue({ member: member({ id: 77 }), photoError: "The member was saved, but the photo couldn't be uploaded." });
-    const user = userEvent.setup();
-    renderPage();
-    await waitForForm();
-    await fillValidForm(user);
-    await submit(user);
-    expect(await screen.findByText(/photo couldn't be uploaded/i, undefined, { timeout: 500 })).toBeInTheDocument();
+  it('locks the form and says "Saving…" while the request is in flight', async () => {
+    const { user } = renderAdd({ create: vi.fn().mockReturnValue(new Promise(() => undefined)) });
+    await ready();
+    await fillValid(user);
+    await user.click(screen.getByRole('button', { name: 'Create member' }));
+
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  });
+
+  it.each([
+    ['a duplicate phone number', new Error('duplicate key … phone'), 'This phone number is already used by another member.'],
+    ['being offline', new Error('Failed to fetch'), "Couldn't save this member — check your connection and try again."],
+    ['anything else', new Error('boom'), 'Something went wrong saving this member. Please try again.'],
+  ])('shows a specific message for %s, keeps every input and re-enables Save', async (_label, error, message) => {
+    const { user } = renderAdd({ create: vi.fn().mockRejectedValue(error) });
+    await ready();
+    await fillValid(user);
+    await user.click(screen.getByRole('button', { name: 'Create member' }));
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(field('name')).toHaveValue('Neha Joshi');
+    expect(screen.getByRole('button', { name: 'Create member' })).toBeEnabled();
+  });
+
+  it('Cancel returns to the Members list without saving', async () => {
+    const { user, create, router } = renderAdd();
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(router.state.location.pathname).toBe('/');
+    expect(create).not.toHaveBeenCalled();
+  });
+});
+
+describe('AddMemberPage — photo', () => {
+  it('offers both Take Photo and Upload Photo', async () => {
+    renderAdd();
+    await ready();
+    expect(screen.getByRole('button', { name: /Take Photo/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Upload Photo/ })).toBeInTheDocument();
+  });
+
+  it('an uploaded photo is previewed and sent along with the member', async () => {
+    const { user, create } = renderAdd();
+    await ready();
+    const file = new File(['img'], 'me.jpg', { type: 'image/jpeg' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+
+    expect(screen.getByRole('img', { name: 'Selected preview' })).toHaveAttribute('src', 'blob:test-preview');
+    await fillValid(user);
+    await user.click(screen.getByRole('button', { name: 'Create member' }));
+    expect(create.mock.calls[0][1]).toBe(file);
+  });
+
+  it('Take Photo opens the camera dialog, and cancelling it closes it', async () => {
+    const { user } = renderAdd();
+    await ready();
+    await user.click(screen.getByRole('button', { name: /Take Photo/ }));
+    expect(screen.getByRole('dialog', { name: 'Take a photo' })).toBeInTheDocument();
+    // Two buttons are named Cancel (the page's and the camera dialog's) — scope to the dialog.
+    await user.click(within(screen.getByRole('dialog', { name: 'Take a photo' })).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog', { name: 'Take a photo' })).not.toBeInTheDocument();
   });
 });

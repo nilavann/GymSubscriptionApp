@@ -44,7 +44,8 @@
 | emergency_contact_phone | Yes | Exactly 10 digits — same format rule as `phone` above (no uniqueness requirement, since it doesn't identify a member) |
 | emergency_contact_relationship | Yes | |
 | email | No | Format-validated if present |
-| residential_address | No | |
+| residential_address | No | Full-width 3-row textarea (v2 — `design_handoff_flexhub_v2/README.md` §3), `resize: vertical`, placeholder "Door / flat no, street, area, city, state" |
+| pincode | No | 6 digits, `inputMode="numeric"` (v2); shown directly above the address textarea |
 | aadhaar_number | No | No format validation specified yet |
 | occupation | No | |
 | photo | No | Upload or camera capture (§4) |
@@ -68,7 +69,7 @@ Save tapped
       → valid: memberService.create({ name, phone, date_of_birth, date_of_joining, branch_id,
                  gender, weight_kg, height_cm, under_doctor_care, doctor_care_details,
                  emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
-                 email, residential_address, aadhaar_number, occupation, handled_by_staff })
+                 email, residential_address, pincode, aadhaar_number, occupation, handled_by_staff })
           → photo (if selected): compressed client-side (§4), then uploaded, then a follow-up
             update sets photo_url/photo_thumbnail_url - a separate step from the create above,
             so a photo failure never blocks the member record itself (REQ-MEM-004)
@@ -108,14 +109,22 @@ Same field set as Add Member (§3.1) — `handled_by_staff` included, same as it
 
 **Data source:** `member_list_view` ([backend/member-management.md §5](../backend/member-management.md#5-member_list_view--resolving-the-member-status-open-question)) — one row per non-deleted member with `current_membership_plan_id`/`current_membership_plan_name`/`current_membership_end_date`/`current_addon_plan_ids` already joined in. The frontend never re-derives this from raw `subscription_items` itself.
 
-#### Layout (unchanged from screens.md)
+#### Layout
 
 | Breakpoint | Layout |
 |---|---|
-| Mobile | Stacked member cards: avatar, name, member number, plan · phone, expiry line, status badge |
-| Desktop | Data table — Avatar+Name, Member #, Phone, Plan, Expiry, Status, Actions; sortable by column header |
+| `< 768px` | Always stacked member cards, regardless of the view toggle below (a table doesn't fit a phone screen) — avatar, name, member number, plan · phone, expiry line, status badge, Renew/View actions |
+| `>= 768px` | User's chosen view (§View toggle below) — data table (Avatar+Name, Member #, Phone, Plan, Expiry, Status, Actions; sortable by column header) by default, or the same cards used on mobile laid out as a grid (2 columns `768–1023px`, 3 columns `>= 1024px`) rather than a single full-width column — a lone full-width card per row would waste most of a desktop viewport |
 
 Member number was previously only usable via search (§Search below), not visible in the list itself — added as its own column/line since staff need it to cross-reference a member without opening their detail page (e.g. matching a paper receipt or a phone call asking "what's my member number").
+
+#### View toggle (v2 — `design_handoff_flexhub_v2/README.md` "Members list row actions")
+
+A Table/Cards toggle in the filter row, visible only at `>= 768px` (below that, cards are forced regardless — the toggle would be a no-op there, so it's hidden rather than shown disabled). Plain component state (`viewMode: 'table' | 'cards'`), default `'table'`, not persisted across sessions — this mirrors the status pill/sort/filter state, none of which persist either.
+
+#### Row actions (v2 — replaces the single Edit icon)
+
+Both the table row's actions cell and the card's action row show **Renew** (filled, `cta` gradient, refresh/repeat icon) + **View** (outlined, eye icon) — not a single Edit icon. Renew opens `/members/:id/renew`; View opens `/members/:id`. Editing a member's own fields is reached from inside Member Detail itself (its own Edit button, [member-detail.md](./member-detail.md) §5), not from a list-row shortcut anymore. Both buttons stop click propagation so they don't also trigger the row/card's own click-through to Member Detail (same `stopPropagation` rule the old Edit icon followed).
 
 #### Search (REQ-LIST-002)
 

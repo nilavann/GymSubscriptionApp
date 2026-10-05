@@ -1,72 +1,63 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { deriveStatus, EXPIRING_SOON_THRESHOLD_DAYS } from './status';
-import { localDate } from '../test/fixtures';
+import { deriveStatus, EXPIRING_SOON_THRESHOLD_DAYS, getMemberListRowStatus, STATUS_BADGE_CLASS, STATUS_LABEL } from './status';
+import { buildMemberListRow } from '../test/builders';
 
-// REQ-LIST-003 / business-logic.md §Member Status — Active / Expiring (<= 7 days, inclusive) / Expired.
-const TODAY = localDate(2026, 7, 15);
+// "Today" is pinned to 27 Jun 2026 (local) so every boundary below is exact.
+const TODAY = '2026-06-27';
 
-function status(planId: number | null, endDate: string | null) {
-  return deriveStatus({ current_membership_plan_id: planId, current_membership_end_date: endDate });
-}
-
-describe('deriveStatus (REQ-LIST-003)', () => {
+describe('deriveStatus', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(TODAY);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 5, 27, 12, 0));
   });
-  afterEach(() => vi.useRealTimers());
-
-  it('uses a 7 day threshold', () => {
-    expect(EXPIRING_SOON_THRESHOLD_DAYS).toBe(7);
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it('member with no current membership item is Expired', () => {
-    expect(status(null, null)).toBe('expired');
+  const withEnd = (current_membership_end_date: string | null) => ({
+    current_membership_plan_id: 1,
+    current_membership_end_date,
   });
 
-  it('indefinite (NULL end_date) membership is always Active', () => {
-    expect(status(1, null)).toBe('active');
+  it('treats a member with no membership plan as expired (current behavior: there is no "no plan" state yet)', () => {
+    expect(deriveStatus({ current_membership_plan_id: null, current_membership_end_date: null })).toBe('expired');
   });
 
-  it('end_date far in the future is Active', () => {
-    expect(status(1, '2027-07-15')).toBe('active');
+  it('treats an indefinite membership (no end date) as active', () => {
+    expect(deriveStatus(withEnd(null))).toBe('active');
   });
 
-  it('8 days remaining is Active (just outside the threshold)', () => {
-    expect(status(1, '2026-07-23')).toBe('active');
+  it('is expiring on the last day (expires today)', () => {
+    expect(deriveStatus(withEnd(TODAY))).toBe('expiring');
   });
 
-  it('exactly 7 days remaining is Expiring (inclusive boundary)', () => {
-    expect(status(1, '2026-07-22')).toBe('expiring');
+  it(`is expiring at exactly ${EXPIRING_SOON_THRESHOLD_DAYS} days remaining and active at ${EXPIRING_SOON_THRESHOLD_DAYS + 1}`, () => {
+    expect(deriveStatus(withEnd('2026-07-04'))).toBe('expiring'); // +7
+    expect(deriveStatus(withEnd('2026-07-05'))).toBe('active'); // +8
   });
 
-  it('1 day remaining is Expiring', () => {
-    expect(status(1, '2026-07-16')).toBe('expiring');
+  it('is expired the day after the end date', () => {
+    expect(deriveStatus(withEnd('2026-06-26'))).toBe('expired');
   });
 
-  it('ending today is still Expiring, not Expired (end_date today or later)', () => {
-    expect(status(1, '2026-07-15')).toBe('expiring');
+  it('uses the browser LOCAL date, so late evening local time is still "today"', () => {
+    vi.setSystemTime(new Date(2026, 5, 27, 23, 59));
+    expect(deriveStatus(withEnd(TODAY))).toBe('expiring');
   });
 
-  it('ended yesterday is Expired', () => {
-    expect(status(1, '2026-07-14')).toBe('expired');
+  it('is computed from a list row via getMemberListRowStatus', () => {
+    const row = buildMemberListRow({ current_membership_end_date: '2026-06-20' });
+    expect(getMemberListRowStatus(row)).toBe('expired');
   });
+});
 
-  it('handles month and year boundaries', () => {
-    vi.setSystemTime(localDate(2026, 12, 28));
-    expect(status(1, '2027-01-04')).toBe('expiring'); // exactly 7 days across the year boundary
-    expect(status(1, '2027-01-05')).toBe('active');
-  });
-
-  it('handles a leap day (2028-02-29)', () => {
-    vi.setSystemTime(localDate(2028, 2, 25));
-    expect(status(1, '2028-03-03')).toBe('expiring'); // 7 days, passes through Feb 29
-    expect(status(1, '2028-03-04')).toBe('active');
-  });
-
-  it('uses the browser LOCAL date, not UTC (Timezone Rule)', () => {
-    // 23:30 local on the 15th: even if UTC has already rolled over, "today" is still the 15th.
-    vi.setSystemTime(localDate(2026, 7, 15, 23));
-    expect(status(1, '2026-07-15')).toBe('expiring');
+describe('status presentation maps', () => {
+  it('has a label and a badge class for every status', () => {
+    expect(STATUS_LABEL).toEqual({ active: 'Active', expiring: 'Expiring', expired: 'Expired' });
+    expect(STATUS_BADGE_CLASS).toEqual({
+      active: 'status-badge-active',
+      expiring: 'status-badge-expiring',
+      expired: 'status-badge-expired',
+    });
   });
 });

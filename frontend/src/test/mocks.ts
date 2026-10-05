@@ -16,6 +16,8 @@ export function fakeAuth(profile: Profile | null = staffProfile, overrides: Part
     session: null,
     isInitialising: false,
     blockedMessage: null,
+    sessionExpired: false,
+    clearSessionExpired: vi.fn(),
     authLinkError: null,
     needsPasswordReset: false,
     signInWithPassword: vi.fn().mockResolvedValue(undefined),

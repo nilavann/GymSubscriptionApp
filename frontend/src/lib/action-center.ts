@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { todayDate, addDays, addMonths } from './datetime';
 import { EXPIRING_SOON_THRESHOLD_DAYS } from './status';
-import { memberListRepository } from '../repositories/member-list.repository';
+import type { MemberListRepository } from '../repositories/member-list.repository';
 import type { MemberListRow } from '../types/member-list';
 
 const EXPIRED_WINDOW_MONTHS = 12;
@@ -73,8 +73,13 @@ export function getRelativeExpiryLabel(endDate: string): { text: string; tier: E
 /**
  * Total Action Center queue size for the nav badge (AppShell) — same bounded query as the
  * page itself, never `getAll()`. Fails silently (no badge) rather than breaking navigation.
+ *
+ * The repository is a parameter (AppShell passes `useServices().memberListRepository`) rather
+ * than an imported singleton, so tests can inject a fake — see CLAUDE.md layer rules. Call this
+ * once at an always-mounted level and pass the count down; calling it from a branch that
+ * remounts would refetch every time (CLAUDE.md "Responsive rendering rules" #3).
  */
-export function useActionCenterCount(): number | null {
+export function useActionCenterCount(memberListRepository: MemberListRepository): number | null {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -91,7 +96,7 @@ export function useActionCenterCount(): number | null {
     return () => {
       active = false;
     };
-  }, []);
+  }, [memberListRepository]);
 
   return count;
 }

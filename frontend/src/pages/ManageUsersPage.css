@@ -231,7 +231,7 @@
 .users-chip-selected {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-weight: 700;
 }
 
@@ -369,7 +369,7 @@
 }
 
 .users-role-admin {
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   background: var(--tint-pill-bg);
 }
 

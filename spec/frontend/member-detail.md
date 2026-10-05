@@ -149,7 +149,7 @@ useEffect(() => {
       setHistory(historyData);
     } catch (err) {
       if (!active) return;
-      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadErrorKind(isTimeoutOrNetwork ? 'network' : 'generic');
       setLoadError(isTimeoutOrNetwork ? NETWORK_ERROR_MESSAGE : GENERIC_ERROR_MESSAGE);
     } finally {
@@ -181,7 +181,7 @@ Per [rules.md rule 31](./rules.md#data-loading-errors--empty-states) — every l
 
 | Section | Empty condition | Message |
 |---|---|---|
-| Current Membership (§14) | No current `category = 'membership'` item | "No active membership" + an Add Subscription CTA |
+| Membership strip (§6.1) | No current `category = 'membership'` item | "No active membership" + a "+ Add membership" CTA |
 | Current Add-ons (§14) | No current `category = 'addon'` items | Section not rendered at all — this is the normal case for most members, not an error, so it gets no message at all rather than an empty-state placeholder |
 | Subscription History (§15) | Zero `subscriptions` rows for this member | "No subscription history yet" |
 
@@ -191,11 +191,12 @@ Per [rules.md rule 16](./rules.md#ui--styling) — this page must work as well o
 
 | Breakpoint | Layout |
 |---|---|
-| `< 768px` (mobile) | Single column, stacked in reading order: Hero (§6) → Personal Details (§7) → Body Metrics (§8) → Doctor's Care (§9) → Emergency Contact (§10) → Current Membership/Add-ons (§14) → Subscription History (§15) |
+| `< 768px` (mobile) | Single column, stacked in reading order: Hero + membership strip (§6/§6.1) → Personal Details (§7) → Body Metrics (§8) → Doctor's Care (§9) → Emergency Contact (§10) → Current Add-ons (§14) → Subscription History (§15) |
 | `768–1023px` (tablet) | **Still single column**, same stacking order as mobile — this is the corrected behavior. The two-column split at `>= 768px` was this page's own bug: `AppShell`'s `240px` sidebar plus this page's `360px` left column leave only ~88px for the right column at a 768–810px viewport (iPad portrait and most small Android tablets), which read as the right column's content overlapping/crowding the left. Tablet gets the mobile layout until there's genuinely enough width for two real columns. |
-| `>= 1024px` (desktop) | Two columns: left (~360px, matching `AppShell`'s sidebar width) has Hero + Personal Details + Body Metrics + Doctor's Care + Emergency Contact; right (flexible width) has Current Membership/Add-ons + Subscription History. At this width there's `1024 − 240 (sidebar) − ~64 (padding) − 360 (left column) − 16 (gap) ≈ 344px` for the right column — healthy, not cramped. |
+| `>= 1024px` (desktop) | Two columns below the full-width Hero+strip: left (~360px, matching `AppShell`'s sidebar width) has Personal Details + Body Metrics + Doctor's Care + Emergency Contact; right (flexible width) has Current Add-ons + Subscription History. At this width there's `1024 − 240 (sidebar) − ~64 (padding) − 360 (left column) − 16 (gap) ≈ 344px` for the right column — healthy, not cramped. |
 
 Mobile/tablet-specific requirements, beyond the column collapse:
+- **Phone hero (`< 760px`).** The identity text (name, status, member number · phone · gender · joined) sits beside the avatar; Edit/Delete (or Cancel/Save while editing) drop to their own full-width row; inside the membership strip the Renew CTA is full width, last in the strip. The stacking order above is a CSS `order` on the same markup (the profile form is ordered before the add-on and history cards, and the grid's Personal column before Medical/Emergency) — desktop DOM order is untouched. `e2e/members.spec.ts` asserts the widths, the 44px minimums and the order.
 - Every tappable control — Edit/Save/Cancel, gender/plan/status chips, photo capture buttons, History row expand, Delete — has a minimum 44×44px touch target (rules.md rule 16).
 - Photo capture (§11) is *more* relevant on mobile than desktop (device camera) — the camera-capture path must be reachable and usable at the narrowest supported width (`~360px`), not just the file-upload fallback.
 - Renew/Add Subscription (§16) is a full routed page rather than a modal/sheet specifically so it renders full-width on mobile without a bottom-sheet library — see `subscription-management.md` §3, which follows this same mobile-first rule.
@@ -235,12 +236,17 @@ No confirmation-on-navigate-away guard is specced for this revision (unlike the 
 
 ---
 
-## 6. Hero Section
+## 6. Hero Section (merged with Current Membership, v2)
 
 ```
 ┌──────────────────────────────────────────┐
 │  [photo or initials]   Arjun Kumar        │
 │                        ● Active  MUM-2026-0001 │
+├──────────────────────────────────────────┤
+│  Annual                          [Renew] │  <- membership strip (§6.1)
+│  01 Jun 2026 – 31 May 2027                │
+│  ₹8,000                                   │
+│  ▓▓▓▓▓▓▓▓░░░░  12 days remaining          │
 └──────────────────────────────────────────┘
 ```
 
@@ -252,6 +258,20 @@ No confirmation-on-navigate-away guard is specced for this revision (unlike the 
 | Member number | `member.member_number` | Read-only, always — never an input anywhere on this page (REQ-MEM-005) |
 
 Photo upload/retry control lives here too — see §11.
+
+### 6.1 Membership strip (v2 — `design_handoff_flexhub_v2/README.md` §4)
+
+**The profile card and the old separate "Current Membership" card are one card now** — the hero above, plus a lower strip that wraps onto its own full-width row and switches on `currentMembershipItem`/`status` (§4.5), exactly the state that already drives the header status badge, so the two never disagree:
+
+| State | Condition | Strip |
+|---|---|---|
+| Active | `currentMembershipItem` present, `status !== 'expired'` | Tint gradient background/border. Plan name, date range, amount, a 6px `--tint-accent` progress bar (`membershipProgress()` — UI preview only, never the source of truth for `end_date`), "N days remaining", **Renew** CTA (`cta` gradient) → `/members/:id/renew` |
+| Expired | `currentMembershipItem` present, `status === 'expired'` | Red background/border (`--color-status-danger-bg-subtle`/`-border`). Plan name, date range, "Entry blocked at the gate", **Renew now** CTA (danger-colored fill) → same route |
+| No plan | `currentMembershipItem` is `null` | Dashed `--color-neutral-300` border on `--color-neutral-75`. "No active membership", **+ Add membership** CTA → same route |
+
+All three states route to the same `/members/:id/renew` checkout (§16) — there's no separate "first subscription" vs "renewal" form, unchanged from the pre-v2 behavior this replaces.
+
+This replaces the former separate "Current Membership" section that used to sit at the top of the right column (§14 below) — that section is gone; **Current Add-ons** and **Subscription History** still live in the right column, unaffected by this merge.
 
 ---
 
@@ -267,7 +287,8 @@ View + inline-edit, same toggle pattern as the rest of this page (§4.1's `isEdi
 | date_of_joining | Yes | Date picker |
 | gender | Yes | Male / Female / Other |
 | email | Yes | Format-validated if present, optional |
-| residential_address | Yes | Optional |
+| residential_address | Yes | Optional, full-width 3-row textarea (v2) |
+| pincode | Yes | Optional, 6 digits |
 | aadhaar_number | Yes | Optional, no format validation (per member-management.md) |
 | occupation | Yes | Optional |
 
@@ -354,20 +375,11 @@ Save tapped (Personal Details / Body Metrics / Doctor's Care / Emergency Contact
 
 ---
 
-## 14. Current Membership & Add-ons
+## 14. Current Add-ons
 
-Replaces the old doc's "Current Subscription" section — under the header/line-item model a member's current holdings are **a set of items**, not one row (`backend/subscription-management.md`).
+**Current Membership moved (v2)** — it's no longer its own section here; it's the merged hero card's membership strip, §6.1 above. This section now covers only Current Add-ons.
 
 ```
-CURRENT MEMBERSHIP
-
-┌─────────────────────────────────────────┐
-│  Annual                                  │
-│  01 Jun 2026 – 31 May 2027   ● Active    │
-│  ₹8,000 · Cash                           │
-└─────────────────────────────────────────┘
-                                    [Renew]
-
 CURRENT ADD-ONS
 
 ┌─────────────────────────────────────────┐
@@ -378,10 +390,9 @@ CURRENT ADD-ONS
 
 | Section | Source | Empty state |
 |---|---|---|
-| Current Membership | `currentMembershipItem` (§4.5) — the single `category = 'membership'` item with the latest `end_date`, or indefinite if one exists | "No active membership" + an "Add Subscription" CTA opening `/members/:id/renew` (same screen either way — see §16) |
 | Current Add-ons | `currentAddonItems` (§4.5) — **all** current add-on items, not just one | Section hidden entirely if empty (not an empty-state message — a member with no add-ons is the normal case, unlike no membership) |
 
-Renew button always opens the same checkout screen (§16), whether the member currently has a membership, an expiring one, or none at all — there's no separate "first subscription" vs "renewal" screen, matching `subscription-management.md` §3.
+Renew button (on the membership strip, §6.1) always opens the same checkout screen (§16), whether the member currently has a membership, an expiring one, or none at all — there's no separate "first subscription" vs "renewal" screen, matching `subscription-management.md` §3.
 
 ---
 
@@ -418,7 +429,7 @@ Full checkout-builder screen — not a bottom sheet. See **[frontend/subscriptio
 - **Fields** (§2 of that doc): header (`payment_mode`, `notes`) + one-or-more items (`plan_id`, `start_date`, `quantity`, `amount_paid`, `shared_member_id` where applicable), with exactly one item required to be `category = 'membership'`.
 - **Renewal start-date default** (§4 of that doc): membership items default to the day after the member's current membership item's `end_date` if one exists, else today; add-on items use the same logic scoped to that add-on's own `plan_id`.
 - **Overlap warning** (§5 of that doc): client-side only, checked per item right before the `create-subscription` call, using `member_current_items` — membership items conflict against *any* existing current membership item, add-on items only against the *same* `plan_id`. Cancel-or-proceed dialog; nothing persisted either way.
-- **Submit**: `subscriptionRepository.create()` → `create-subscription` Edge Function → on success, navigate back to `/members/:id`, where §14/§15 re-fetch and reflect the new checkout.
+- **Submit**: `subscriptionRepository.create()` → `create-subscription` Edge Function → on success, navigate back to `/members/:id`, where §6.1/§14/§15 re-fetch and reflect the new checkout.
 
 Do not re-derive any of this here — if it changes, update `subscription-management.md` first, then this pointer's wording only if the route or entry point changes.
 
@@ -435,7 +446,7 @@ A destructive action on this page (confirm dialog), calling `memberRepository.de
 | Scenario | Expected behavior |
 |---|---|
 | Member ID not found / soft-deleted | Load error → message + link back to `/` |
-| Member has zero current items and zero history | Both §14 and §15 show their respective empty states — this is a normal state for a brand-new member, not an error |
+| Member has zero current items and zero history | §6.1's strip, §14, and §15 all show their respective empty states — this is a normal state for a brand-new member, not an error |
 | `photo_url` missing | Hero shows initials avatar, no broken-image icon |
 | `handled_by_staff` null | Shown as "Not set" in view mode, a staff picker in edit mode |
 | `doctor_care_details` toggled to Yes then blanked before Save | Blocks Save with a validation error, same as create (REQ-MEM-001's rule applies identically to edit) |

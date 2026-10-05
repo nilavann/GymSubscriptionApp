@@ -5,7 +5,9 @@ import { withTimeout } from '../lib/with-timeout';
 import { AdminTabs } from '../components/AdminTabs';
 import type { Role } from '../types/role';
 import type { RoleDraft, RoleFormErrors } from '../services/role.service';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './ManageRolesPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
@@ -13,6 +15,7 @@ type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
 /** Manage Roles — admin-only catalog of role names a user can be assigned (auth.md §2),
  * same shape as Manage Plans / Manage Branches. */
 export function ManageRolesPage() {
+  const isTabletUp = useIsTabletUp();
   const { roleRepository, roleService } = useServices();
 
   const [roles, setRoles] = useState<Role[]>([]);
@@ -37,7 +40,7 @@ export function ManageRolesPage() {
       setRoles(data);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message === 'roles-timeout' || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message === 'roles-timeout' || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -90,7 +93,7 @@ export function ManageRolesPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('name')) {
         setSaveError('This name is already used by another role.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setSaveError("Couldn't save this role — check your connection and try again.");
       } else {
         setSaveError('Something went wrong saving this role. Please try again.');
@@ -115,7 +118,7 @@ export function ManageRolesPage() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Failed to fetch') {
+      if (isNetworkError(message)) {
         setDeleteError("Couldn't delete this role — check your connection and try again.");
       } else if (message) {
         // Includes the "Cannot delete — used by X user(s)" message from delete-role
@@ -214,51 +217,54 @@ export function ManageRolesPage() {
         </div>
       ) : (
         <>
-          <div className="roles-cards">
-            {roles.map((role) => (
-              <div key={role.id} className="roles-card">
-                <div>
-                  <span className="roles-card-name">{role.name}</span>
-                  {role.description && <span className="roles-card-description">{role.description}</span>}
-                </div>
-                <div className="roles-card-actions">
-                  <button
-                    type="button"
-                    className="roles-edit-button"
-                    onClick={() => openEditForm(role)}
-                    aria-label={`Edit ${role.name}`}
-                  >
-                    <Pencil size={14} strokeWidth={2} />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="roles-delete-button"
-                    onClick={() => openDeleteConfirm(role)}
-                    aria-label={`Delete ${role.name}`}
-                  >
-                    <Trash2 size={14} strokeWidth={2} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <table className="roles-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+          {isTabletUp ? (
+            <table className="roles-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map((role) => (
+                  <tr key={role.id}>
+                    <td>{role.name}</td>
+                    <td>{role.description ?? '—'}</td>
+                    <td className="roles-table-actions">
+                      <button
+                        type="button"
+                        className="roles-edit-button"
+                        onClick={() => openEditForm(role)}
+                        aria-label={`Edit ${role.name}`}
+                      >
+                        <Pencil size={14} strokeWidth={2} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="roles-delete-button"
+                        onClick={() => openDeleteConfirm(role)}
+                        aria-label={`Delete ${role.name}`}
+                      >
+                        <Trash2 size={14} strokeWidth={2} />
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="roles-cards">
               {roles.map((role) => (
-                <tr key={role.id}>
-                  <td>{role.name}</td>
-                  <td>{role.description ?? '—'}</td>
-                  <td className="roles-table-actions">
+                <div key={role.id} className="roles-card">
+                  <div>
+                    <span className="roles-card-name">{role.name}</span>
+                    {role.description && <span className="roles-card-description">{role.description}</span>}
+                  </div>
+                  <div className="roles-card-actions">
                     <button
                       type="button"
                       className="roles-edit-button"
@@ -277,11 +283,11 @@ export function ManageRolesPage() {
                       <Trash2 size={14} strokeWidth={2} />
                       Delete
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </>
       )}
 

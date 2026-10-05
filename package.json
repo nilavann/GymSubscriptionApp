@@ -10,6 +10,7 @@
     "supabase": "supabase",
     "test": "npm run test:frontend && npm run test:functions && npm run test:db",
     "test:frontend": "npm --workspace frontend run test",
+    "test:e2e:frontend": "npm --workspace frontend run test:e2e",
     "test:functions": "deno test --import-map=supabase/functions/_tests/import_map.json --allow-env --allow-read supabase/functions/_tests/",
     "test:db": "bash supabase/tests/run.sh"
   },

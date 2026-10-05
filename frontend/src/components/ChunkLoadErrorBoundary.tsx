@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import './ChunkLoadErrorBoundary.css';
 
 interface Props {
   children: ReactNode;
@@ -27,8 +28,8 @@ export class ChunkLoadErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div
+          className="chunk-error"
           style={{
-            minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',

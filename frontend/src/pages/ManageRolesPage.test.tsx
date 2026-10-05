@@ -1,73 +1,150 @@
-import '../test/page-mocks';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+import { screen, within } from '@testing-library/react';
 import { ManageRolesPage } from './ManageRolesPage';
 import { roleService as realRoleService } from '../services/role.service';
-import { adminProfile, fakeAuth, setAuth, setServices } from '../test/mocks';
+import { fakeServices } from '../test/fakes';
+import { renderWithProviders, type RenderOptions } from '../test/render';
+import { buildRole } from '../test/builders';
+import { MOBILE_WIDTH } from '../test/viewport';
+import type { Role } from '../types/role';
 
-const roles = [{ id: 1, name: 'admin', description: 'Full access' }, { id: 2, name: 'staff', description: null }];
-let roleRepository: Record<string, ReturnType<typeof vi.fn>>;
-let roleService: typeof realRoleService;
-const el = (id: string) => document.getElementById(id) as HTMLInputElement;
-const rows = () => Array.from(document.querySelectorAll('table tbody tr')).map((r) => r.textContent ?? '');
+const ROLES: Role[] = [
+  buildRole({ id: 1, name: 'admin', description: 'Full access' }),
+  buildRole({ id: 2, name: 'staff', description: null }),
+];
 
-function renderPage() {
-  roleRepository = { getAllActive: vi.fn().mockResolvedValue(roles), delete: vi.fn().mockResolvedValue(undefined) };
-  roleService = { ...realRoleService, create: vi.fn().mockResolvedValue(roles[0]), update: vi.fn().mockResolvedValue(undefined) } as never;
-  setAuth(fakeAuth(adminProfile));
-  setServices({ roleRepository: roleRepository as never, roleService });
-  return render(<MemoryRouter><ManageRolesPage /></MemoryRouter>);
+function renderRoles(
+  options: RenderOptions & {
+    roles?: Role[];
+    getAllActive?: ReturnType<typeof vi.fn>;
+    create?: ReturnType<typeof vi.fn>;
+    update?: ReturnType<typeof vi.fn>;
+    remove?: ReturnType<typeof vi.fn>;
+  } = {}
+) {
+  const {
+    roles = ROLES,
+    getAllActive = vi.fn().mockResolvedValue(roles),
+    create = vi.fn().mockResolvedValue(buildRole()),
+    update = vi.fn().mockResolvedValue(undefined),
+    remove = vi.fn().mockResolvedValue(undefined),
+    ...rest
+  } = options;
+  const utils = renderWithProviders(<ManageRolesPage />, {
+    ...rest,
+    services: fakeServices({
+      roleRepository: { getAllActive, delete: remove },
+      roleService: { ...realRoleService, create, update },
+    }),
+  });
+  return { ...utils, getAllActive, create, update, remove };
 }
 
-describe('Role management', () => {
-  beforeEach(() => vi.useRealTimers());
+const ready = () => screen.findByRole('heading', { name: 'Roles' });
 
-  it('lists roles', async () => {
-    renderPage();
-    await waitFor(() => expect(rows()).toHaveLength(2));
+describe('ManageRolesPage — data states', () => {
+  it('shows a skeleton while loading', () => {
+    renderRoles({ getAllActive: vi.fn().mockReturnValue(new Promise(() => undefined)) });
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument();
   });
-  it('a role needs a name', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(await screen.findByRole('button', { name: /add role/i }));
-    await user.click(screen.getByRole('button', { name: /^(save|create)/i }));
-    expect(await screen.findByText('Name is required')).toBeInTheDocument();
-    expect(roleService.create).not.toHaveBeenCalled();
+
+  it('a network failure offers Retry and recovers', async () => {
+    const getAllActive = vi.fn().mockRejectedValueOnce(new Error('Failed to fetch')).mockResolvedValue(ROLES);
+    const { user } = renderRoles({ getAllActive });
+    expect(await screen.findByText("Couldn't load roles — check your connection and try again.")).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await ready()).toBeInTheDocument();
   });
-  it('creates a role with a blank description stored as null', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(await screen.findByRole('button', { name: /add role/i }));
-    await user.type(el('role-name'), 'trainer');
-    await user.click(screen.getByRole('button', { name: /^(save|create)/i }));
-    await waitFor(() => expect(roleService.create).toHaveBeenCalledWith({ name: 'trainer', description: '' }));
+
+  it('a generic failure never shows the raw error', async () => {
+    renderRoles({ getAllActive: vi.fn().mockRejectedValue(new Error('PGRST raw')) });
+    expect(await screen.findByText('Something went wrong loading roles. Please try again.')).toBeInTheDocument();
+    expect(screen.queryByText(/PGRST/)).not.toBeInTheDocument();
   });
-  it('duplicate role names are reported', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(await screen.findByRole('button', { name: /add role/i }));
-    (roleService.create as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('duplicate key value violates unique constraint "idx_roles_name_active"'));
-    await user.type(el('role-name'), 'staff');
-    await user.click(screen.getByRole('button', { name: /^(save|create)/i }));
+
+  it('with no roles, says so and offers to add one', async () => {
+    renderRoles({ roles: [] });
+    await ready();
+    expect(screen.getByText('No roles yet.')).toBeInTheDocument();
+  });
+});
+
+describe('ManageRolesPage renders exactly ONE of table / cards', () => {
+  it('on desktop: a table showing each description (or a dash), no cards', async () => {
+    renderRoles({ viewport: 1280 });
+    await ready();
+    const table = document.querySelector('table') as HTMLElement;
+    expect(document.querySelectorAll('table')).toHaveLength(1);
+    expect(within(table).getAllByRole('row')).toHaveLength(ROLES.length + 1);
+    expect(within(table).getByText('Full access')).toBeInTheDocument();
+    expect(within(table).getByText('—')).toBeInTheDocument();
+    expect(document.querySelector('.roles-cards')).toBeNull();
+  });
+
+  it('on a phone: cards, one per role, no table', async () => {
+    renderRoles({ viewport: MOBILE_WIDTH });
+    await ready();
+    expect(document.querySelectorAll('table')).toHaveLength(0);
+    expect(document.querySelectorAll('.roles-card')).toHaveLength(ROLES.length);
+  });
+});
+
+describe('ManageRolesPage — add / edit / delete', () => {
+  it('requires a name but not a description', async () => {
+    const { user, create } = renderRoles();
+    await ready();
+    await user.click(screen.getAllByRole('button', { name: /Add Role/ })[0]);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByText('Name is required')).toBeInTheDocument();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('creates a role, trimming it and storing a blank description as null', async () => {
+    const { user, create, getAllActive } = renderRoles();
+    await ready();
+    await user.click(screen.getAllByRole('button', { name: /Add Role/ })[0]);
+    await user.type(screen.getByLabelText(/^Name/), 'trainer');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // The page hands its draft to the service; the service's own trim/null mapping is covered in role.service.test.
+    expect(create).toHaveBeenCalledWith({ name: 'trainer', description: '' });
+    await vi.waitFor(() => expect(getAllActive).toHaveBeenCalledTimes(2));
+  });
+
+  it('reports a duplicate NAME (roles are unique by name, not code)', async () => {
+    const { user } = renderRoles({ create: vi.fn().mockRejectedValue(new Error('duplicate key … name')) });
+    await ready();
+    await user.click(screen.getAllByRole('button', { name: /Add Role/ })[0]);
+    await user.type(screen.getByLabelText(/^Name/), 'admin');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('This name is already used by another role.')).toBeInTheDocument();
   });
-  it('a role that is still assigned to users can\'t be deleted (guard message shown)', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    roleRepository.delete.mockRejectedValue(new Error('Cannot delete — used by 4 user(s)'));
-    await user.click((await screen.findAllByRole('button', { name: 'Delete staff' }))[0]);
-    const dialog = screen.getByText('Delete role?').parentElement as HTMLElement;
-    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }));
-    expect(await screen.findByText('Cannot delete — used by 4 user(s)')).toBeInTheDocument();
+
+  it('editing prefills name and description and saves with the role id', async () => {
+    const { user, update } = renderRoles({ viewport: 1280 });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Edit admin' }));
+    expect(screen.getByRole('heading', { name: 'Edit Role' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Name/)).toHaveValue('admin');
+    expect(screen.getByLabelText('Description')).toHaveValue('Full access');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(update).toHaveBeenCalledWith(1, { name: 'admin', description: 'Full access' });
   });
-  it('an unused role is deleted after confirmation', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click((await screen.findAllByRole('button', { name: 'Delete staff' }))[0]);
-    const dialog = screen.getByText('Delete role?').parentElement as HTMLElement;
-    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }));
-    await waitFor(() => expect(roleRepository.delete).toHaveBeenCalledWith(2));
+
+  it('deletes after confirmation and shows the server’s "in use" message verbatim when blocked', async () => {
+    const remove = vi.fn().mockRejectedValueOnce(new Error('Cannot delete — used by 2 user(s)')).mockResolvedValue(undefined);
+    const { user } = renderRoles({ remove, viewport: 1280 });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Delete staff' }));
+    expect(screen.getByRole('heading', { name: 'Delete role?' })).toBeInTheDocument();
+
+    const dialog = () => document.querySelector('.roles-delete-dialog') as HTMLElement;
+    await user.click(within(dialog()).getByRole('button', { name: 'Delete' }));
+    expect(await screen.findByText('Cannot delete — used by 2 user(s)')).toBeInTheDocument();
+    expect(remove).toHaveBeenCalledWith(2);
+
+    await user.click(within(dialog()).getByRole('button', { name: 'Delete' }));
+    await vi.waitFor(() => expect(screen.queryByRole('heading', { name: 'Delete role?' })).not.toBeInTheDocument());
   });
 });

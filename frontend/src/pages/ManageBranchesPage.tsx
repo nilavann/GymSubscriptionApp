@@ -5,7 +5,9 @@ import { withTimeout } from '../lib/with-timeout';
 import { AdminTabs } from '../components/AdminTabs';
 import type { Branch } from '../types/branch';
 import type { BranchDraft, BranchFormErrors } from '../services/branch.service';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './ManageBranchesPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
@@ -15,6 +17,7 @@ function emptyDraft(): BranchDraft {
 }
 
 export function ManageBranchesPage() {
+  const isTabletUp = useIsTabletUp();
   const { branchRepository, branchService } = useServices();
 
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -39,7 +42,7 @@ export function ManageBranchesPage() {
       setBranches(data);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message === 'branches-timeout' || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message === 'branches-timeout' || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -92,7 +95,7 @@ export function ManageBranchesPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('code')) {
         setSaveError('This code is already used by another branch.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setSaveError("Couldn't save this branch — check your connection and try again.");
       } else {
         setSaveError('Something went wrong saving this branch. Please try again.');
@@ -117,7 +120,7 @@ export function ManageBranchesPage() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Failed to fetch') {
+      if (isNetworkError(message)) {
         setDeleteError("Couldn't delete this branch — check your connection and try again.");
       } else if (message) {
         // Includes the "Cannot delete — used by X member(s)" message from delete-branch
@@ -221,51 +224,54 @@ export function ManageBranchesPage() {
         </div>
       ) : (
         <>
-          <div className="branches-cards">
-            {branches.map((branch) => (
-              <div key={branch.id} className="branches-card">
-                <div>
-                  <span className="branches-card-name">{branch.name}</span>
-                  <span className="branches-card-code">{branch.code}</span>
-                </div>
-                <div className="branches-card-actions">
-                  <button
-                    type="button"
-                    className="branches-edit-button"
-                    onClick={() => openEditForm(branch)}
-                    aria-label={`Edit ${branch.name}`}
-                  >
-                    <Pencil size={14} strokeWidth={2} />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="branches-delete-button"
-                    onClick={() => openDeleteConfirm(branch)}
-                    aria-label={`Delete ${branch.name}`}
-                  >
-                    <Trash2 size={14} strokeWidth={2} />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <table className="branches-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Code</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+          {isTabletUp ? (
+            <table className="branches-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Code</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {branches.map((branch) => (
+                  <tr key={branch.id}>
+                    <td>{branch.name}</td>
+                    <td>{branch.code}</td>
+                    <td className="branches-table-actions">
+                      <button
+                        type="button"
+                        className="branches-edit-button"
+                        onClick={() => openEditForm(branch)}
+                        aria-label={`Edit ${branch.name}`}
+                      >
+                        <Pencil size={14} strokeWidth={2} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="branches-delete-button"
+                        onClick={() => openDeleteConfirm(branch)}
+                        aria-label={`Delete ${branch.name}`}
+                      >
+                        <Trash2 size={14} strokeWidth={2} />
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="branches-cards">
               {branches.map((branch) => (
-                <tr key={branch.id}>
-                  <td>{branch.name}</td>
-                  <td>{branch.code}</td>
-                  <td className="branches-table-actions">
+                <div key={branch.id} className="branches-card">
+                  <div>
+                    <span className="branches-card-name">{branch.name}</span>
+                    <span className="branches-card-code">{branch.code}</span>
+                  </div>
+                  <div className="branches-card-actions">
                     <button
                       type="button"
                       className="branches-edit-button"
@@ -284,11 +290,11 @@ export function ManageBranchesPage() {
                       <Trash2 size={14} strokeWidth={2} />
                       Delete
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </>
       )}
 

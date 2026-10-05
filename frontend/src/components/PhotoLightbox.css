@@ -1,9 +1,9 @@
 .photo-lightbox-backdrop {
   position: fixed;
   inset: 0;
-  /* Tracks --color-neutral-900 (#0F172A = 15,23,42) at a heavier opacity than the
+  /* Tracks --color-neutral-900 (stone-900 = 28,25,23) at a heavier opacity than the
      other modal scrims, so the full-size photo stays the clear focal point. */
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(28, 25, 23, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;

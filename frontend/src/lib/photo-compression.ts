@@ -30,7 +30,9 @@ export async function compressImage(file: File): Promise<Blob> {
   let quality = 0.9;
   let blob = await canvasToBlob(canvas, quality);
   while (blob.size > TARGET_MAX_BYTES && quality > MIN_QUALITY) {
-    quality -= QUALITY_STEP;
+    // Rounded to one decimal: repeated `-= 0.1` drifts (0.4 - 0.1 = 0.30000000000000004), which is still
+    // `> MIN_QUALITY` and would encode one extra step BELOW the documented floor.
+    quality = Math.round((quality - QUALITY_STEP) * 10) / 10;
     blob = await canvasToBlob(canvas, quality);
   }
   return blob;

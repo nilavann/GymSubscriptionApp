@@ -6,8 +6,10 @@ import { withTimeout } from '../lib/with-timeout';
 import { formatDate } from '../lib/datetime';
 import { getActionCenterWindow, getRelativeExpiryLabel, splitActionCenterQueue, type ExpiryTier } from '../lib/action-center';
 import { getAvatarColor, getInitials } from '../lib/avatar';
+import { PhotoLightbox } from '../components/PhotoLightbox';
 import type { MemberListRow } from '../types/member-list';
 import './ActionCenterPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 type ActionCenterTab = 'expiring' | 'expired';
@@ -31,7 +33,13 @@ export function ActionCenterPage() {
   const [rows, setRows] = useState<MemberListRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [tab, setTab] = useState<ActionCenterTab>('expiring');
+  const [lightboxMember, setLightboxMember] = useState<MemberListRow | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  /** Only the original photo enlarges — a member with no photo_url yet (upload in progress/failed) has nothing to show. */
+  function enlargePhoto(row: MemberListRow) {
+    if (row.photo_url) setLightboxMember(row);
+  }
 
   async function load() {
     setLoadState('loading');
@@ -45,7 +53,7 @@ export function ActionCenterPage() {
       setRows(queue);
       setLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -181,6 +189,7 @@ export function ActionCenterPage() {
                 row={row}
                 onRenew={() => navigate(`/members/${row.id}/renew`)}
                 onView={() => navigate(`/members/${row.id}`)}
+                onEnlargePhoto={() => enlargePhoto(row)}
               />
             ))}
           </div>
@@ -195,11 +204,25 @@ export function ActionCenterPage() {
           </button>
         </div>
       )}
+
+      {lightboxMember?.photo_url && (
+        <PhotoLightbox src={lightboxMember.photo_url} alt={lightboxMember.name} onClose={() => setLightboxMember(null)} />
+      )}
     </div>
   );
 }
 
-function ActionCenterCard({ row, onRenew, onView }: { row: MemberListRow; onRenew: () => void; onView: () => void }) {
+function ActionCenterCard({
+  row,
+  onRenew,
+  onView,
+  onEnlargePhoto,
+}: {
+  row: MemberListRow;
+  onRenew: () => void;
+  onView: () => void;
+  onEnlargePhoto: () => void;
+}) {
   const endDate = row.current_membership_end_date as string;
   const { text: relativeLabel, tier } = getRelativeExpiryLabel(endDate);
 
@@ -207,7 +230,15 @@ function ActionCenterCard({ row, onRenew, onView }: { row: MemberListRow; onRene
     <div className="action-center-card">
       <div className="action-center-card-header">
         {row.photo_thumbnail_url ? (
-          <img src={row.photo_thumbnail_url} alt="" className="action-center-avatar-img" />
+          <img
+            src={row.photo_thumbnail_url}
+            alt=""
+            className="action-center-avatar-img action-center-avatar-clickable"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEnlargePhoto();
+            }}
+          />
         ) : (
           <span className="action-center-avatar" style={{ background: getAvatarColor(row.id) }}>
             {getInitials(row.name)}

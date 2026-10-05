@@ -7,18 +7,21 @@ import { STATUS_LABEL } from '../lib/status';
 import type { MemberListRow } from '../types/member-list';
 import type { MonthlyCount, PaymentModeTotal, ReportSummary, ReportTransactionRow } from '../types/report';
 import type { PaymentMode } from '../types/subscription';
+import { useIsTabletUp } from '../lib/use-media-query';
 import './ReportsPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 /**
  * Categorical slots for the payment-mode donut/legend — per frontend/mockups/README.md,
  * Cash is tied to the active tint accent (not the avatar categorical palette) so it reads
- * as "this app's main color," while UPI/Card use fixed neutral-adjacent tones that stay
- * legible across every tint choice.
+ * as "this app's main color," while UPI/Card use fixed stone tones (--color-chart-upi /
+ * --color-chart-card) that stay distinct from each other AND from the accent under every
+ * tint — an amber UPI next to an amber Cash would be indistinguishable.
  */
 const PAYMENT_MODE_COLOR: Record<PaymentMode, string> = {
   Cash: 'var(--tint-accent)',
-  UPI: '#f59e0b',
-  Card: '#9ca3af',
+  UPI: 'var(--color-chart-upi)',
+  Card: 'var(--color-chart-card)',
 };
 
 type RangePreset = 'today' | 'week' | 'month' | 'custom';
@@ -31,11 +34,12 @@ const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
 
 function toLoadState(err: unknown, timeoutMessage: string): LoadState {
-  const isNetwork = err instanceof Error && (err.message === timeoutMessage || err.message === 'Failed to fetch');
+  const isNetwork = err instanceof Error && (err.message === timeoutMessage || isNetworkError(err));
   return isNetwork ? 'network-error' : 'generic-error';
 }
 
 export function ReportsPage() {
+  const isTabletUp = useIsTabletUp();
   const { memberListRepository, reportService } = useServices();
 
   const [memberRows, setMemberRows] = useState<MemberListRow[]>([]);
@@ -249,64 +253,67 @@ export function ReportsPage() {
               <p className="reports-empty-inline">No transactions in this date range.</p>
             ) : (
               <>
-                <div className="reports-tx-cards">
-                  {sortedTransactions.map((tx) => (
-                    <div key={tx.subscription_item_id} className="reports-tx-card">
-                      <div className="reports-tx-card-top">
-                        <span className="reports-tx-name">{tx.member_name}</span>
-                        <span
-                          className={`reports-tx-type-badge${tx.transaction_type === 'Add-on' ? ' reports-tx-type-addon' : ''}`}
-                        >
-                          {tx.transaction_type}
-                        </span>
-                      </div>
-                      <p className="reports-tx-detail">
-                        {tx.plan_name} · {formatDate(tx.start_date)}
-                      </p>
-                      <p className="reports-tx-detail">
-                        {tx.member_number} · {tx.phone}
-                      </p>
-                      <p className="reports-tx-amount">
-                        ₹{tx.amount_paid} · {tx.payment_mode}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <table className="reports-tx-table">
-                  <thead>
-                    <tr>
-                      <th>Member</th>
-                      <th>Member #</th>
-                      <th>Phone</th>
-                      <th>Type</th>
-                      <th>Plan</th>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Payment</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                {/* Render exactly ONE of table / cards (rules.md rule 33), not both with one hidden by CSS. */}
+                {isTabletUp ? (
+                  <table className="reports-tx-table">
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th>Member #</th>
+                        <th>Phone</th>
+                        <th>Type</th>
+                        <th>Plan</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedTransactions.map((tx) => (
+                        <tr key={tx.subscription_item_id}>
+                          <td>{tx.member_name}</td>
+                          <td>{tx.member_number}</td>
+                          <td>{tx.phone}</td>
+                          <td>
+                            <span
+                              className={`reports-tx-type-badge${tx.transaction_type === 'Add-on' ? ' reports-tx-type-addon' : ''}`}
+                            >
+                              {tx.transaction_type}
+                            </span>
+                          </td>
+                          <td>{tx.plan_name}</td>
+                          <td>{formatDate(tx.start_date)}</td>
+                          <td>₹{tx.amount_paid}</td>
+                          <td>{tx.payment_mode}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="reports-tx-cards">
                     {sortedTransactions.map((tx) => (
-                      <tr key={tx.subscription_item_id}>
-                        <td>{tx.member_name}</td>
-                        <td>{tx.member_number}</td>
-                        <td>{tx.phone}</td>
-                        <td>
+                      <div key={tx.subscription_item_id} className="reports-tx-card">
+                        <div className="reports-tx-card-top">
+                          <span className="reports-tx-name">{tx.member_name}</span>
                           <span
                             className={`reports-tx-type-badge${tx.transaction_type === 'Add-on' ? ' reports-tx-type-addon' : ''}`}
                           >
                             {tx.transaction_type}
                           </span>
-                        </td>
-                        <td>{tx.plan_name}</td>
-                        <td>{formatDate(tx.start_date)}</td>
-                        <td>₹{tx.amount_paid}</td>
-                        <td>{tx.payment_mode}</td>
-                      </tr>
+                        </div>
+                        <p className="reports-tx-detail">
+                          {tx.plan_name} · {formatDate(tx.start_date)}
+                        </p>
+                        <p className="reports-tx-detail">
+                          {tx.member_number} · {tx.phone}
+                        </p>
+                        <p className="reports-tx-amount">
+                          ₹{tx.amount_paid} · {tx.payment_mode}
+                        </p>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                )}
               </>
             )}
           </section>

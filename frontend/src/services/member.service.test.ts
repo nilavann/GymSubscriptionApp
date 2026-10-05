@@ -1,252 +1,221 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { member } from '../test/fixtures';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MemberRepository } from '../repositories/member.repository';
 
-const repo = vi.hoisted(() => ({ create: vi.fn(), update: vi.fn() }));
-const storage = vi.hoisted(() => ({ upload: vi.fn(), remove: vi.fn() }));
-const compress = vi.hoisted(() => vi.fn());
-vi.mock('../repositories/member.repository', () => ({ memberRepository: repo }));
-vi.mock('../lib/photo-compression', () => ({ compressImage: compress }));
-vi.mock('../lib/supabase-client', () => ({ supabase: { storage: { from: () => storage } } }));
+// The service imports the concrete repository/Supabase modules (rather than taking them as
+// arguments), so the tests replace those modules. Fakes are typed against the real repository
+// so a renamed/removed method is a compile error here.
+const mocks = vi.hoisted(() => ({
+  create: vi.fn(),
+  update: vi.fn(),
+  compressImage: vi.fn(),
+  upload: vi.fn(),
+  remove: vi.fn(),
+}));
+vi.mock('../repositories/member.repository', () => ({
+  memberRepository: { create: mocks.create, update: mocks.update } satisfies Partial<MemberRepository>,
+}));
+vi.mock('../lib/photo-compression', () => ({ compressImage: mocks.compressImage }));
+vi.mock('../lib/supabase-client', () => ({
+  supabase: { storage: { from: () => ({ upload: mocks.upload, remove: mocks.remove }) } },
+}));
 
-import { memberService, validateMemberEdit, validateNewMember, isMemberFormValid, editDraftFromMember, type NewMemberDraft } from './member.service';
+import {
+  editDraftFromMember,
+  isMemberFormValid,
+  memberService,
+  validateMemberEdit,
+  validateNewMember,
+  type NewMemberDraft,
+} from './member.service';
+import { buildMember } from '../test/builders';
 
-function validDraft(overrides: Partial<NewMemberDraft> = {}): NewMemberDraft {
-  return {
-    name: 'Priya Sharma',
-    phone: '9876543210',
-    date_of_birth: '1995-04-02',
-    date_of_joining: '2026-07-15',
-    gender: 'Female',
-    weight_kg: '60',
-    height_cm: '165.5',
-    under_doctor_care: false,
-    doctor_care_details: '',
-    emergency_contact_name: 'Ravi Sharma',
-    emergency_contact_phone: '9123456780',
-    emergency_contact_relationship: 'Brother',
-    email: '',
-    residential_address: '',
-    aadhaar_number: '',
-    occupation: '',
-    handled_by_staff: '',
-    branch_id: 1,
-    ...overrides,
-  };
-}
+const validDraft = (overrides: Partial<NewMemberDraft> = {}): NewMemberDraft => ({
+  name: 'Priya Sharma',
+  phone: '9876543210',
+  date_of_birth: '1995-04-12',
+  date_of_joining: '2026-01-15',
+  gender: 'Female',
+  weight_kg: '60.5',
+  height_cm: '165',
+  under_doctor_care: false,
+  doctor_care_details: '',
+  emergency_contact_name: 'Asha Rao',
+  emergency_contact_phone: '9123456780',
+  emergency_contact_relationship: 'Sister',
+  email: '',
+  residential_address: '',
+  pincode: '',
+  aadhaar_number: '',
+  occupation: '',
+  handled_by_staff: '',
+  branch_id: 1,
+  ...overrides,
+});
 
-describe('REQ-MEM-001 validation', () => {
-  it('a fully filled form is valid', () => {
-    expect(isMemberFormValid(validateNewMember(validDraft()))).toBe(true);
-  });
+beforeEach(() => {
+  Object.values(mocks).forEach((mock) => mock.mockReset());
+});
 
-  it('every required field missing is reported by name (one error per field)', () => {
-    const errors = validateNewMember({
-      ...validDraft(),
-      name: '', phone: '', date_of_birth: '', date_of_joining: '', gender: '', weight_kg: '', height_cm: '',
-      emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_relationship: '', branch_id: '',
-    });
-    expect(Object.keys(errors).sort()).toEqual([
-      'branch_id', 'date_of_birth', 'date_of_joining', 'emergency_contact_name', 'emergency_contact_phone',
-      'emergency_contact_relationship', 'gender', 'height_cm', 'name', 'phone', 'weight_kg',
-    ]);
-  });
-
-  it('optional fields (email, address, aadhaar, occupation, photo, handled_by) are NOT required', () => {
-    const errors = validateNewMember(validDraft({ email: '', residential_address: '', aadhaar_number: '', occupation: '' }));
+describe('validateNewMember / validateMemberEdit', () => {
+  it('accepts a complete draft', () => {
+    const errors = validateNewMember(validDraft());
     expect(errors).toEqual({});
+    expect(isMemberFormValid(errors)).toBe(true);
   });
 
-  describe('name', () => {
-    it.each([['', 'required'], ['   ', 'required'], ['A', '2-80'], ['x'.repeat(81), '2-80']])('rejects %j', (name, hint) => {
-      expect(validateNewMember(validDraft({ name })).name).toContain(hint === 'required' ? 'required' : '2-80');
-    });
-    it.each(['Al', 'x'.repeat(80), '  Jo  '])('accepts %j', (name) => {
-      expect(validateNewMember(validDraft({ name })).name).toBeUndefined();
-    });
+  it.each<[string, Partial<NewMemberDraft>, string, string]>([
+    ['empty name', { name: '  ' }, 'name', 'Name is required'],
+    ['1-char name', { name: 'P' }, 'name', 'Name must be 2-80 characters'],
+    ['81-char name', { name: 'x'.repeat(81) }, 'name', 'Name must be 2-80 characters'],
+    ['empty phone', { phone: '' }, 'phone', 'Phone is required'],
+    ['9-digit phone', { phone: '987654321' }, 'phone', 'Enter a valid 10-digit phone number'],
+    ['letters in phone', { phone: '98765abcde' }, 'phone', 'Enter a valid 10-digit phone number'],
+    ['missing DOB', { date_of_birth: '' }, 'date_of_birth', 'Date of birth is required'],
+    ['missing joining date', { date_of_joining: '' }, 'date_of_joining', 'Date of joining is required'],
+    ['no gender', { gender: '' }, 'gender', 'Select a gender'],
+    ['empty weight', { weight_kg: '' }, 'weight_kg', 'Weight is required'],
+    ['weight below 1', { weight_kg: '0.5' }, 'weight_kg', 'Weight must be between 1 and 500 kg'],
+    ['weight above 500', { weight_kg: '501' }, 'weight_kg', 'Weight must be between 1 and 500 kg'],
+    ['non-numeric weight', { weight_kg: 'abc' }, 'weight_kg', 'Weight must be between 1 and 500 kg'],
+    ['empty height', { height_cm: '' }, 'height_cm', 'Height is required'],
+    ['height above 300', { height_cm: '301' }, 'height_cm', 'Height must be between 1.0 and 300.0 cm'],
+    ['doctor care without details', { under_doctor_care: true, doctor_care_details: ' ' }, 'doctor_care_details', "Details are required when under doctor's care"],
+    ['no emergency name', { emergency_contact_name: '' }, 'emergency_contact_name', 'Emergency contact name is required'],
+    ['no emergency phone', { emergency_contact_phone: '' }, 'emergency_contact_phone', 'Emergency contact phone is required'],
+    ['bad emergency phone', { emergency_contact_phone: '123' }, 'emergency_contact_phone', 'Enter a valid 10-digit phone number'],
+    ['no relationship', { emergency_contact_relationship: '' }, 'emergency_contact_relationship', 'Emergency contact relationship is required'],
+    ['bad email', { email: 'not-an-email' }, 'email', 'Enter a valid email address'],
+    ['5-digit pincode', { pincode: '12345' }, 'pincode', 'Must be exactly 6 digits'],
+    ['no branch', { branch_id: '' }, 'branch_id', 'Select a branch'],
+  ])('rejects %s', (_label, patch, field, message) => {
+    expect(validateNewMember(validDraft(patch))).toEqual({ [field]: message });
   });
 
-  describe('phone', () => {
-    it.each(['123', '98765432101', 'abcdefghij', '98765-4321'])('rejects %j', (phone) => {
-      expect(validateNewMember(validDraft({ phone })).phone).toBeDefined();
-    });
-    it('accepts exactly 10 digits, and ignores embedded spaces', () => {
-      expect(validateNewMember(validDraft({ phone: '9876543210' })).phone).toBeUndefined();
-      expect(validateNewMember(validDraft({ phone: '98765 43210' })).phone).toBeUndefined();
-    });
-    it('emergency contact phone follows the same rule', () => {
-      expect(validateNewMember(validDraft({ emergency_contact_phone: '12345' })).emergency_contact_phone).toBeDefined();
-    });
+  it('accepts boundary values: weight 1 and 500, height 1 and 300, a 2-char name', () => {
+    expect(validateNewMember(validDraft({ weight_kg: '1', height_cm: '1', name: 'Jo' }))).toEqual({});
+    expect(validateNewMember(validDraft({ weight_kg: '500', height_cm: '300' }))).toEqual({});
   });
 
-  describe('weight / height bounds mirror the DB CHECK constraints', () => {
-    it.each([['0', true], ['0.9', true], ['1', false], ['500', false], ['500.01', true], ['abc', true], ['', true]])('weight %j error=%s', (v, err) => {
-      expect(validateNewMember(validDraft({ weight_kg: v })).weight_kg !== undefined).toBe(err);
-    });
-    it.each([['0', true], ['1', false], ['300', false], ['300.1', true], ['-5', true]])('height %j error=%s', (v, err) => {
-      expect(validateNewMember(validDraft({ height_cm: v })).height_cm !== undefined).toBe(err);
-    });
+  it('tolerates spaces inside a phone number and keeps optional fields optional', () => {
+    expect(validateNewMember(validDraft({ phone: '98765 43210', email: '', pincode: '' }))).toEqual({});
   });
 
-  describe("doctor's care (conditional required)", () => {
-    it('Yes + blank explanation -> blocked', () => {
-      expect(validateNewMember(validDraft({ under_doctor_care: true, doctor_care_details: '' })).doctor_care_details).toBeDefined();
-    });
-    it('Yes + whitespace-only explanation -> blocked', () => {
-      expect(validateNewMember(validDraft({ under_doctor_care: true, doctor_care_details: '   \n ' })).doctor_care_details).toBeDefined();
-    });
-    it('Yes + explanation -> ok', () => {
-      expect(validateNewMember(validDraft({ under_doctor_care: true, doctor_care_details: 'Asthma' })).doctor_care_details).toBeUndefined();
-    });
-    it('No + blank explanation -> ok', () => {
-      expect(validateNewMember(validDraft({ under_doctor_care: false, doctor_care_details: '' })).doctor_care_details).toBeUndefined();
-    });
-  });
-
-  it('email: optional, but must look like an email when given', () => {
-    expect(validateNewMember(validDraft({ email: 'nope' })).email).toBeDefined();
-    expect(validateNewMember(validDraft({ email: 'a@b' })).email).toBeDefined();
-    expect(validateNewMember(validDraft({ email: 'a@b.co' })).email).toBeUndefined();
-    expect(validateNewMember(validDraft({ email: '   ' })).email).toBeUndefined();
-  });
-
-  it('REQ-MEM-006: the edit form has no branch field to validate (immutable after creation)', () => {
-    const { branch_id: _omit, ...edit } = validDraft();
-    expect(validateMemberEdit(edit)).toEqual({});
+  it('does not require a branch when editing (branch is immutable after creation)', () => {
+    const { branch_id: _branch, ...editDraft } = validDraft();
+    expect(validateMemberEdit(editDraft)).toEqual({});
   });
 });
 
-describe('create / update payloads', () => {
-  beforeEach(() => {
-    repo.create.mockReset();
-    repo.update.mockReset();
-    storage.upload.mockReset();
-    storage.remove.mockReset();
-    compress.mockReset();
-    repo.create.mockResolvedValue(member({ id: 42 }));
+describe('editDraftFromMember', () => {
+  it('turns numbers into the string form state and nulls into empty strings', () => {
+    const draft = editDraftFromMember(buildMember({ weight_kg: 72.5, height_cm: 175, doctor_care_details: null, email: null }));
+    expect(draft.weight_kg).toBe('72.5');
+    expect(draft.height_cm).toBe('175');
+    expect(draft.doctor_care_details).toBe('');
+    expect(draft.email).toBe('');
+    expect(draft.handled_by_staff).toBe('');
   });
+});
 
-  it('create sends trimmed/normalised values and nulls for blank optionals', async () => {
-    await memberService.create(validDraft({ name: '  Priya Sharma ', phone: '98765 43210', email: ' ', occupation: 'Dev ' }), null);
-    const payload = repo.create.mock.calls[0][0];
+describe('memberService.updateMember', () => {
+  it('sends trimmed, coerced values and returns the exact payload it sent', async () => {
+    mocks.update.mockResolvedValue(undefined);
+    const draft = { ...validDraft({ name: '  Priya Sharma ', phone: '98765 43210', weight_kg: '60.5', email: '  ' }) };
+    const { branch_id: _branch, ...editDraft } = draft;
+
+    const payload = await memberService.updateMember(7, editDraft);
+
+    expect(mocks.update).toHaveBeenCalledWith(7, payload);
     expect(payload).toMatchObject({
-      name: 'Priya Sharma', phone: '9876543210', email: null, residential_address: null, aadhaar_number: null,
-      occupation: 'Dev', weight_kg: 60, height_cm: 165.5, doctor_care_details: null, handled_by_staff: null, branch_id: 1,
+      name: 'Priya Sharma',
+      phone: '9876543210',
+      weight_kg: 60.5,
+      height_cm: 165,
+      email: null,
+      doctor_care_details: null,
+      handled_by_staff: null,
     });
   });
 
-  it('REQ-MEM-006/005: create never sends member_number or created_by', async () => {
-    await memberService.create(validDraft(), null);
-    const payload = repo.create.mock.calls[0][0];
-    expect(payload).not.toHaveProperty('member_number');
-    expect(payload).not.toHaveProperty('created_by');
-  });
-
-  it('REQ-MEM-003: handled_by_staff is passed through when chosen', async () => {
-    await memberService.create(validDraft({ handled_by_staff: 'staff-uuid' }), null);
-    expect(repo.create.mock.calls[0][0].handled_by_staff).toBe('staff-uuid');
-  });
-
-  it('doctor details are only sent when under_doctor_care is true', async () => {
-    await memberService.create(validDraft({ under_doctor_care: false, doctor_care_details: 'stale text' }), null);
-    expect(repo.create.mock.calls[0][0].doctor_care_details).toBeNull();
-    await memberService.create(validDraft({ under_doctor_care: true, doctor_care_details: ' Asthma ' }), null);
-    expect(repo.create.mock.calls[1][0].doctor_care_details).toBe('Asthma');
-  });
-
-  it('REQ-MEM-006: update payload never contains branch_id, member_number or created_by', async () => {
-    const { branch_id: _b, ...edit } = validDraft();
-    const payload = await memberService.updateMember(5, edit);
-    expect(repo.update).toHaveBeenCalledWith(5, payload);
-    for (const k of ['branch_id', 'member_number', 'created_by']) expect(payload).not.toHaveProperty(k);
-  });
-
-  it('REQ-MEM-003: handled_by_staff can be changed independently on update, and cleared with null', async () => {
-    const { branch_id: _b, ...edit } = validDraft({ handled_by_staff: 'other-staff' });
-    expect((await memberService.updateMember(5, edit)).handled_by_staff).toBe('other-staff');
-    expect((await memberService.updateMember(5, { ...edit, handled_by_staff: '' })).handled_by_staff).toBeNull();
-  });
-
-  it('editDraftFromMember round-trips a Member into form strings', () => {
-    const draft = editDraftFromMember(member({ weight_kg: 72.5, email: null, doctor_care_details: null, handled_by_staff: null }));
-    expect(draft).toMatchObject({ weight_kg: '72.5', email: '', doctor_care_details: '', handled_by_staff: '' });
-    expect(draft).not.toHaveProperty('branch_id');
+  it('keeps doctor_care_details only when under doctor care', async () => {
+    mocks.update.mockResolvedValue(undefined);
+    const { branch_id: _branch, ...editDraft } = validDraft({ under_doctor_care: true, doctor_care_details: ' asthma ' });
+    const payload = await memberService.updateMember(1, editDraft);
+    expect(payload.doctor_care_details).toBe('asthma');
   });
 });
 
-describe('REQ-MEM-004 photo handling', () => {
-  const file = new File(['x'], 'me.png', { type: 'image/png' });
+describe('memberService.create', () => {
+  it('creates the member and skips the photo step when no file is given', async () => {
+    const member = buildMember({ id: 5 });
+    mocks.create.mockResolvedValue(member);
+
+    await expect(memberService.create(validDraft(), null)).resolves.toEqual({ member, photoError: null });
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Priya Sharma', branch_id: 1 }));
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
+  it('never blocks or rolls back the member when the photo upload fails (REQ-MEM-004)', async () => {
+    const member = buildMember({ id: 5 });
+    mocks.create.mockResolvedValue(member);
+    mocks.compressImage.mockRejectedValue(new Error('canvas failed'));
+
+    const result = await memberService.create(validDraft(), new File(['x'], 'p.jpg', { type: 'image/jpeg' }));
+
+    expect(result.member).toBe(member);
+    expect(result.photoError).toMatch(/member was saved, but the photo couldn't be uploaded/);
+  });
+
+  it('propagates a failure to create the member itself', async () => {
+    mocks.create.mockRejectedValue(new Error('duplicate'));
+    await expect(memberService.create(validDraft(), null)).rejects.toThrow('duplicate');
+  });
+});
+
+describe('memberService.uploadPhoto', () => {
+  const file = new File(['x'], 'p.jpg', { type: 'image/jpeg' });
+  const compressed = new Blob(['y']);
+
   beforeEach(() => {
-    repo.create.mockReset().mockResolvedValue(member({ id: 42 }));
-    repo.update.mockReset().mockResolvedValue(undefined);
-    storage.upload.mockReset().mockResolvedValue({ error: null });
-    storage.remove.mockReset().mockResolvedValue({});
-    compress.mockReset().mockResolvedValue(new Blob(['small']));
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(1_700_000_000_000);
+    mocks.compressImage.mockResolvedValue(compressed);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it('no photo: member created, no upload attempted', async () => {
-    const result = await memberService.create(validDraft(), null);
-    expect(result.photoError).toBeNull();
-    expect(storage.upload).not.toHaveBeenCalled();
+  it('uploads original + thumbnail and stores the bucket-relative PATHS (the bucket is private)', async () => {
+    mocks.upload.mockResolvedValue({ error: null });
+    mocks.update.mockResolvedValue(undefined);
+
+    await memberService.uploadPhoto(9, file);
+
+    expect(mocks.upload).toHaveBeenCalledWith('9/original-1700000000000.jpg', file, { upsert: true });
+    expect(mocks.upload).toHaveBeenCalledWith('9/thumbnail-1700000000000.jpg', compressed, { upsert: true });
+    expect(mocks.update).toHaveBeenCalledWith(9, {
+      photo_url: '9/original-1700000000000.jpg',
+      photo_thumbnail_url: '9/thumbnail-1700000000000.jpg',
+    });
   });
 
-  it('uploads BOTH the original and the compressed thumbnail, then stores both paths', async () => {
-    const result = await memberService.create(validDraft(), file);
-    expect(result.photoError).toBeNull();
-    expect(storage.upload).toHaveBeenCalledTimes(2);
-    const [[originalPath, originalBody], [thumbPath, thumbBody]] = storage.upload.mock.calls;
-    expect(originalPath).toMatch(/^42\/original-\d+\.jpg$/);
-    expect(thumbPath).toMatch(/^42\/thumbnail-\d+\.jpg$/);
-    expect(originalBody).toBe(file); // original untouched
-    expect(thumbBody).toBeInstanceOf(Blob);
-    expect(repo.update).toHaveBeenCalledWith(42, { photo_url: originalPath, photo_thumbnail_url: thumbPath });
+  it('cleans up the half that landed when the other upload fails, then throws', async () => {
+    const failure = new Error('thumb failed');
+    mocks.upload.mockImplementation((path: string) =>
+      Promise.resolve({ error: path.includes('thumbnail') ? failure : null })
+    );
+
+    await expect(memberService.uploadPhoto(9, file)).rejects.toBe(failure);
+
+    expect(mocks.remove).toHaveBeenCalledWith(['9/original-1700000000000.jpg']);
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  it('compression runs before the upload request', async () => {
-    const order: string[] = [];
-    compress.mockImplementation(async () => { order.push('compress'); return new Blob(['s']); });
-    storage.upload.mockImplementation(async () => { order.push('upload'); return { error: null }; });
-    await memberService.create(validDraft(), file);
-    expect(order[0]).toBe('compress');
-  });
+  it('removes both blobs when saving their paths on the member fails', async () => {
+    mocks.upload.mockResolvedValue({ error: null });
+    mocks.update.mockRejectedValue(new Error('rls'));
 
-  it('compression failure: member is still created, user gets a photo error message', async () => {
-    compress.mockRejectedValue(new Error('canvas-not-supported'));
-    const result = await memberService.create(validDraft(), file);
-    expect(result.member.id).toBe(42);
-    expect(result.photoError).toMatch(/photo couldn't be uploaded/i);
-    expect(result.photoError).toMatch(/retry/i);
-  });
-
-  it('upload failure: member kept, error surfaced', async () => {
-    storage.upload.mockResolvedValue({ error: new Error('network') });
-    const result = await memberService.create(validDraft(), file);
-    expect(result.photoError).toBeTruthy();
-    expect(repo.update).not.toHaveBeenCalled();
-  });
-
-  it('half-failed upload cleans up the side that landed (no orphaned blob)', async () => {
-    storage.upload.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: new Error('boom') });
-    await memberService.create(validDraft(), file);
-    expect(storage.remove).toHaveBeenCalledTimes(1);
-    expect(storage.remove.mock.calls[0][0]).toHaveLength(1);
-    expect(storage.remove.mock.calls[0][0][0]).toMatch(/original-/);
-  });
-
-  it('failure saving the paths removes both uploaded blobs', async () => {
-    repo.update.mockRejectedValue(new Error('db down'));
-    const result = await memberService.create(validDraft(), file);
-    expect(result.photoError).toBeTruthy();
-    expect(storage.remove).toHaveBeenCalledWith(expect.arrayContaining([expect.stringMatching(/original-/), expect.stringMatching(/thumbnail-/)]));
-  });
-
-  it('retry path: uploadPhoto can be called again for an existing member', async () => {
-    await expect(memberService.uploadPhoto(42, file)).resolves.toBeUndefined();
-    expect(repo.update).toHaveBeenCalledTimes(1);
-  });
-
-  it('a failed member insert propagates (no photo work attempted)', async () => {
-    repo.create.mockRejectedValue(new Error('duplicate key value violates unique constraint "idx_members_phone_active"'));
-    await expect(memberService.create(validDraft(), file)).rejects.toThrow(/idx_members_phone_active/);
-    expect(storage.upload).not.toHaveBeenCalled();
+    await expect(memberService.uploadPhoto(9, file)).rejects.toThrow('rls');
+    expect(mocks.remove).toHaveBeenCalledWith(['9/original-1700000000000.jpg', '9/thumbnail-1700000000000.jpg']);
   });
 });

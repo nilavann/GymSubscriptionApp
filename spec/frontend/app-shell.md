@@ -113,44 +113,70 @@ While `isInitialising === true`, the router renders a full-screen loading view i
 
 ## 3. Responsive Layout Shell (`web/src/components/AppShell.tsx`)
 
-Wraps every authenticated route. Unlike the mobile app's fixed bottom tab bar, the web shell **changes navigation pattern by viewport width**, since desktop and mobile browsers have different ergonomic norms:
+Wraps every authenticated route. The web shell **changes navigation structure by viewport width**, since desktop and mobile browsers have different ergonomic norms — and it renders **exactly one** structure at a time (rules.md rule 33):
 
-| Breakpoint | Nav pattern |
+| Breakpoint | Rendered | Component(s) |
+|---|---|---|
+| `< 768px` (mobile) | A top header + a fixed bottom tab bar (the bar is left out on drill-in routes, §3.4) | `MobileHeader`, `TabBar` |
+| `>= 768px` (tablet/desktop) | A fixed-width left sidebar + the footer | `SidebarNav`, `AppFooter` |
+
+Both read the same nav definition (`components/nav-items.tsx` — see [navigation.md](./navigation.md)): there is exactly one source of truth for "what items exist and who can see them", rendered two different ways, not two separate route trees. **`AppShell` switches with `useIsTabletUp()`** (`lib/use-media-query.ts`, the px query `(min-width: 768px)`), so the sidebar and the tab bar are never both mounted. Hiding one with CSS is not allowed: the hidden copy would still render, run its hooks and leave two "Main navigation" landmarks in the DOM ([styling.md §4](./styling.md#css-vs-js-who-decides-what-renders)).
+
+Two further rules follow from that:
+- **`useActionCenterCount()` is called once, in `AppShell`,** and the count is passed to whichever nav is mounted. If a conditionally mounted nav owned it, it would refetch every time the tab bar remounted (leaving a drill-in screen, rotating across 768px).
+- `<ScrollRestoration />` is rendered in `AppShell`. On a phone the **window** scrolls and React Router doesn't reset it on navigation, so a page opened from mid-list would inherit the old offset (it lands ~25px down on WebKit). At `>= 768px` the scroll container is `.app-shell-main`, which this does not touch.
+
+### 3.1 Mobile header (`MobileHeader.tsx`, `< 768px`)
+
+Source: `design_handoff_flexhub_mobile/README.md` §Mobile shell.
+
+| Property | Value |
 |---|---|
-| `< 768px` (mobile) | Fixed bottom tab bar, same 2–3 tabs as the mobile app (Members / Reports / Settings) |
-| `>= 768px` (tablet/desktop) | Fixed left sidebar with the same items, plus labels always visible (not icon-only) |
+| Height / position | `58px`, `position: sticky; top: 0`, `z-index: 20` (the layer scale: tab bar 10, header 20, drawer 40, modals 50+) |
+| Surface | `--color-neutral-0`, `1px` bottom border `--color-border-default`, `0 20px` side padding (grown by `env(safe-area-inset-*)`) |
+| Left | `assets/logo.png` at `24×18` + "Fit & Fine Gym" in `--font-display`, 15.5px / 700, letter-spacing −0.015em |
+| Right | The signed-in user's initials (`getInitials(full_name)`) in a 28px `--color-surface-inverse` circle, white 11px / 700. The desktop's "Name · Role" label is not shown on mobile |
+| Hit area | The circle sits inside a **44×44** button (`aria-label="Account menu"`, `aria-expanded`) — the visible glyph is smaller than the touch target |
 
-Both patterns read from the same route/tab definition (see [navigation.md](./navigation.md)) — there is exactly one source of truth for "what tabs exist and who can see them," rendered two different ways via a CSS media query / `useMediaQuery` hook, not two separate route trees.
+**Account menu.** Tapping the avatar opens a small panel with the user's name, their roles, and **Sign out**. This is how staff sign out on a phone: the mockup's tab bar has no Sign Out, and Settings (which also has one) is admin-only. The panel is mounted only while open, and its two document listeners (`keydown`, `pointerdown`) exist only while open. It closes on Escape (focus returns to the avatar button), on a press outside it, on any route change (including the browser back button), and after Sign out.
 
-### 3.1 Shared shell elements (both breakpoints)
+### 3.2 Mobile bottom tab bar (`TabBar.tsx`, `< 768px`)
 
-| Element | Content |
+| Property | Value |
 |---|---|
-| Top bar | App name/logo (left), current user's name + sign-out control (right) |
-| Content area | Routed page content, `max-width: 1200px` centered on wide desktop screens so text/tables don't stretch edge-to-edge on ultrawide monitors |
+| Items | Action Center · Members · Reports · (Settings, admins only) — three for staff, four for admins. **No Sign Out tab** |
+| Position | `position: fixed; bottom: 0; left: 0; right: 0`, `z-index: 10` |
+| Surface | `--color-neutral-0`, `1px` top border `--color-border-default`, no shadow; padding `8px 6px` plus `env(safe-area-inset-bottom)` so the home indicator never overlaps it |
+| Item | `flex: 1`, min-height 48px, a 20px icon (2px stroke) over a 10.5px label |
+| Inactive | `--color-text-secondary`, weight 400 |
+| Active | `--tint-ink`, weight 500, **no pill or background**; marked `aria-current="page"` |
+| Badge | On the Action Center icon: min 16×16, `--color-status-danger-text`, white 10px / 700, offset top −6 / right −10; value = the queue size; absent when 0 or unknown |
+| Content clearance | `.app-shell[data-tabbar='on'] .app-shell-content` reserves `1.5rem + 64px + env(safe-area-inset-bottom)` at the bottom so the last item is never hidden behind the bar |
 
-### 3.2 Mobile bottom tab bar
+"Active" is computed by `isNavItemActive()` (`nav-items.tsx`), not by `NavLink`, because a single `to` can't express a section: **Members** is also active on `/members/*`, and **Settings** on `/plans /branches /users /roles /audit-log /member-numbering` (every admin sub-screen carries `AdminTabs`). The same function drives the desktop sidebar.
 
-Same visual language as the mobile app's tab bar (see [colors.md](./colors.md)):
+### 3.3 Desktop sidebar (`SidebarNav.tsx`, `>= 768px`)
 
-| Property | Token |
+| Property | Value |
 |---|---|
-| Background | `var(--color-surface-dark)` |
-| Active icon + label | `var(--color-text-brand)` |
-| Inactive icon + label | `var(--color-neutral-600)` |
-| Position | `position: fixed; bottom: 0` |
-| Content bottom padding | Content area must reserve space (`padding-bottom`) equal to the tab bar height so the last list item isn't hidden behind it |
+| Background | `--color-neutral-0`, `1px` right border `--color-border-default` |
+| Width | `240px` fixed. Implemented as a CSS Grid column (`.app-shell { grid-template-columns: 240px 1fr }`, `height: 100dvh`), not literal `position: fixed` — same fixed width and full height, sidebar never scrolls independently |
+| Brand | Logo + "Fit & Fine" at the top (there is no separate topbar at this width) |
+| Active item | `--tint-on-pill` text on a `--tint-pill-bg` row, weight 600 |
+| Inactive item | `--color-text-secondary` |
+| Sign Out | A row pinned to the bottom of the sidebar, in `--color-status-danger-text` — the only way a staff user (who can't reach Settings) can sign out at this width |
+| Badge | Action Center queue size, `--tint-solid` |
 
-### 3.3 Desktop sidebar
+### 3.4 Tab-bar visibility is route data
 
-| Property | Token |
+Drill-in screens show a back link instead of the tab bar, and a form must not have a fixed bar sitting over the on-screen keyboard. This is declared on the route (`App.tsx`: `handle: { hideTabBar: true }`) and read in `AppShell` with `useMatches()` via `shouldHideTabBar()` (`lib/route-handle.ts`) — components never path-match to decide it.
+
+| Shows the tab bar | Hides it (`hideTabBar`) |
 |---|---|
-| Background | `var(--color-surface-dark)` |
-| Width | `240px` fixed |
-| Active item | Background tint `var(--color-brand-tint)` at low opacity or left accent bar in `var(--color-text-brand)`, label `var(--color-text-brand)` |
-| Inactive item | Label `var(--color-neutral-600)` |
-| Position | Fixed-width `240px` column, full viewport height. Implemented as a CSS Grid column (`.app-shell { grid-template-columns: 240px 1fr }`, `height: 100vh` on the shell), not literal `position: fixed` — visually and behaviorally equivalent (same fixed width, same full-height, sidebar never scrolls independently), just achieved via a different mechanism than this line originally specified. |
+| `/action-center`, `/`, `/reports`, `/settings`, and the admin sub-screens `/plans /branches /users /users/invite /roles /audit-log /member-numbering` | `/members/new`, `/members/:id`, `/members/:id/renew`, `/members/:id/edit` |
 
-### 3.4 Tab/nav items
+The handle only applies below 768px: at `>= 768px` the sidebar is always shown. Admin sub-screens keep the bar because each carries its own `AdminTabs` row and the bar shows Settings as active.
 
-Same role-based visibility rule as the mobile app — see [navigation.md §Tab Bar](./navigation.md#tab-bar): Members and Reports for all users, Settings (and its Plans/Users sub-items) for `admin` role only.
+### 3.5 Tab/nav items
+
+Same role-based visibility rule as the mobile app — see [navigation.md §Navigation Items](./navigation.md): Action Center, Members and Reports for all users, Settings (and its Plans/Branches/Users/Roles/Audit Log/Numbering sub-screens) for the `admin` role only.

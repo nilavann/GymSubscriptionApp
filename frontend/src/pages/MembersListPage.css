@@ -150,10 +150,22 @@
 .members-pill-row {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  /* README §Members: the status pills scroll horizontally if they overflow and never wrap to a
+     second line. The padding + equal negative margin leave room inside the scroll container for the
+     2px keyboard-focus ring + offset, which overflow-x would otherwise clip. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  margin: -4px;
+}
+
+.members-pill-row::-webkit-scrollbar {
+  display: none;
 }
 
 .members-pill {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -197,14 +209,15 @@
 }
 
 .members-pill-active {
-  background: var(--tint-accent);
-  border-color: var(--tint-accent);
+  /* Solid fill carrying white text - --tint-solid, not --tint-accent (Accessibility contract). */
+  background: var(--tint-solid);
+  border-color: var(--tint-solid);
   color: var(--color-text-inverse);
   font-weight: 700;
 }
 
 .members-pill-active:hover {
-  border-color: var(--tint-accent);
+  border-color: var(--tint-solid);
 }
 
 .members-controls-row {
@@ -246,7 +259,7 @@
 .members-filter-toggle-active {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
 }
 
 .members-filter-toggle-count {
@@ -257,10 +270,51 @@
   height: 1.2rem;
   padding: 0 0.3rem;
   border-radius: var(--radius-pill);
-  background: var(--tint-accent);
+  background: var(--tint-solid);
   color: var(--color-text-inverse);
   font-size: 0.68rem;
   font-weight: 700;
+}
+
+/* Table/Cards view toggle - desktop only (>=768px); below that, cards render regardless of
+   the chosen mode, so the toggle itself is hidden rather than offering a no-op control. */
+.members-view-toggle {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .members-view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-el);
+    overflow: hidden;
+  }
+
+  .members-view-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    background: var(--color-neutral-0);
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .members-view-toggle-btn + .members-view-toggle-btn {
+    border-left: 1px solid var(--color-border-default);
+  }
+
+  .members-view-toggle-btn:hover {
+    background: var(--color-surface-page);
+  }
+
+  .members-view-toggle-btn-active {
+    background: var(--tint-pill-bg);
+    color: var(--tint-on-pill);
+  }
 }
 
 .members-applied-chips {
@@ -277,7 +331,7 @@
   padding: 0.3rem 0.35rem 0.3rem 0.75rem;
   border-radius: var(--radius-pill);
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -352,7 +406,7 @@
 .members-clear-link {
   background: none;
   border: none;
-  color: var(--tint-accent);
+  color: var(--tint-ink);
   font-weight: 600;
   font-size: 0.78rem;
   cursor: pointer;
@@ -364,43 +418,7 @@
   text-decoration: underline;
 }
 
-/* Status badges - shared by cards and table */
-
-.status-badge {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-
-.status-badge-active {
-  background: var(--color-status-success-bg);
-  color: var(--color-status-success-text);
-}
-
-.status-badge-expiring {
-  background: var(--color-status-warning-bg);
-  color: var(--color-status-warning-text);
-}
-
-.status-badge-expired {
-  background: var(--color-status-danger-bg);
-  color: var(--color-status-danger-text);
-}
-
-.status-text-active {
-  color: var(--color-text-muted);
-}
-
-.status-text-expiring {
-  color: var(--color-status-warning-text);
-}
-
-.status-text-expired {
-  color: var(--color-status-danger-text);
-}
+/* Status badges and status text (.status-badge-*, .status-text-*) live in styles/status.css. */
 
 /* Avatar */
 
@@ -434,25 +452,57 @@
   transform: scale(1.08);
 }
 
-.members-edit-button {
+/* Row actions - Renew (filled) + View (outlined), replaces the old single Edit icon
+   (design_handoff_flexhub_v2/README.md "Members list row actions"). Shared by both the
+   table row's actions cell and the mobile/cards-view card's action row. */
+.members-row-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.members-row-renew,
+.members-row-view {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  min-width: 44px;
-  width: 30px;
-  height: 30px;
-  background: var(--color-neutral-0);
-  border: 1px solid var(--color-border-default);
+  gap: 0.3rem;
+  min-height: 36px;
+  padding: 0 0.7rem;
   border-radius: var(--radius-el);
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
-  color: var(--color-text-secondary);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-.members-edit-button:hover {
+.members-row-renew {
+  border: none;
+  background: linear-gradient(to bottom, var(--cta-from), var(--cta-to));
+  color: var(--color-text-inverse);
+}
+
+.members-row-renew:hover {
+  opacity: 0.9;
+}
+
+.members-row-view {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-neutral-0);
+  color: var(--color-text-secondary);
+}
+
+.members-row-view:hover {
   background: var(--color-surface-page);
-  border-color: var(--color-neutral-300);
+}
+
+.members-card-actions {
+  margin-top: 0.6rem;
+}
+
+.members-card-actions .members-row-renew,
+.members-card-actions .members-row-view {
+  flex: 1;
+  min-height: 40px;
 }
 
 /* Mobile cards - default (< 768px) */
@@ -460,7 +510,53 @@
 .members-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 10px;
+}
+
+.members-card:focus-visible {
+  outline: 2px solid var(--tint-ink);
+  outline-offset: 2px;
+}
+
+/* Phone card — design_handoff_flexhub_mobile/README.md §Members: white, radius 14, 1px stone border,
+   padding 14, gap 12; name 14.5/600, member # 12.5, "Plan · Phone" 13, expiry 12.5. Whole card taps to
+   Member Detail, so there are no action buttons here. */
+.members-card-compact {
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border-color: var(--color-border-default);
+  box-shadow: none;
+}
+
+.members-card-compact:hover {
+  box-shadow: none;
+}
+
+.members-card-compact .members-card-top {
+  gap: 8px;
+}
+
+.members-card-compact .members-card-name {
+  font-size: 14.5px;
+}
+
+.members-card-compact .members-card-number {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.members-card-compact .members-card-secondary {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.members-card-expiry-line {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
 }
 
 .members-card {
@@ -496,6 +592,9 @@
 }
 
 .members-card-name {
+  /* A flex child with white-space: nowrap won't shrink below its text unless told to (rules.md 16d) —
+     without this a long name pushes the status pill off the card instead of ellipsizing. */
+  min-width: 0;
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--color-text-primary);
@@ -535,15 +634,29 @@
 }
 
 @media (min-width: 768px) {
-  .members-cards {
+  /* Below 768px, cards always render (a table doesn't fit a phone screen) regardless of
+     viewMode - the data-view gating below only takes effect once there's room for a table. */
+  .members-page[data-view='table'] .members-cards {
     display: none;
+  }
+
+  .members-page[data-view='cards'] .members-table {
+    display: none;
+  }
+
+  /* Desktop Cards view is a grid, not the mobile single-column stack - a lone full-width
+     card per row would waste most of a desktop viewport's width. */
+  .members-page[data-view='cards'] .members-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
   .members-controls-row {
     align-items: center;
   }
 
-  .members-table {
+  .members-page[data-view='table'] .members-table {
     display: table;
     width: 100%;
     border-collapse: separate;
@@ -584,7 +697,7 @@
   }
 
   .members-sort-header:hover {
-    color: var(--tint-accent);
+    color: var(--tint-ink);
   }
 
   .members-table-row {
@@ -624,5 +737,15 @@
     font-weight: 600;
     font-size: 0.85rem;
     color: var(--color-text-primary);
+  }
+
+  .members-table-actions-cell {
+    width: 148px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .members-page[data-view='cards'] .members-cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

@@ -208,18 +208,21 @@
   color: var(--color-text-primary);
 }
 
-/* Tint preview dots — deliberately literal hexes (not the live --tint-* vars) so every
-   option shows its own color regardless of which tint is currently active. CTA is folded
-   into tint in v2 (design_handoff_flexhub_v2/README.md §Theming), so there's no separate
-   CTA swatch row/preview anymore. */
+/* Tint preview dots — fixed per-tint values (the --color-tint-preview-* tokens), NOT the live
+   --tint-* vars, so every option shows its own color regardless of which tint is currently
+   active. CTA is folded into tint in v2 (design_handoff_flexhub_v2/README.md §Theming), so
+   there's no separate CTA swatch row/preview anymore. */
+.settings-theme-swatch[data-tint-preview='amber']::before {
+  background: var(--color-tint-preview-amber);
+}
 .settings-theme-swatch[data-tint-preview='wild']::before {
-  background: #ff5a2c;
+  background: var(--color-tint-preview-wild);
 }
 .settings-theme-swatch[data-tint-preview='sky']::before {
-  background: #2563eb;
+  background: var(--color-tint-preview-sky);
 }
 .settings-theme-swatch[data-tint-preview='violet']::before {
-  background: #7c3aed;
+  background: var(--color-tint-preview-violet);
 }
 
 /* Data Management cards */

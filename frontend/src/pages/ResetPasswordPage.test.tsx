@@ -1,78 +1,128 @@
-import '../test/page-mocks';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+import { screen } from '@testing-library/react';
 import { ResetPasswordPage } from './ResetPasswordPage';
-import { adminProfile, fakeAuth, setAuth } from '../test/mocks';
+import { buildAuth } from '../test/auth';
+import { renderRoutes } from '../test/render';
+import { buildProfile } from '../test/builders';
+import type { AuthContextValue } from '../types/auth';
 
-const session = { user: { id: 'u1' } } as never;
-
-function renderPage(auth: ReturnType<typeof fakeAuth>) {
-  setAuth(auth);
-  return render(
-    <MemoryRouter initialEntries={['/reset-password']}>
-      <Routes>
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/" element={<div>HOME</div>} />
-        <Route path="/login" element={<div>LOGIN</div>} />
-      </Routes>
-    </MemoryRouter>
+function renderReset(auth: Partial<AuthContextValue> = {}) {
+  return renderRoutes(
+    [
+      { path: '/reset-password', element: <ResetPasswordPage /> },
+      { path: '/login', element: <p>Login screen</p> },
+      { path: '/', element: <p>Members screen</p> },
+      { path: '/action-center', element: <p>Action Center screen</p> },
+    ],
+    { route: '/reset-password', auth }
   );
 }
-const pw = () => document.getElementById('new-password') as HTMLInputElement;
-const confirm = () => document.getElementById('confirm-password') as HTMLInputElement;
 
-describe('Reset password page (REQ-AUTH-005)', () => {
-  beforeEach(() => vi.useRealTimers());
-  const recovery = () => fakeAuth(adminProfile, { needsPasswordReset: true, session });
+// A genuine recovery session: signed in via the emailed link, flagged as needing a new password.
+const recovery = (overrides: Partial<AuthContextValue> = {}) => ({
+  currentProfile: buildProfile(),
+  needsPasswordReset: true,
+  ...overrides,
+});
 
-  it('reached directly without a recovery session -> sent away (login when signed out)', () => {
-    renderPage(fakeAuth(null));
-    expect(screen.getByText('LOGIN')).toBeInTheDocument();
+const newPassword = () => screen.getByLabelText('New password');
+const confirm = () => screen.getByLabelText('Confirm new password');
+const submit = () => screen.getByRole('button', { name: /^Update password$|^Updating…$/ });
+
+describe('ResetPasswordPage — who is allowed to see it', () => {
+  it('shows the loading view while the session resolves', () => {
+    renderReset({ isInitialising: true });
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
   });
 
-  it('signed-in user without recovery session is sent home', () => {
-    renderPage(fakeAuth(adminProfile, { session }));
-    expect(screen.getByText('HOME')).toBeInTheDocument();
-  });
-
-  it('an expired/used link shows the error instead of silently redirecting', () => {
-    renderPage(fakeAuth(null, { authLinkError: 'Email link is invalid or has expired' }));
+  it('explains a rejected or expired link instead of silently redirecting, and points back to sign-in', () => {
+    renderReset({ currentProfile: null, needsPasswordReset: false, authLinkError: 'Email link is invalid or has expired' });
     expect(screen.getByText('Email link is invalid or has expired')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'sign in' })).toHaveAttribute('href', '/login');
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
   });
 
-  it('submit is disabled for passwords shorter than 6 chars or mismatched', async () => {
-    const user = userEvent.setup();
-    renderPage(recovery());
-    const submit = screen.getByRole('button', { name: /update|set|save|reset/i });
-    await user.type(pw(), '12345');
-    await user.type(confirm(), '12345');
-    expect(submit).toBeDisabled();
-    await user.type(pw(), '6');
-    expect(submit).toBeDisabled(); // confirm still 12345
-    await user.type(confirm(), '6');
-    expect(submit).toBeEnabled();
+  it('sends a signed-out visitor who typed the URL to /login', () => {
+    renderReset({ currentProfile: null, session: null, needsPasswordReset: false });
+    expect(screen.getByText('Login screen')).toBeInTheDocument();
   });
 
-  it('a valid new password is set and the user lands in the app', async () => {
-    const auth = recovery();
-    const user = userEvent.setup();
-    renderPage(auth);
-    await user.type(pw(), 'brand-new-pass');
-    await user.type(confirm(), 'brand-new-pass');
-    await user.click(screen.getByRole('button', { name: /update|set|save|reset/i }));
-    expect(auth.updatePassword).toHaveBeenCalledWith('brand-new-pass');
-    expect(await screen.findByText('HOME')).toBeInTheDocument();
+  it('sends a signed-in user who is not in recovery back to the app', () => {
+    renderReset({ currentProfile: buildProfile(), needsPasswordReset: false });
+    expect(screen.getByText('Members screen')).toBeInTheDocument();
   });
 
-  it('a failing update keeps the form and reports the failure', async () => {
-    const auth = fakeAuth(adminProfile, { needsPasswordReset: true, session, updatePassword: vi.fn().mockRejectedValue(new Error('weak')) });
-    const user = userEvent.setup();
-    renderPage(auth);
-    await user.type(pw(), 'brand-new-pass');
-    await user.type(confirm(), 'brand-new-pass');
-    await user.click(screen.getByRole('button', { name: /update|set|save|reset/i }));
-    expect(await screen.findByText(/Could not update your password/)).toBeInTheDocument();
+  it('sends a recovery attempt that ended with no session (blocked account) to /login', () => {
+    renderReset({ needsPasswordReset: true, currentProfile: null, session: null });
+    expect(screen.getByText('Login screen')).toBeInTheDocument();
+  });
+});
+
+describe('ResetPasswordPage — setting the new password', () => {
+  it('keeps Update password disabled until the password is 6+ characters AND confirmed', async () => {
+    const { user } = renderReset(recovery());
+    expect(submit()).toBeDisabled();
+
+    await user.type(newPassword(), 'abc');
+    await user.type(confirm(), 'abc');
+    expect(submit()).toBeDisabled(); // matching but too short
+
+    await user.clear(newPassword());
+    await user.clear(confirm());
+    await user.type(newPassword(), 'secret1');
+    await user.type(confirm(), 'secret2');
+    expect(submit()).toBeDisabled(); // long enough but not matching
+
+    await user.clear(confirm());
+    await user.type(confirm(), 'secret1');
+    expect(submit()).toBeEnabled();
+  });
+
+  it('hints the browser that these are NEW passwords (so password managers offer to save, not fill)', () => {
+    renderReset(recovery());
+    expect(newPassword()).toHaveAttribute('autocomplete', 'new-password');
+    expect(confirm()).toHaveAttribute('autocomplete', 'new-password');
+  });
+
+  it('updates the password and goes to the Action Center', async () => {
+    const { user, auth } = renderReset(recovery());
+    await user.type(newPassword(), 'secret1');
+    await user.type(confirm(), 'secret1');
+    await user.click(submit());
+
+    expect(auth.updatePassword).toHaveBeenCalledWith('secret1');
+    expect(await screen.findByText('Action Center screen')).toBeInTheDocument();
+  });
+
+  it('locks the form while updating', async () => {
+    const { user, auth } = renderReset(recovery());
+    (auth.updatePassword as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => undefined));
+    await user.type(newPassword(), 'secret1');
+    await user.type(confirm(), 'secret1');
+    await user.click(submit());
+
+    expect(screen.getByRole('button', { name: 'Updating…' })).toBeDisabled();
+    expect(newPassword()).toBeDisabled();
+    expect(confirm()).toBeDisabled();
+  });
+
+  it('a failed update shows a message, keeps the user here and re-enables the form', async () => {
+    const { user, auth } = renderReset(recovery());
+    (auth.updatePassword as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('weak password'));
+    await user.type(newPassword(), 'secret1');
+    await user.type(confirm(), 'secret1');
+    await user.click(submit());
+
+    expect(await screen.findByText('Could not update your password. Please try again.')).toBeInTheDocument();
+    expect(screen.queryByText(/weak password/)).not.toBeInTheDocument();
+    expect(newPassword()).toBeEnabled();
+    expect(screen.queryByText('Action Center screen')).not.toBeInTheDocument();
+  });
+});
+
+describe('buildAuth', () => {
+  it('derives the session from the profile, so "no profile" really means signed out', () => {
+    expect(buildAuth({ currentProfile: null }).session).toBeNull();
+    expect(buildAuth().session).not.toBeNull();
   });
 });

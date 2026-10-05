@@ -6,12 +6,14 @@ import { useAuth } from '../context/auth.context';
 import { todayDate } from '../lib/datetime';
 import { withTimeout } from '../lib/with-timeout';
 import { sanitizeDigits, sanitizeDecimal } from '../lib/input-masks';
+import { BackLink } from '../components/BackLink';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import type { Branch } from '../types/branch';
 import type { Gender } from '../types/member';
 import type { Profile } from '../types/profile';
 import type { MemberFormErrors, NewMemberDraft } from '../services/member.service';
 import './AddMemberPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
@@ -45,6 +47,7 @@ function emptyDraft(handledByStaffId: string): NewMemberDraft {
     emergency_contact_relationship: '',
     email: '',
     residential_address: '',
+    pincode: '',
     aadhaar_number: '',
     occupation: '',
     handled_by_staff: handledByStaffId,
@@ -89,7 +92,7 @@ export function AddMemberPage() {
       setProfiles(profileData);
       setBranchLoadState('loaded');
     } catch (err) {
-      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setBranchLoadState(isNetwork ? 'network-error' : 'generic-error');
     }
   }
@@ -112,6 +115,18 @@ export function AddMemberPage() {
   function handleBlur(field: keyof NewMemberDraft) {
     setTouched((prev) => ({ ...prev, [field]: true }));
     setErrors(memberService.validateNewMember({ ...form }));
+  }
+
+  /** Gender is chip buttons, not a native input — there's no separate blur event, so the
+   * value update and validation have to happen together against the same merged draft.
+   * (Calling updateField() then handleBlur('gender') back to back would validate against
+   * the pre-update `form` closure, since setForm's update hasn't committed yet — that
+   * flashed a spurious "Select a gender" error on the very first selection.) */
+  function selectGender(gender: Gender) {
+    const next = { ...form, gender };
+    setForm(next);
+    setTouched((prev) => ({ ...prev, gender: true }));
+    setErrors(memberService.validateNewMember(next));
   }
 
   function handlePhotoSelected(file: File | undefined) {
@@ -149,7 +164,7 @@ export function AddMemberPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('phone')) {
         setSaveError('This phone number is already used by another member.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setSaveError("Couldn't save this member — check your connection and try again.");
       } else {
         setSaveError('Something went wrong saving this member. Please try again.');
@@ -188,6 +203,7 @@ export function AddMemberPage() {
 
   return (
     <div className="add-member-page">
+      <BackLink to="/">Members</BackLink>
       <h1>Add Member</h1>
       <p className="add-member-subtitle">Subscription is sold separately after the member is created.</p>
 
@@ -305,10 +321,7 @@ export function AddMemberPage() {
                     key={gender}
                     type="button"
                     className={`add-member-chip${form.gender === gender ? ' add-member-chip-selected' : ''}`}
-                    onClick={() => {
-                      updateField('gender', gender);
-                      handleBlur('gender');
-                    }}
+                    onClick={() => selectGender(gender)}
                   >
                     {gender}
                   </button>
@@ -502,12 +515,25 @@ export function AddMemberPage() {
               />
             </div>
 
+            <div className="add-member-field">
+              <label htmlFor="pincode">Pincode</label>
+              <input
+                id="pincode"
+                inputMode="numeric"
+                placeholder="6-digit pincode"
+                value={form.pincode}
+                onChange={(e) => updateField('pincode', sanitizeDigits(e.target.value, 6))}
+                onBlur={() => handleBlur('pincode')}
+              />
+              {showError('pincode') && <p className="add-member-error">{errors.pincode}</p>}
+            </div>
+
             <div className="add-member-field add-member-field-span-2">
               <label htmlFor="residential_address">Residential address</label>
               <textarea
                 id="residential_address"
-                rows={4}
-                placeholder="Street, city, state"
+                rows={3}
+                placeholder="Door / flat no, street, area, city, state"
                 value={form.residential_address}
                 onChange={(e) => updateField('residential_address', e.target.value)}
               />

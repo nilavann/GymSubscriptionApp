@@ -6,7 +6,10 @@ import { withTimeout } from '../lib/with-timeout';
 import type { AuthContextValue } from '../types/auth';
 import type { Profile } from '../types/profile';
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Exported only as a test seam: component/page tests wrap the tree in
+// `<AuthContext.Provider value={…}>` (src/test/render.tsx) instead of module-mocking `useAuth`.
+// App code reads auth through `useAuth()` only.
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 const NOT_INVITED_MESSAGE = "This email hasn't been invited — contact your admin.";
 const DEACTIVATED_MESSAGE = 'Your account has been deactivated. Contact an admin.';
@@ -34,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [isInitialising, setIsInitialising] = useState(true);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
   const [authLinkError, setAuthLinkError] = useState<string | null>(null);
 
@@ -170,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setCurrentProfile(null);
       setBlockedMessage(SESSION_EXPIRED_MESSAGE);
+      setSessionExpired(true);
       authService.signOut().catch(() => {});
     }
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
@@ -186,6 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     isInitialising,
     blockedMessage,
+    sessionExpired,
+    clearSessionExpired: () => setSessionExpired(false),
     authLinkError,
     needsPasswordReset,
     signInWithPassword: authService.signInWithPassword,

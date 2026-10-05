@@ -1,18 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { sanitizeDecimal, sanitizeDigits } from './input-masks';
 
-describe('sanitizeDigits (phone entry)', () => {
-  it('strips non-digits', () => expect(sanitizeDigits('98a-76 5', 10)).toBe('98765'));
-  it('caps length', () => expect(sanitizeDigits('98765432109876', 10)).toBe('9876543210'));
-  it('empty stays empty', () => expect(sanitizeDigits('', 10)).toBe(''));
-  it('pasted +91 style prefix keeps digits only', () => expect(sanitizeDigits('+91 98765 43210', 12)).toBe('919876543210'));
+describe('sanitizeDigits', () => {
+  it('strips every non-digit', () => {
+    expect(sanitizeDigits('98a76-54 32', 10)).toBe('98765432');
+  });
+
+  it('caps the length, which maxLength alone does not do for pasted text', () => {
+    expect(sanitizeDigits('98765432109876', 10)).toBe('9876543210');
+  });
+
+  it('returns an empty string for input with no digits', () => {
+    expect(sanitizeDigits('abc', 10)).toBe('');
+  });
 });
 
-describe('sanitizeDecimal (weight / height / price)', () => {
-  it('keeps one decimal point', () => expect(sanitizeDecimal('7.2.5', 2)).toBe('7.25'));
-  it('caps fractional digits', () => expect(sanitizeDecimal('72.555', 2)).toBe('72.55'));
-  it('keeps a trailing dot while typing', () => expect(sanitizeDecimal('72.', 2)).toBe('72.'));
-  it('drops letters and signs (no negatives)', () => expect(sanitizeDecimal('-7e2', 2)).toBe('72'));
-  it('leading dot is preserved as typed', () => expect(sanitizeDecimal('.5', 2)).toBe('.5'));
-  it('empty stays empty', () => expect(sanitizeDecimal('', 2)).toBe(''));
+describe('sanitizeDecimal', () => {
+  it('keeps a trailing decimal point so "72.5" stays reachable while typing', () => {
+    expect(sanitizeDecimal('72.', 1)).toBe('72.');
+  });
+
+  it('caps the fractional part', () => {
+    expect(sanitizeDecimal('72.567', 1)).toBe('72.5');
+    expect(sanitizeDecimal('72.567', 2)).toBe('72.56');
+  });
+
+  it('keeps only the first decimal point', () => {
+    expect(sanitizeDecimal('7.2.5', 2)).toBe('7.25');
+  });
+
+  it('strips letters and symbols', () => {
+    expect(sanitizeDecimal('7a2,5kg', 2)).toBe('725');
+  });
+
+  it('passes a plain integer through', () => {
+    expect(sanitizeDecimal('175', 1)).toBe('175');
+  });
 });

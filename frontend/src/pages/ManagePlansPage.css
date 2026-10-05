@@ -98,8 +98,8 @@
 }
 
 .plans-pill-active {
-  background: var(--tint-accent);
-  border-color: var(--tint-accent);
+  background: var(--tint-solid);
+  border-color: var(--tint-solid);
   color: var(--color-text-inverse);
   font-weight: 700;
 }
@@ -216,7 +216,7 @@
 .plans-chip-selected {
   background: var(--tint-pill-bg);
   border-color: var(--tint-border);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
   font-weight: 700;
 }
 
@@ -295,7 +295,7 @@
 
 .plans-category-membership {
   background: var(--tint-pill-bg);
-  color: var(--tint-accent);
+  color: var(--tint-on-pill);
 }
 
 .plans-category-addon {

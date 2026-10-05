@@ -1,44 +1,53 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const createSignedUrls = vi.hoisted(() => vi.fn());
-vi.mock('./supabase-client', () => ({ supabase: { storage: { from: () => ({ createSignedUrls }) } } }));
+const { createSignedUrls } = vi.hoisted(() => ({ createSignedUrls: vi.fn() }));
+vi.mock('./supabase-client', () => ({
+  supabase: { storage: { from: () => ({ createSignedUrls }) } },
+}));
+
 import { resolvePhotoUrls } from './photo-urls';
 
-const row = (id: number, photo_url: string | null, photo_thumbnail_url: string | null) => ({ id, photo_url, photo_thumbnail_url });
+const row = (photo_url: string | null, photo_thumbnail_url: string | null) => ({ id: 1, photo_url, photo_thumbnail_url });
 
-beforeEach(() => createSignedUrls.mockReset());
+describe('resolvePhotoUrls', () => {
+  beforeEach(() => {
+    createSignedUrls.mockReset();
+  });
 
-describe('resolvePhotoUrls (private member-photos bucket, REQ-MEM-004)', () => {
-  it('does not call storage at all when no row has a photo', async () => {
-    const rows = [row(1, null, null)];
-    expect(await resolvePhotoUrls(rows)).toBe(rows);
+  it('replaces storage paths with signed URLs using ONE batched call, de-duplicating paths', async () => {
+    createSignedUrls.mockResolvedValue({
+      data: [
+        { path: 'a/full.jpg', signedUrl: 'https://signed/full' },
+        { path: 'a/thumb.jpg', signedUrl: 'https://signed/thumb' },
+      ],
+      error: null,
+    });
+
+    const rows = [row('a/full.jpg', 'a/thumb.jpg'), row('a/full.jpg', 'a/thumb.jpg')];
+    const resolved = await resolvePhotoUrls(rows);
+
+    expect(createSignedUrls).toHaveBeenCalledTimes(1);
+    expect(createSignedUrls).toHaveBeenCalledWith(['a/full.jpg', 'a/thumb.jpg'], 3600);
+    expect(resolved).toEqual([
+      row('https://signed/full', 'https://signed/thumb'),
+      row('https://signed/full', 'https://signed/thumb'),
+    ]);
+  });
+
+  it('makes no network call at all when no row has a photo, and returns the rows untouched', async () => {
+    const rows = [row(null, null)];
+    await expect(resolvePhotoUrls(rows)).resolves.toBe(rows);
     expect(createSignedUrls).not.toHaveBeenCalled();
   });
 
-  it('replaces stored paths with short-lived signed URLs, in ONE batched call for all rows', async () => {
-    createSignedUrls.mockResolvedValue({ data: [
-      { path: '1/o.jpg', signedUrl: 'https://s/o1' }, { path: '1/t.jpg', signedUrl: 'https://s/t1' },
-      { path: '2/t.jpg', signedUrl: 'https://s/t2' },
-    ], error: null });
-    const out = await resolvePhotoUrls([row(1, '1/o.jpg', '1/t.jpg'), row(2, null, '2/t.jpg')]);
-    expect(createSignedUrls).toHaveBeenCalledTimes(1);
-    expect(createSignedUrls).toHaveBeenCalledWith(expect.arrayContaining(['1/o.jpg', '1/t.jpg', '2/t.jpg']), 3600);
-    expect(out).toEqual([row(1, 'https://s/o1', 'https://s/t1'), row(2, null, 'https://s/t2')]);
-  });
-
-  it('de-duplicates identical paths', async () => {
-    createSignedUrls.mockResolvedValue({ data: [{ path: 'a.jpg', signedUrl: 'u' }], error: null });
-    await resolvePhotoUrls([row(1, 'a.jpg', 'a.jpg'), row(2, 'a.jpg', null)]);
-    expect(createSignedUrls.mock.calls[0][0]).toEqual(['a.jpg']);
-  });
-
-  it('a path that could not be signed becomes null rather than leaking the raw path', async () => {
+  it('nulls a photo whose path did not come back signed', async () => {
     createSignedUrls.mockResolvedValue({ data: [], error: null });
-    expect(await resolvePhotoUrls([row(1, 'x.jpg', 'y.jpg')])).toEqual([row(1, null, null)]);
+    await expect(resolvePhotoUrls([row('gone.jpg', null)])).resolves.toEqual([row(null, null)]);
   });
 
-  it('storage errors propagate', async () => {
-    createSignedUrls.mockResolvedValue({ data: null, error: new Error('nope') });
-    await expect(resolvePhotoUrls([row(1, 'x.jpg', null)])).rejects.toThrow('nope');
+  it('throws when Storage returns an error, so the caller can show its retry state', async () => {
+    const failure = new Error('storage down');
+    createSignedUrls.mockResolvedValue({ data: null, error: failure });
+    await expect(resolvePhotoUrls([row('a.jpg', null)])).rejects.toBe(failure);
   });
 });

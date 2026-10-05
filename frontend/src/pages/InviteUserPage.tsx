@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Send } from 'lucide-react';
+import { RefreshCw, Send } from 'lucide-react';
 import { useServices } from '../context/services.context';
 import { AdminTabs } from '../components/AdminTabs';
+import { BackLink } from '../components/BackLink';
 import type { InviteUserDraft, InviteUserFormErrors } from '../services/user.service';
 import type { Role } from '../types/role';
 import './InviteUserPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 function emptyDraft(): InviteUserDraft {
   return { email: '', full_name: '', roles: [] };
@@ -50,7 +52,7 @@ export function InviteUserPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('already registered')) {
         setSubmitError('This email is already registered.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setSubmitError("Couldn't send the invite — check your connection and try again.");
       } else {
         setSubmitError('Something went wrong sending the invite. Please try again.');
@@ -62,10 +64,7 @@ export function InviteUserPage() {
 
   return (
     <div className="invite-user-page">
-      <button type="button" className="invite-user-back-link" onClick={() => navigate('/users')}>
-        <ArrowLeft size={16} strokeWidth={2} />
-        Manage Users
-      </button>
+      <BackLink to="/users">Manage Users</BackLink>
 
       <h1>Invite User</h1>
 

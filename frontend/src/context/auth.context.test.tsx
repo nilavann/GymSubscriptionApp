@@ -1,170 +1,292 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { allowConsoleError } from '../test/console';
+import { fakeServices } from '../test/fakes';
+import { buildProfile } from '../test/builders';
 
-// A controllable stand-in for supabase.auth: tests push session/auth events through it.
-const auth = vi.hoisted(() => {
-  const state: { listener: ((event: string, session: unknown) => void) | null; session: unknown } = { listener: null, session: null };
-  return {
-    state,
-    getSession: vi.fn(async () => ({ data: { session: state.session } })),
-    onAuthStateChange: vi.fn((cb: (event: string, session: unknown) => void) => {
-      state.listener = cb;
-      return { data: { subscription: { unsubscribe: vi.fn() } } };
-    }),
-  };
-});
+// The provider reads the REAL supabase client for the session and auth events (everything else — the profile
+// lookup and sign-out — comes through useServices(), so those are plain fakes).
+const supabaseAuth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
 vi.mock('../lib/supabase-client', () => ({
-  supabase: { auth: { getSession: auth.getSession, onAuthStateChange: auth.onAuthStateChange } },
+  supabase: { auth: supabaseAuth },
   SESSION_EXPIRED_EVENT: 'supabase:session-expired',
 }));
 
-const profileRepository = { getById: vi.fn() };
-const authService = {
-  signOut: vi.fn().mockResolvedValue(undefined),
-  updatePassword: vi.fn().mockResolvedValue(undefined),
-  signInWithPassword: vi.fn(),
-  signInWithOAuth: vi.fn(),
-  resetPasswordForEmail: vi.fn(),
-};
-vi.mock('./services.context', () => ({ useServices: () => ({ authService, profileRepository }) }));
-
 import { AuthProvider, useAuth } from './auth.context';
+import { ServicesProvider } from './services.context';
 
-function Probe() {
-  const a = useAuth();
-  return (
-    <div>
-      <span data-testid="init">{String(a.isInitialising)}</span>
-      <span data-testid="profile">{a.currentProfile?.full_name ?? 'none'}</span>
-      <span data-testid="blocked">{a.blockedMessage ?? ''}</span>
-      <span data-testid="link-error">{a.authLinkError ?? ''}</span>
-      <span data-testid="needs-reset">{String(a.needsPasswordReset)}</span>
-      <button onClick={() => a.updatePassword('x')}>update</button>
-    </div>
+const SESSION = { user: { id: 'u1', email: 'priya@fitandfine.in' } } as unknown as Session;
+const ACTIVE = buildProfile({ id: 'u1', full_name: 'Priya Sharma', is_active: true });
+
+let emit: (event: AuthChangeEvent, session: Session | null) => void;
+const unsubscribe = vi.fn();
+
+function setup(options: { getById?: ReturnType<typeof vi.fn>; session?: Session | null } = {}) {
+  const { getById = vi.fn().mockResolvedValue(ACTIVE), session = SESSION } = options;
+  const authService = {
+    signOut: vi.fn().mockResolvedValue(undefined),
+    updatePassword: vi.fn().mockResolvedValue(undefined),
+    signInWithPassword: vi.fn().mockResolvedValue(undefined),
+    signInWithOAuth: vi.fn().mockResolvedValue(undefined),
+    resetPasswordForEmail: vi.fn().mockResolvedValue(undefined),
+  };
+  supabaseAuth.getSession.mockResolvedValue({ data: { session } });
+  supabaseAuth.onAuthStateChange.mockImplementation((callback: typeof emit) => {
+    emit = callback;
+    return { data: { subscription: { unsubscribe } } };
+  });
+
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <ServicesProvider services={fakeServices({ authService, profileRepository: { getById } })}>
+      <AuthProvider>{children}</AuthProvider>
+    </ServicesProvider>
   );
+  const utils = renderHook(() => useAuth(), { wrapper });
+  return { ...utils, authService, getById };
 }
-const mount = () => render(<AuthProvider><Probe /></AuthProvider>);
-const sess = { user: { id: 'u1' } };
-const active = { id: 'u1', full_name: 'Sam Staff', roles: ['staff'], is_active: true };
 
-describe('AuthProvider (REQ-AUTH-001/003/004, REQ-ADMIN-006 deactivation)', () => {
-  beforeEach(() => {
-    vi.useRealTimers();
-    auth.state.session = null;
-    auth.state.listener = null;
-    profileRepository.getById.mockReset();
-    authService.signOut.mockReset().mockResolvedValue(undefined);
-    authService.updatePassword.mockReset().mockResolvedValue(undefined);
-    window.history.replaceState(null, '', '/');
+beforeEach(() => {
+  supabaseAuth.getSession.mockReset();
+  supabaseAuth.onAuthStateChange.mockReset();
+  unsubscribe.mockReset();
+  window.history.replaceState(null, '', '/');
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+/** NOTE: with fake timers, use `vi.waitFor` (it advances them) — RTL's `waitFor` drains with a setTimeout(0) that the fake
+ *  clock freezes, so it hangs. The 500ms profile-retry timer is only CREATED after getSession() and the first lookup have settled, so
+ *  flush those microtasks first — advancing the clock before the timer exists would advance nothing. */
+async function waitOutProfileRetry() {
+  await act(async () => {
+    for (let i = 0; i < 5; i++) await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(500);
+  });
+}
+
+describe('AuthProvider — resolving the session on load', () => {
+  it('is initialising until the session check finishes, then signed out when there is none', async () => {
+    const { result } = setup({ session: null });
+    expect(result.current.isInitialising).toBe(true);
+    await waitFor(() => expect(result.current.isInitialising).toBe(false));
+    expect(result.current.currentProfile).toBeNull();
+    expect(result.current.session).toBeNull();
   });
 
-  it('no session: initialised, no profile, nothing blocked', async () => {
-    mount();
-    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'));
-    expect(screen.getByTestId('profile')).toHaveTextContent('none');
-    expect(screen.getByTestId('blocked')).toHaveTextContent('');
+  it('signs in a session whose profile is active, clearing any earlier block', async () => {
+    const { result, getById } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+    expect(result.current.session).toBe(SESSION);
+    expect(result.current.isInitialising).toBe(false);
+    expect(result.current.blockedMessage).toBeNull();
+    expect(getById).toHaveBeenCalledWith('u1');
   });
 
-  it('REQ-AUTH-004: any sign-in method resolves to the same active profile and role set', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValue(active);
-    mount();
-    await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent('Sam Staff'));
-    expect(profileRepository.getById).toHaveBeenCalledWith('u1');
+  it('absorbs the invite race: retries ONCE after a short wait when the profile row does not exist yet', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const getById = vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(ACTIVE);
+    const { result } = setup({ getById });
+
+    await waitOutProfileRetry();
+    await vi.waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE)); // vi.waitFor, not RTL's: see waitOutProfileRetry
+    expect(getById).toHaveBeenCalledTimes(2);
+    expect(result.current.blockedMessage).toBeNull();
+  });
+});
+
+describe('AuthProvider — accounts that must never keep a session', () => {
+  it('a user who was never invited (still no profile after the retry) is blocked AND signed out of Supabase', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { result, authService } = setup({ getById: vi.fn().mockResolvedValue(null) });
+
+    await waitOutProfileRetry();
+    await vi.waitFor(() => expect(result.current.blockedMessage).toBe("This email hasn't been invited — contact your admin."));
+    expect(result.current.currentProfile).toBeNull();
+    expect(result.current.session).toBeNull();
+    expect(authService.signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('REQ-AUTH-003: a session with NO profile row (e.g. Google, never invited) is blocked, message shown, session signed back out', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValue(null);
-    mount();
-    await act(async () => { await vi.advanceTimersByTimeAsync(600); }); // covers the single retry delay
-    await waitFor(() => expect(screen.getByTestId('blocked')).toHaveTextContent("This email hasn't been invited — contact your admin."));
-    expect(screen.getByTestId('profile')).toHaveTextContent('none');
-    expect(authService.signOut).toHaveBeenCalled();
-    expect(profileRepository.getById).toHaveBeenCalledTimes(2); // one retry absorbs the invite-trigger race
+  it('a deactivated user is blocked with its own message and signed out', async () => {
+    const { result, authService } = setup({ getById: vi.fn().mockResolvedValue({ ...ACTIVE, is_active: false }) });
+    await waitFor(() => expect(result.current.blockedMessage).toBe('Your account has been deactivated. Contact an admin.'));
+    expect(result.current.currentProfile).toBeNull();
+    expect(authService.signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('a brand-new invited account whose profile appears on the retry is let in (race absorbed)', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValueOnce(null).mockResolvedValueOnce(active);
-    mount();
-    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
-    await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent('Sam Staff'));
+  it('a profile LOOKUP FAILURE withholds access but does NOT sign the user out (it is not the account’s fault)', async () => {
+    const { result, authService } = setup({ getById: vi.fn().mockRejectedValue(new Error('Failed to fetch')) });
+    await waitFor(() =>
+      expect(result.current.blockedMessage).toBe("Couldn't verify your account — check your connection and try again.")
+    );
+    expect(result.current.currentProfile).toBeNull();
+    expect(result.current.isInitialising).toBe(false);
     expect(authService.signOut).not.toHaveBeenCalled();
   });
 
-  it('a deactivated account gets the distinct deactivation message and is signed out (REQ-ADMIN-004)', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValue({ ...active, is_active: false });
-    mount();
-    await waitFor(() => expect(screen.getByTestId('blocked')).toHaveTextContent('Your account has been deactivated. Contact an admin.'));
-    expect(screen.getByTestId('profile')).toHaveTextContent('none');
-    expect(authService.signOut).toHaveBeenCalled();
+  it('never lets a slow, stale lookup undo a newer sign-out', async () => {
+    let resolveSlow!: (profile: typeof ACTIVE) => void;
+    const getById = vi.fn().mockReturnValue(new Promise((resolve) => (resolveSlow = resolve)));
+    const { result } = setup({ getById });
+    await waitFor(() => expect(getById).toHaveBeenCalled());
+
+    act(() => emit('SIGNED_OUT', null)); // the user signs out while the first lookup is still in flight
+    await waitFor(() => expect(result.current.isInitialising).toBe(false));
+
+    await act(async () => resolveSlow(ACTIVE)); // …then the stale lookup finally returns
+    expect(result.current.currentProfile).toBeNull();
+    expect(result.current.session).toBeNull();
+  });
+});
+
+describe('AuthProvider — auth events', () => {
+  it('a new session arriving later signs the user in', async () => {
+    const { result } = setup({ session: null });
+    await waitFor(() => expect(result.current.isInitialising).toBe(false));
+
+    await act(async () => emit('SIGNED_IN', SESSION));
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
   });
 
-  it('a transient profile-fetch failure is NOT reported as "not invited" and does not sign the user out', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockRejectedValue(new Error('Failed to fetch'));
-    mount();
-    await waitFor(() => expect(screen.getByTestId('blocked')).toHaveTextContent(/Couldn't verify your account/));
-    expect(screen.getByTestId('blocked')).not.toHaveTextContent('invited');
-    expect(authService.signOut).not.toHaveBeenCalled();
-    expect(screen.getByTestId('profile')).toHaveTextContent('none');
+  it('PASSWORD_RECOVERY flags that a new password is required, until updatePassword succeeds', async () => {
+    const { result, authService } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+
+    await act(async () => emit('PASSWORD_RECOVERY', SESSION));
+    expect(result.current.needsPasswordReset).toBe(true);
+
+    await act(() => result.current.updatePassword('new-secret'));
+    expect(authService.updatePassword).toHaveBeenCalledWith('new-secret');
+    expect(result.current.needsPasswordReset).toBe(false);
   });
 
-  it('a later auth event with no session clears the profile (sign out)', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValue(active);
-    mount();
-    await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent('Sam Staff'));
-    await act(async () => { auth.state.listener?.('SIGNED_OUT', null); });
-    await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent('none'));
+  it('a failed updatePassword keeps the flag set (the user must still set one)', async () => {
+    const { result, authService } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+    await act(async () => emit('PASSWORD_RECOVERY', SESSION));
+    authService.updatePassword.mockRejectedValue(new Error('weak'));
+
+    await expect(act(() => result.current.updatePassword('x'))).rejects.toThrow('weak');
+    expect(result.current.needsPasswordReset).toBe(true);
   });
 
-  it('REQ-AUTH-005: PASSWORD_RECOVERY flags needsPasswordReset until the password is updated', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValue(active);
-    mount();
-    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'));
-    await act(async () => { auth.state.listener?.('PASSWORD_RECOVERY', sess); });
-    expect(screen.getByTestId('needs-reset')).toHaveTextContent('true');
-    await act(async () => { screen.getByText('update').click(); });
-    await waitFor(() => expect(screen.getByTestId('needs-reset')).toHaveTextContent('false'));
-    expect(authService.updatePassword).toHaveBeenCalledWith('x');
+  it('signing out clears a stale recovery flag so it can never block a later ordinary sign-in', async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+    await act(async () => emit('PASSWORD_RECOVERY', SESSION));
+    expect(result.current.needsPasswordReset).toBe(true);
+
+    await act(async () => emit('SIGNED_OUT', null));
+    expect(result.current.needsPasswordReset).toBe(false);
   });
 
-  it('a stale recovery flag is dropped when the session goes away', async () => {
-    mount();
-    await act(async () => { auth.state.listener?.('PASSWORD_RECOVERY', sess); });
-    await act(async () => { auth.state.listener?.('SIGNED_OUT', null); });
-    expect(screen.getByTestId('needs-reset')).toHaveTextContent('false');
+  it('re-checks the session when the tab becomes visible again (a token revoked or account deactivated while backgrounded)', async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+    expect(supabaseAuth.getSession).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(supabaseAuth.getSession).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(supabaseAuth.getSession).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('AuthProvider — a mid-session 401', () => {
+  it('signs the user out locally, explains why, and flags the signed-out screen', async () => {
+    const { result, authService } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+
+    act(() => {
+      window.dispatchEvent(new Event('supabase:session-expired'));
+    });
+
+    expect(result.current.currentProfile).toBeNull();
+    expect(result.current.session).toBeNull();
+    expect(result.current.sessionExpired).toBe(true);
+    expect(result.current.blockedMessage).toBe('Your session has expired. Please sign in again.');
+    expect(authService.signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('an expired/used auth link in the URL hash is surfaced as authLinkError and removed from the address bar', async () => {
-    window.history.replaceState(null, '', '/#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired');
-    mount();
-    await waitFor(() => expect(screen.getByTestId('link-error')).toHaveTextContent('Email link is invalid or has expired'));
+  it('does not surface a failing best-effort sign-out cleanup', async () => {
+    const { result, authService } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+    authService.signOut.mockRejectedValue(new Error('already invalid'));
+
+    expect(() =>
+      act(() => {
+        window.dispatchEvent(new Event('supabase:session-expired'));
+      })
+    ).not.toThrow();
+    expect(result.current.sessionExpired).toBe(true);
+  });
+
+  it('clearSessionExpired dismisses the flag', async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.currentProfile).toEqual(ACTIVE));
+    act(() => {
+      window.dispatchEvent(new Event('supabase:session-expired'));
+    });
+    act(() => result.current.clearSessionExpired());
+    expect(result.current.sessionExpired).toBe(false);
+  });
+});
+
+describe('AuthProvider — a rejected link (expired reset / invite / OAuth)', () => {
+  it('surfaces the link’s error description and tidies it out of the address bar', async () => {
+    window.history.replaceState(null, '', '/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired');
+    const { result } = setup({ session: null });
+
+    await waitFor(() => expect(result.current.authLinkError).toBe('Email link is invalid or has expired'));
     expect(window.location.hash).toBe('');
+    expect(window.location.pathname).toBe('/reset-password');
   });
 
-  it('a mid-session 401 (SESSION_EXPIRED event) drops the profile and explains why', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValue(active);
-    mount();
-    await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent('Sam Staff'));
-    await act(async () => { window.dispatchEvent(new Event('supabase:session-expired')); });
-    expect(screen.getByTestId('profile')).toHaveTextContent('none');
-    expect(screen.getByTestId('blocked')).toHaveTextContent('Your session has expired. Please sign in again.');
+  it('also reads the error from the query string', async () => {
+    window.history.replaceState(null, '', '/login?error_description=Invite+expired');
+    const { result } = setup({ session: null });
+    await waitFor(() => expect(result.current.authLinkError).toBe('Invite expired'));
   });
 
-  it('tab regaining focus re-validates the account (a deactivation while backgrounded is caught)', async () => {
-    auth.state.session = sess;
-    profileRepository.getById.mockResolvedValueOnce(active).mockResolvedValue({ ...active, is_active: false });
-    mount();
-    await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent('Sam Staff'));
-    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
-    await waitFor(() => expect(screen.getByTestId('blocked')).toHaveTextContent(/deactivated/));
+  it('has no link error on a normal load', async () => {
+    const { result } = setup({ session: null });
+    await waitFor(() => expect(result.current.isInitialising).toBe(false));
+    expect(result.current.authLinkError).toBeNull();
+  });
+});
+
+describe('AuthProvider — wiring', () => {
+  it('exposes the auth service actions', async () => {
+    const { result, authService } = setup({ session: null });
+    await waitFor(() => expect(result.current.isInitialising).toBe(false));
+    await result.current.signInWithPassword('a@b.co', 'pw');
+    await result.current.signOut();
+    expect(authService.signInWithPassword).toHaveBeenCalledWith('a@b.co', 'pw');
+    expect(authService.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('cleans up its listeners on unmount', async () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const docRemove = vi.spyOn(document, 'removeEventListener');
+    const { unmount, result } = setup({ session: null });
+    await waitFor(() => expect(result.current.isInitialising).toBe(false));
+
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(docRemove.mock.calls.some(([type]) => type === 'visibilitychange')).toBe(true);
+    expect(add.mock.calls.some(([type]) => type === 'supabase:session-expired')).toBe(true);
+    expect(remove.mock.calls.some(([type]) => type === 'supabase:session-expired')).toBe(true);
+  });
+
+  it('useAuth outside the provider throws a clear error', () => {
+    allowConsoleError(/useAuth must be used inside AuthProvider/, /The above error occurred/);
+    expect(() => renderHook(() => useAuth())).toThrow('useAuth must be used inside AuthProvider');
   });
 });

@@ -1,0 +1,50 @@
+/* Membership status pills + status text — the ONE place these are declared (they used to be copied
+   into MemberDetailPage.css, MembersListPage.css and RenewSubscriptionPage.css, which is how a
+   re-skin drifts). Imported once from index.css, so every page gets them. CLAUDE.md "Mobile
+   conventions": never re-declare .status-badge-* in a page stylesheet.
+
+   Colors are the v3 mockup's STATUS_META (design_handoff_flexhub_mobile/Gym App Mockups v3.dc.html):
+     Active   neutral stone #f5f5f4 / #292524   — amber is reserved for "can still act", red for lapsed
+     Expiring light amber #fffbeb / #92400e
+     Expired  red         #fee2e2 / #b91c1c
+   Amber vs red differ in fill weight as well as hue so they survive cheap panels; and every pill
+   carries a text label, so status is never color alone. */
+
+.status-badge {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.status-badge-active {
+  background: var(--color-status-active-bg);
+  color: var(--color-status-active-text);
+}
+
+.status-badge-expiring {
+  background: var(--color-status-warning-bg-subtle);
+  color: var(--color-status-warning-text-deep);
+}
+
+.status-badge-expired {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-text);
+}
+
+/* Inline status-coloured text (e.g. a member card's expiry line). */
+.status-text-active {
+  color: var(--color-text-muted);
+}
+
+.status-text-expiring {
+  color: var(--color-status-warning-text-deep);
+}
+
+.status-text-expired {
+  color: var(--color-status-danger-text);
+}

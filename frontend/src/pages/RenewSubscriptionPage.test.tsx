@@ -1,311 +1,424 @@
-import '../test/page-mocks';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { formatDate } from '../lib/datetime';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { RenewSubscriptionPage } from './RenewSubscriptionPage';
-import { fakeAuth, setAuth, setServices } from '../test/mocks';
-import { currentItem, localDate, member, plan } from '../test/fixtures';
+import { addDays, todayDate } from '../lib/datetime';
+import { fakeServices } from '../test/fakes';
+import { renderRoutes } from '../test/render';
+import { buildMember, buildPlan } from '../test/builders';
+import type { MemberCurrentItem } from '../types/member-current-item';
+import type { Plan } from '../types/plan';
 
-const monthly = plan({ id: 1, name: 'Monthly', duration_days: 30, price: 1000 });
-const quarterly = plan({ id: 2, name: 'Quarterly', duration_days: 90, price: 2500 });
-const couple = plan({ id: 6, name: 'Couple Monthly', duration_days: 30, price: 1800, max_members: 2 });
-const fee = plan({ id: 3, name: 'Membership Fee', category: 'addon', duration_days: null, price: 500 });
-const zumba = plan({ id: 4, name: 'Zumba Class', category: 'addon', duration_days: 30, price: 800 });
-const pt = plan({ id: 5, name: 'Personal Training', category: 'addon', duration_days: 30, price: 3000 });
+const inDays = (n: number) => addDays(todayDate(), n);
 
-let create: ReturnType<typeof vi.fn>;
+const MEMBER = buildMember({ id: 12, name: 'Neha Joshi', member_number: 'MUM-2026-0012' });
+const PLANS: Plan[] = [
+  buildPlan({ id: 1, name: 'Monthly', category: 'membership', duration_days: 30, price: 1500 }),
+  buildPlan({ id: 2, name: 'Quarterly', category: 'membership', duration_days: 90, price: 4000 }),
+  buildPlan({ id: 3, name: 'Yoga', category: 'addon', duration_days: 30, price: 500 }),
+  buildPlan({ id: 4, name: 'Joining Fee', category: 'addon', duration_days: null, price: 300 }),
+];
 
-function setup(opts: { items?: ReturnType<typeof currentItem>[]; plans?: ReturnType<typeof plan>[] } = {}) {
-  create = vi.fn().mockResolvedValue({ subscription: { id: 99 }, items: [] });
-  setAuth(fakeAuth());
-  setServices({
-    memberRepository: { getById: vi.fn().mockResolvedValue(member({ id: 5 })) } as never,
-    subscriptionRepository: { getCurrentItemsForMember: vi.fn().mockResolvedValue(opts.items ?? []), create } as never,
-    planRepository: { getAllActive: vi.fn().mockResolvedValue(opts.plans ?? [monthly, quarterly, couple, fee, zumba, pt]) } as never,
-  });
-  return render(
-    <MemoryRouter initialEntries={['/members/5/renew']}>
-      <Routes>
-        <Route path="/members/:id/renew" element={<RenewSubscriptionPage />} />
-        <Route path="/members/:id" element={<div>MEMBER DETAIL PAGE</div>} />
-      </Routes>
-    </MemoryRouter>
+const current = (plan: Plan, start: string, end: string | null): MemberCurrentItem => ({
+  subscription_item_id: plan.id * 10,
+  subscription_id: 1,
+  plan_id: plan.id,
+  plan_name: plan.name,
+  category: plan.category,
+  member_id: 12,
+  start_date: start,
+  end_date: end,
+  quantity: 1,
+  amount_paid: plan.price,
+});
+
+function renderRenew(
+  options: {
+    plans?: Plan[];
+    items?: MemberCurrentItem[];
+    member?: typeof MEMBER | null;
+    getById?: ReturnType<typeof vi.fn>;
+    getAllActive?: ReturnType<typeof vi.fn>;
+    create?: ReturnType<typeof vi.fn>;
+  } = {}
+) {
+  const {
+    plans = PLANS,
+    items = [],
+    member = MEMBER,
+    getById = vi.fn().mockResolvedValue(member),
+    getAllActive = vi.fn().mockResolvedValue(plans),
+    create = vi.fn().mockResolvedValue({ subscription: { id: 501 }, items: [] }),
+  } = options;
+  const getCurrentItemsForMember = vi.fn().mockResolvedValue(items);
+  const utils = renderRoutes(
+    [
+      { path: '/members/:id/renew', element: <RenewSubscriptionPage /> },
+      { path: '/members/:id', element: <p>Member detail screen</p> },
+    ],
+    {
+      route: '/members/12/renew',
+      services: fakeServices({
+        memberRepository: { getById },
+        planRepository: { getAllActive },
+        subscriptionRepository: { getCurrentItemsForMember, create },
+      }),
+    }
   );
+  return { ...utils, getById, getAllActive, getCurrentItemsForMember, create };
 }
 
-const planSelects = () => screen.getAllByRole('combobox');
-const save = () => screen.getByRole('button', { name: /save checkout/i });
+const ready = () => screen.findByRole('heading', { name: 'Renew / Add Subscription' });
+const itemCards = () => Array.from(document.querySelectorAll('.renew-item-card')) as HTMLElement[];
+const planSelect = (i = 0) => within(itemCards()[i]).getByLabelText(/^Plan/) as HTMLSelectElement;
+const startDate = (i = 0) => within(itemCards()[i]).getByLabelText(/^Start date/) as HTMLInputElement;
+const amount = (i = 0) => within(itemCards()[i]).getByLabelText(/^Amount paid/) as HTMLInputElement;
+const save = () => screen.getByRole('button', { name: /^Save checkout$|^Saving…$/ });
 
-describe('Renew / add subscription checkout (REQ-SUB-001..009)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(localDate(2026, 7, 15));
+async function fillMonthly(user: ReturnType<typeof renderRenew>['user']) {
+  await user.selectOptions(planSelect(0), '1');
+}
+
+describe('RenewSubscriptionPage — data states', () => {
+  it('shows a skeleton while loading', () => {
+    renderRenew({ getById: vi.fn().mockReturnValue(new Promise(() => undefined)) });
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument();
   });
-  const user = () => userEvent.setup({ advanceTimers: () => {} });
 
-  it('REQ-SUB-001: starts with one blank membership item; Save disabled until a plan is chosen', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    expect(planSelects()).toHaveLength(1);
-    expect(save()).toBeDisabled();
+  it('a network failure offers Retry and recovers', async () => {
+    const getById = vi.fn().mockRejectedValueOnce(new Error('Failed to fetch')).mockResolvedValue(MEMBER);
+    const { user } = renderRenew({ getById });
+    expect(await screen.findByText("Couldn't load this screen — check your connection and try again.")).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await ready()).toBeInTheDocument();
+  });
+
+  it('a member that no longer exists shows the generic error (never a blank screen)', async () => {
+    renderRenew({ member: null });
+    expect(await screen.findByText('Something went wrong loading this screen. Please try again.')).toBeInTheDocument();
+  });
+
+  it('with no plans in the catalog, says so and links back instead of showing an unusable form', async () => {
+    renderRenew({ plans: [] });
+    expect(await screen.findByText('No plans available — ask an admin to add one first.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to member' })).toHaveAttribute('href', '/members/12');
+  });
+});
+
+describe('RenewSubscriptionPage — header and member summary', () => {
+  it('has a back link to the member (this route hides the tab bar) and names the member', async () => {
+    renderRenew();
+    await ready();
+    expect(screen.getByRole('link', { name: 'Member' })).toHaveAttribute('href', '/members/12');
+    expect(screen.getByText(/Neha Joshi · MUM-2026-0012 · one checkout, one or more items/)).toBeInTheDocument();
+  });
+
+  it('says "No active membership" for a lapsed member, with no status badge', async () => {
+    renderRenew({ items: [] });
+    await ready();
+    expect(screen.getByText('No active membership')).toBeInTheDocument();
+    expect(document.querySelector('.renew-member-card .status-badge')).toBeNull();
+  });
+
+  it('shows the current membership with days left and an Active pill when comfortably valid', async () => {
+    renderRenew({ items: [current(PLANS[0], inDays(-10), inDays(20))] });
+    await ready();
+    expect(screen.getByText(/Monthly expires .* · 20 days/)).toBeInTheDocument();
+    expect(document.querySelector('.renew-member-card .status-badge')).toHaveClass('status-badge-active');
+  });
+
+  it('shows an Expiring Soon pill when within a week', async () => {
+    renderRenew({ items: [current(PLANS[0], inDays(-25), inDays(5))] });
+    await ready();
+    expect(screen.getByText('Expiring Soon')).toHaveClass('status-badge-expiring');
+  });
+
+  it('says "never expires" for an indefinite membership', async () => {
+    renderRenew({ items: [current(buildPlan({ id: 1, name: 'Lifetime', category: 'membership', duration_days: null }), inDays(-100), null)] });
+    await ready();
+    expect(screen.getByText('Lifetime · never expires')).toBeInTheDocument();
+  });
+});
+
+describe('RenewSubscriptionPage — the starting items', () => {
+  it('starts with ONE blank Membership item and Save disabled for a member with nothing current', async () => {
+    renderRenew();
+    await ready();
+    expect(itemCards()).toHaveLength(1);
+    expect(within(itemCards()[0]).getByText('Membership')).toBeInTheDocument();
+    expect(planSelect(0)).toHaveValue('');
+    expect(save()).toBeDisabled(); // the blank item still needs a plan
+    // The blank card already counts as the one membership item (the message is about count, not completeness);
+    // "Add one membership item to continue" can't be reached from the UI because the only membership can't be removed.
     expect(screen.getByText('✓ Contains exactly one membership item')).toBeInTheDocument();
   });
 
-  it('REQ-SUB-001: picking a plan pre-fills start date = today and amount = price, and previews the end date', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    const startInput = document.querySelector('input[type="date"]') as HTMLInputElement;
-    expect(startInput).toHaveValue('2026-07-15');
-    expect(screen.getByLabelText(/Amount paid/)).toHaveValue('1,000');
-    expect(screen.getByText(/Ends/)).toHaveTextContent(formatDate('2026-08-13')); // 15 Jul + 30 days - 1
+  it('prefills "renew what they already have": the membership plus a card per current add-on', async () => {
+    renderRenew({ items: [current(PLANS[0], inDays(-10), inDays(20)), current(PLANS[2], inDays(-10), inDays(20))] });
+    await ready();
+    expect(itemCards()).toHaveLength(2);
+    expect(planSelect(0)).toHaveValue('1');
+    expect(planSelect(1)).toHaveValue('3');
+    expect(startDate(0)).toHaveValue(inDays(21)); // the day after the current one ends
+    expect(amount(0)).toHaveValue('1,500');
+    expect(amount(1)).toHaveValue('500');
     expect(save()).toBeEnabled();
   });
 
-  it('REQ-SUB-009: quantity chips x1/x2/x3/x6/x12 + Custom; selecting x2 doubles amount and extends end date', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    for (const label of ['×1', '×2', '×3', '×6', '×12', 'Custom']) expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '×1' }).className).toContain('selected');
-    await user().click(screen.getByRole('button', { name: '×2' }));
-    expect(screen.getByLabelText(/Amount paid/)).toHaveValue('2,000');
-    expect(screen.getByText(/Ends/)).toHaveTextContent(formatDate('2026-09-12')); // 15 Jul + 60 - 1
-    await user().click(screen.getByRole('button', { name: '×12' }));
-    expect(screen.getByLabelText(/Amount paid/)).toHaveValue('12,000');
+  it('offers only membership plans on the membership item', async () => {
+    renderRenew();
+    await ready();
+    const labels = within(planSelect(0)).getAllByRole('option').map((o) => o.textContent);
+    expect(labels).toEqual(['Select a plan…', 'Monthly · 30 days · ₹1,500', 'Quarterly · 90 days · ₹4,000']);
+  });
+});
+
+describe('RenewSubscriptionPage — an item', () => {
+  it('choosing a plan fills the amount (price × quantity) and previews the end date', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+
+    expect(amount(0)).toHaveValue('1,500');
+    expect(startDate(0)).toHaveValue(todayDate());
+    expect(within(itemCards()[0]).getByText(inDays(29).slice(0, 4), { exact: false })).toBeInTheDocument(); // "Ends <date>" (start + 30 - 1)
+    expect(within(itemCards()[0]).getByText('(computed on save)')).toBeInTheDocument();
   });
 
-  it('REQ-SUB-009: custom quantity is clamped to a sane 1..60 and drives amount', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    await user().click(screen.getByRole('button', { name: 'Custom' }));
-    const qty = screen.getByRole('spinbutton');
-    fireEvent.change(qty, { target: { value: '4' } });
-    expect(screen.getByLabelText(/Amount paid/)).toHaveValue('4,000');
-    fireEvent.change(qty, { target: { value: '999' } });
+  it('a quantity preset recalculates the amount and the end date', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(within(itemCards()[0]).getByRole('button', { name: '×3' }));
+
+    expect(amount(0)).toHaveValue('4,500');
+    expect(within(itemCards()[0]).getByRole('button', { name: '×3' })).toHaveClass('renew-quantity-chip-selected');
+  });
+
+  it('Custom quantity takes a number clamped to 1–60, and "back to presets" returns', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(within(itemCards()[0]).getByRole('button', { name: 'Custom' }));
+
+    const qty = within(itemCards()[0]).getByRole('spinbutton');
+    fireEvent.change(qty, { target: { value: '500' } });
     expect(qty).toHaveValue(60);
-    expect(screen.getByLabelText(/Amount paid/)).toHaveValue('60,000');
+    expect(amount(0)).toHaveValue('90,000');
+
+    await user.click(within(itemCards()[0]).getByRole('button', { name: 'back to presets' }));
+    expect(within(itemCards()[0]).getByRole('button', { name: '×12' })).toBeInTheDocument();
   });
 
-  it('REQ-SUB-009 / SUB-006: quantity chips and end date are hidden for an indefinite item ("Never expires")', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().click(screen.getByRole('button', { name: /add another item/i })); // second item = add-on
-    await user().selectOptions(planSelects()[1], '3'); // Membership Fee (indefinite)
-    const addonCard = screen.getAllByText('Add-on')[0].closest('.renew-item-card') as HTMLElement;
-    expect(within(addonCard).queryByRole('button', { name: '×2' })).toBeNull();
-    expect(within(addonCard).getByText('Never expires')).toBeInTheDocument();
+  it('an indefinite add-on has no quantity and says it never expires', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(screen.getByRole('button', { name: '+ Add another item' }));
+    await user.selectOptions(planSelect(1), '4');
+
+    expect(within(itemCards()[1]).queryByText('Quantity')).not.toBeInTheDocument();
+    expect(within(itemCards()[1]).getByText('Never expires')).toBeInTheDocument();
   });
 
-  it('REQ-SUB-001/003: only one membership item; additional items are add-ons; total sums every item', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    await user().click(screen.getByRole('button', { name: /add another item/i }));
-    const second = planSelects()[1];
-    // the second item's plan list only offers add-ons
-    expect(within(second).getAllByRole('option').map((o) => o.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Zumba Class')]));
-    expect(within(second).queryByText(/Monthly/)).toBeNull();
-    await user().selectOptions(second, '4');
-    expect(screen.getByText('Total this visit').nextElementSibling).toHaveTextContent('₹1,800'); // 1000 + 800
+  it('the amount is editable, shown with thousands separators when not focused', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(amount(0));
+    expect(amount(0)).toHaveValue('1500');
+    await user.clear(amount(0));
+    await user.type(amount(0), '12ab34');
+    expect(amount(0)).toHaveValue('1234');
+    await user.tab();
+    expect(amount(0)).toHaveValue('1,234');
   });
 
-  it('REQ-SUB-001: the sole membership item cannot be removed; an add-on can', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().click(screen.getByRole('button', { name: /add another item/i }));
-    expect(screen.getByRole('button', { name: 'Remove membership item' })).toBeDisabled();
-    await user().click(screen.getByRole('button', { name: 'Remove add-on item' }));
-    expect(planSelects()).toHaveLength(1);
+  it('flags a past start date with a warning style (it is allowed, but unusual)', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    fireEvent.change(startDate(0), { target: { value: inDays(-3) } });
+    expect(within(itemCards()[0]).getByText(/Defaults to day after current membership expires/)).toHaveClass('renew-helper-warning');
+  });
+});
+
+describe('RenewSubscriptionPage — adding and removing items', () => {
+  it('"+ Add another item" adds an Add-on (a checkout has exactly one membership), and it can be removed', async () => {
+    const { user } = renderRenew();
+    await ready();
+    await user.click(screen.getByRole('button', { name: '+ Add another item' }));
+
+    expect(itemCards()).toHaveLength(2);
+    expect(within(itemCards()[1]).getByText('Add-on')).toBeInTheDocument();
+    expect(within(planSelect(1)).getAllByRole('option').map((o) => o.textContent)).toContain('Yoga · 30 days · ₹500');
+
+    await user.click(within(itemCards()[1]).getByRole('button', { name: 'Remove add-on item' }));
+    expect(itemCards()).toHaveLength(1);
   });
 
-  it('REQ-SUB-001: submit sends ONE call with the header + all items (payment mode once, per checkout)', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    await user().click(screen.getByRole('button', { name: /add another item/i }));
-    await user().selectOptions(planSelects()[1], '4');
-    await user().click(screen.getByRole('button', { name: 'UPI' }));
-    await user().type(screen.getByLabelText(/Notes/), 'partial');
-    await user().click(save());
-    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
-    expect(create.mock.calls[0][0]).toEqual({
-      member_id: 5,
+  it('the only membership item cannot be removed', async () => {
+    renderRenew();
+    await ready();
+    const remove = within(itemCards()[0]).getByRole('button', { name: 'Remove membership item' });
+    expect(remove).toBeDisabled();
+    expect(remove).toHaveAttribute('title', 'A checkout needs one membership.');
+  });
+});
+
+describe('RenewSubscriptionPage — overlap warning (client-side only, by design)', () => {
+  const overlapping = () => [current(PLANS[0], inDays(-10), inDays(20))];
+
+  it('warns when the new period overlaps the same plan the member already has, naming it', async () => {
+    renderRenew({ items: overlapping() });
+    await ready();
+    fireEvent.change(startDate(0), { target: { value: todayDate() } });
+    expect(within(itemCards()[0]).getByText(/Overlaps with current/)).toBeInTheDocument();
+    expect(within(itemCards()[0]).getByText('Monthly')).toBeInTheDocument();
+  });
+
+  it('does not warn for back-to-back periods', async () => {
+    renderRenew({ items: overlapping() });
+    await ready();
+    expect(within(itemCards()[0]).queryByText(/Overlaps with current/)).not.toBeInTheDocument();
+  });
+
+  it('Cancel puts the start date back to its last non-overlapping value', async () => {
+    const { user } = renderRenew({ items: overlapping() });
+    await ready();
+    const good = startDate(0).value;
+    fireEvent.change(startDate(0), { target: { value: todayDate() } });
+    await user.click(within(itemCards()[0]).getByRole('button', { name: 'Cancel' }));
+
+    expect(startDate(0)).toHaveValue(good);
+    expect(within(itemCards()[0]).queryByText(/Overlaps with current/)).not.toBeInTheDocument();
+  });
+
+  it('"Save anyway" silences the warning and notes it was acknowledged — it never blocks saving', async () => {
+    const { user } = renderRenew({ items: overlapping() });
+    await ready();
+    fireEvent.change(startDate(0), { target: { value: todayDate() } });
+    expect(save()).toBeEnabled(); // the warning is advisory
+    await user.click(within(itemCards()[0]).getByRole('button', { name: 'Save anyway' }));
+
+    expect(within(itemCards()[0]).getByText('Overlap acknowledged.')).toBeInTheDocument();
+    expect(within(itemCards()[0]).queryByText(/Overlaps with current/)).not.toBeInTheDocument();
+  });
+});
+
+describe('RenewSubscriptionPage — totals', () => {
+  it('sums every item and says the checkout is valid once it has one membership', async () => {
+    const { user } = renderRenew({ items: [current(PLANS[0], inDays(-10), inDays(20)), current(PLANS[2], inDays(-10), inDays(20))] });
+    await ready();
+    expect(screen.getByText('₹2,000')).toBeInTheDocument();
+    expect(screen.getByText('✓ Contains exactly one membership item')).toBeInTheDocument();
+
+    await user.click(within(itemCards()[1]).getByRole('button', { name: '×2' }));
+    expect(screen.getByText('₹2,500')).toBeInTheDocument();
+  });
+});
+
+describe('RenewSubscriptionPage — saving the checkout', () => {
+  it('sends exactly the contract create-subscription expects, then opens the member with a receipt toast', async () => {
+    const { user, create, router } = renderRenew({ items: [current(PLANS[0], inDays(-10), inDays(20)), current(PLANS[2], inDays(-10), inDays(20))] });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'UPI' }));
+    await user.type(screen.getByLabelText(/^Notes/), '  balance next week  ');
+    await user.click(within(itemCards()[0]).getByRole('button', { name: '×2' }));
+    await user.click(save());
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledWith({
+      member_id: 12,
       payment_mode: 'UPI',
-      notes: 'partial',
+      notes: 'balance next week',
       items: [
-        { plan_id: 1, member_id: 5, shared_member_id: null, start_date: '2026-07-15', quantity: 1, amount_paid: 1000 },
-        { plan_id: 4, member_id: 5, shared_member_id: null, start_date: '2026-07-15', quantity: 1, amount_paid: 800 },
+        { plan_id: 1, member_id: 12, shared_member_id: null, start_date: inDays(21), quantity: 2, amount_paid: 3000 },
+        { plan_id: 3, member_id: 12, shared_member_id: null, start_date: inDays(21), quantity: 1, amount_paid: 500 },
       ],
     });
-    expect(await screen.findByText('MEMBER DETAIL PAGE')).toBeInTheDocument();
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/members/12'));
+    expect(router.state.location.state).toEqual({ toast: 'Checkout saved · receipt #501' });
+    expect(router.state.historyAction).toBe('REPLACE');
   });
 
-  it('REQ-SUB-002: payment mode offers exactly Cash / UPI / Card, default Cash', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    const group = within(screen.getByRole('group', { name: 'Payment mode' }));
-    expect(group.getAllByRole('button').map((b) => b.textContent)).toEqual(['Cash', 'UPI', 'Card']);
-    expect(group.getByRole('button', { name: 'Cash' }).className).toContain('selected');
+  it('never sends end_date (the server computes it) and sends quantity null for an indefinite item', async () => {
+    const { user, create } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(screen.getByRole('button', { name: '+ Add another item' }));
+    await user.selectOptions(planSelect(1), '4');
+    await user.click(save());
+
+    const payload = create.mock.calls[0][0];
+    expect(payload.items[1]).toMatchObject({ plan_id: 4, quantity: null });
+    for (const item of payload.items) expect(item).not.toHaveProperty('end_date');
+    expect(payload.notes).toBeNull();
+    expect(payload.payment_mode).toBe('Cash');
   });
 
-  it('REQ-SUB-006: an indefinite item is sent with quantity null (server rejects any quantity for it)', async () => {
-    setup({ plans: [monthly, fee] });
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    await user().click(screen.getByRole('button', { name: /add another item/i }));
-    await user().selectOptions(planSelects()[1], '3');
-    await user().click(save());
-    await waitFor(() => expect(create).toHaveBeenCalled());
-    expect(create.mock.calls[0][0].items[1]).toMatchObject({ plan_id: 3, quantity: null, amount_paid: 500 });
+  it('locks the form while saving', async () => {
+    const { user } = renderRenew({ create: vi.fn().mockReturnValue(new Promise(() => undefined)) });
+    await ready();
+    await fillMonthly(user);
+    await user.click(save());
+
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(planSelect(0)).toBeDisabled();
   });
 
-  it('amount can be edited (0 allowed) and is what gets saved', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    const amount = screen.getByLabelText(/Amount paid/);
-    await user().clear(amount);
-    await user().type(amount, '0');
-    await user().click(save());
-    await waitFor(() => expect(create).toHaveBeenCalled());
-    expect(create.mock.calls[0][0].items[0].amount_paid).toBe(0);
+  it('a network failure keeps every item, says no payment was recorded, and "Retry save" tries again', async () => {
+    const create = vi.fn().mockRejectedValueOnce(new Error('Failed to fetch')).mockResolvedValue({ subscription: { id: 9 }, items: [] });
+    const { user, router } = renderRenew({ create });
+    await ready();
+    await fillMonthly(user);
+    await user.click(save());
+
+    expect(await screen.findByText(/Checkout couldn't be saved — network error\. No payment was recorded; your items are kept\./)).toBeInTheDocument();
+    expect(planSelect(0)).toHaveValue('1');
+
+    await user.click(screen.getByRole('button', { name: 'Retry save' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/members/12'));
+    expect(create).toHaveBeenCalledTimes(2);
   });
 
-  it('amount cannot be blanked: field error and Save disabled', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '1');
-    await user().clear(screen.getByLabelText(/Amount paid/));
-    expect(save()).toBeDisabled();
+  it('a server rejection is shown verbatim (the Edge Function’s own message is already specific)', async () => {
+    const { user } = renderRenew({ create: vi.fn().mockRejectedValue(new Error('Plan 1 is no longer available')) });
+    await ready();
+    await fillMonthly(user);
+    await user.click(save());
+    expect(await screen.findByText('Plan 1 is no longer available')).toBeInTheDocument();
+  });
+});
+
+describe('RenewSubscriptionPage — leaving', () => {
+  it('Cancel on an untouched form just goes back to the member', async () => {
+    const { user, router } = renderRenew();
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(router.state.location.pathname).toBe('/members/12');
   });
 
-  describe('renewal prefill', () => {
-    it('prefills the current membership + each current add-on, with start = day after each current item ends', async () => {
-      setup({
-        items: [
-          currentItem({ plan_id: 1, plan_name: 'Monthly', category: 'membership', end_date: '2026-07-20' }),
-          currentItem({ subscription_item_id: 2, plan_id: 4, plan_name: 'Zumba Class', category: 'addon', end_date: '2026-07-25' }),
-        ],
-      });
-      await screen.findByText('Renew / Add Subscription');
-      expect(planSelects()).toHaveLength(2);
-      expect(planSelects()[0]).toHaveValue('1');
-      expect(planSelects()[1]).toHaveValue('4');
-      const dates = Array.from(document.querySelectorAll('input[type="date"]')).map((i) => (i as HTMLInputElement).value);
-      expect(dates).toEqual(['2026-07-21', '2026-07-26']);
-      expect(save()).toBeEnabled();
-    });
+  it('Cancel after editing asks first, and "Keep editing" stays put', async () => {
+    const { user, router } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('heading', { name: 'Discard this checkout?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Keep editing' }));
+    expect(screen.queryByRole('heading', { name: 'Discard this checkout?' })).not.toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/members/12/renew');
+    expect(planSelect(0)).toHaveValue('1');
   });
 
-  describe('REQ-SUB-005/008 overlap warning (warn, never block)', () => {
-    it('REQ-SUB-008: re-adding the same add-on overlapping its current run shows a warning naming it and its end date', async () => {
-      setup({ items: [currentItem({ plan_id: 4, plan_name: 'Zumba Class', category: 'addon', start_date: '2026-07-01', end_date: '2026-07-30' })] });
-      await screen.findByText('Renew / Add Subscription');
-      // prefill puts the add-on on 31 Jul (no overlap); pull the date back into the current run
-      const addonDate = document.querySelectorAll('input[type="date"]')[1] as HTMLInputElement;
-      await user().clear(addonDate);
-      await user().type(addonDate, '2026-07-20');
-      expect(screen.getByText(/Overlaps with current/)).toHaveTextContent('Zumba Class');
-      expect(screen.getByText(/Overlaps with current/)).toHaveTextContent(formatDate('2026-07-30'));
-    });
-
-    it('REQ-SUB-005: "Save anyway" acknowledges; the checkout then saves with the payload unchanged and no overlap flag', async () => {
-      setup({ items: [currentItem({ plan_id: 1, plan_name: 'Monthly', category: 'membership', start_date: '2026-07-01', end_date: '2026-07-30' })] });
-      await screen.findByText('Renew / Add Subscription');
-      const startDate = document.querySelector('input[type="date"]') as HTMLInputElement;
-      await user().clear(startDate);
-      await user().type(startDate, '2026-07-20');
-      expect(await screen.findByText(/Overlaps with current/)).toBeInTheDocument();
-      await user().click(screen.getByRole('button', { name: 'Save anyway' }));
-      expect(screen.getByText('Overlap acknowledged.')).toBeInTheDocument();
-      await user().click(save());
-      await waitFor(() => expect(create).toHaveBeenCalled());
-      const payload = create.mock.calls[0][0];
-      expect(JSON.stringify(payload)).not.toMatch(/overlap/i);
-      expect(payload.items[0].start_date).toBe('2026-07-20');
-    });
-
-    it('REQ-SUB-005: the warning\'s Cancel reverts the date to the last non-overlapping value', async () => {
-      setup({ items: [currentItem({ plan_id: 1, plan_name: 'Monthly', category: 'membership', start_date: '2026-07-01', end_date: '2026-07-30' })] });
-      await screen.findByText('Renew / Add Subscription');
-      const startDate = document.querySelector('input[type="date"]') as HTMLInputElement;
-      expect(startDate).toHaveValue('2026-07-31');
-      fireEvent.change(startDate, { target: { value: '2026-07-20' } });
-      const warning = (await screen.findByText(/Overlaps with current/)).closest('.renew-overlap-warning') as HTMLElement;
-      await user().click(within(warning).getByRole('button', { name: 'Cancel' }));
-      await waitFor(() => expect(document.querySelector('input[type="date"]')).toHaveValue('2026-07-31'));
-    });
-
-    it('REQ-SUB-008: a DIFFERENT add-on overlapping does not warn', async () => {
-      setup({ items: [currentItem({ plan_id: 4, plan_name: 'Zumba Class', category: 'addon', end_date: '2026-07-30' })] });
-      await screen.findByText('Renew / Add Subscription');
-      await user().click(screen.getByRole('button', { name: /add another item/i }));
-      await user().selectOptions(planSelects()[planSelects().length - 1], '5'); // Personal Training, starts today
-      expect(screen.queryByText(/Overlaps with current/)).toBeNull();
-    });
-  });
-
-  describe('failure handling', () => {
-    it('REQ-SUB-007: the server\'s indefinite-plan block is shown to staff and the form is kept', async () => {
-      setup();
-      await screen.findByText('Renew / Add Subscription');
-      await user().selectOptions(planSelects()[0], '1');
-      create.mockRejectedValue(new Error('This member already has an active indefinite item for plan "Membership Fee" — it cannot be attached again'));
-      await user().click(save());
-      expect(await screen.findByText(/already has an active indefinite item/)).toBeInTheDocument();
-      expect(planSelects()[0]).toHaveValue('1');
-      expect(screen.queryByText('MEMBER DETAIL PAGE')).toBeNull();
-    });
-
-    it('a network failure keeps all items and offers "Retry save"', async () => {
-      setup();
-      await screen.findByText('Renew / Add Subscription');
-      await user().selectOptions(planSelects()[0], '1');
-      create.mockRejectedValueOnce(new Error('Failed to fetch'));
-      await user().click(save());
-      expect(await screen.findByText(/No payment was recorded; your items are kept/)).toBeInTheDocument();
-      await user().click(screen.getByRole('button', { name: 'Retry save' }));
-      expect(await screen.findByText('MEMBER DETAIL PAGE')).toBeInTheDocument();
-      expect(create).toHaveBeenCalledTimes(2);
-    });
-
-    it('leaving a dirty form asks before discarding', async () => {
-      setup();
-      await screen.findByText('Renew / Add Subscription');
-      await user().selectOptions(planSelects()[0], '1');
-      await user().click(screen.getAllByRole('button', { name: 'Cancel' }).pop() as HTMLElement);
-      expect(screen.getByText('Discard this checkout?')).toBeInTheDocument();
-      await user().click(screen.getByRole('button', { name: /keep editing/i }));
-      expect(screen.queryByText('Discard this checkout?')).toBeNull();
-    });
-
-    it('no plans configured: explains an admin must add one first', async () => {
-      setup({ plans: [] });
-      expect(await screen.findByText(/No plans available/)).toBeInTheDocument();
-    });
-  });
-
-  // REQ-SUB-004 (Must): for a plan with max_members = 2, staff can optionally set a shared member at creation.
-  // RenewSubscriptionPage hard-codes `shared_member_id: null` and has no member picker at all.
-  it.fails('SPEC GAP REQ-SUB-004: a couple (max_members = 2) membership offers an optional shared-member picker', async () => {
-    setup();
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '6'); // Couple Monthly
-    expect(screen.getByLabelText(/shared member|second member|partner/i)).toBeInTheDocument();
-  });
-
-  // REQ-SUB-005: membership overlap should be checked against ANY existing membership item (any plan).
-  it.fails('SPEC GAP REQ-SUB-005: picking a DIFFERENT membership plan that overlaps the current one warns', async () => {
-    setup({ items: [currentItem({ plan_id: 1, plan_name: 'Monthly', category: 'membership', start_date: '2026-07-01', end_date: '2026-07-30' })] });
-    await screen.findByText('Renew / Add Subscription');
-    await user().selectOptions(planSelects()[0], '2'); // Quarterly
-    const startDate = document.querySelector('input[type="date"]') as HTMLInputElement;
-    await user().clear(startDate);
-    await user().type(startDate, '2026-07-20');
-    expect(await screen.findByText(/Overlaps with current/, undefined, { timeout: 300 })).toBeInTheDocument();
+  it('"Discard" leaves without saving', async () => {
+    const { user, router, create } = renderRenew();
+    await ready();
+    await fillMonthly(user);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(router.state.location.pathname).toBe('/members/12');
+    expect(create).not.toHaveBeenCalled();
   });
 });

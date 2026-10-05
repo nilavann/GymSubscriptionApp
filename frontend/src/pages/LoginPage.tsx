@@ -1,14 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Mail, Lock, Dumbbell, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { LoadingView } from '../components/LoadingView';
 import { withTimeout } from '../lib/with-timeout';
+import logo from '../assets/logo.png';
 import './LoginPage.css';
 
 type ViewState = 'idle' | 'submitting' | 'reset-sent';
 
 const SIGN_IN_TIMEOUT_MS = 15000;
+// How long the signed-out screen (v2 - design_handoff_flexhub_v2/README.md §1) stays up
+// before auto-transitioning to the normal sign-in form - "Sign in again" skips the wait.
+const SIGNED_OUT_DISPLAY_MS = 2500;
 
 // Inline (not hotlinked) so the login screen never depends on a third-party
 // asset host being reachable - see brand guidelines for the "Sign in with
@@ -38,6 +42,8 @@ export function LoginPage() {
     currentProfile,
     isInitialising,
     blockedMessage,
+    sessionExpired,
+    clearSessionExpired,
     authLinkError,
     needsPasswordReset,
     signInWithPassword,
@@ -57,11 +63,20 @@ export function LoginPage() {
   // deactivated/not-invited/verify-error result never reaches the screen and the
   // form stays stuck on "Signing in..." forever (see the bug this fixes).
   useEffect(() => {
-    if (blockedMessage) {
+    // sessionExpired gets its own dedicated screen below, not the generic error banner.
+    if (blockedMessage && !sessionExpired) {
       setError(blockedMessage);
       setViewState('idle');
     }
-  }, [blockedMessage]);
+  }, [blockedMessage, sessionExpired]);
+
+  // Auto-transitions from the signed-out screen to the normal form after a beat - "Sign in
+  // again" (onClick below) calls the same clearSessionExpired() to skip the wait instead.
+  useEffect(() => {
+    if (!sessionExpired) return;
+    const timer = setTimeout(clearSessionExpired, SIGNED_OUT_DISPLAY_MS);
+    return () => clearTimeout(timer);
+  }, [sessionExpired, clearSessionExpired]);
 
   // Surfaces a rejected/expired/already-used auth link (password reset, invite, OAuth)
   // instead of silently landing here with no explanation — see auth.context.tsx.
@@ -80,9 +95,35 @@ export function LoginPage() {
     return <Navigate to="/reset-password" replace />;
   }
 
+  // Signed-out confirmation (v2) - a brief, reassuring screen in place of the form itself
+  // (not a banner on top of it) after a mid-session token expiry, auto-dismissing into the
+  // normal form above via the effect above.
+  if (sessionExpired) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-signed-out-icon" aria-hidden="true">
+            <CheckCircle2 size={32} strokeWidth={2} />
+          </div>
+          <h1 className="login-brand">You're signed out</h1>
+          <p className="login-subtitle">Your session has ended safely. Redirecting to sign in…</p>
+          <div className="login-signed-out-progress-track">
+            <div
+              className="login-signed-out-progress-fill"
+              style={{ animationDuration: `${SIGNED_OUT_DISPLAY_MS}ms` }}
+            />
+          </div>
+          <button type="button" className="login-submit login-signed-out-cta" onClick={clearSessionExpired}>
+            Sign in again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Already signed in with an active profile — no reason to see the login form.
   if (currentProfile) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/action-center" replace />;
   }
 
   const canSubmit = email.trim() !== '' && password !== '' && viewState !== 'submitting';
@@ -125,8 +166,11 @@ export function LoginPage() {
     setError(null);
     try {
       await resetPasswordForEmail(email);
+    } catch {
+      // Deliberately swallowed: the user sees the same generic confirmation whether or not the send
+      // worked, so a failure can't be used to probe which emails are registered. (Without this catch
+      // the rejection escaped the click handler as an unhandled promise rejection.)
     } finally {
-      // Generic confirmation either way — never reveals whether the email exists.
       setViewState('reset-sent');
     }
   }
@@ -135,7 +179,7 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-badge" aria-hidden="true">
-          <Dumbbell size={26} strokeWidth={2} />
+          <img src={logo} alt="" className="login-badge-logo" />
         </div>
         <h1 className="login-brand">Welcome to Fit &amp; Fine</h1>
         <p className="login-subtitle">Sign in to manage members and subscriptions</p>

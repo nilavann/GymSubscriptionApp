@@ -1,10 +1,18 @@
-/* Design tokens — FlexHub visual redesign (see design_handoff_flexhub_v2/README.md, the
-   design handoff this file implements — v2 reworked the theme-axis section below; the rest
-   of this file is unchanged from the v1 redesign, frontend/mockups/README.md). Wrapped in
+/* Design tokens — FlexHub "Stone & Amber" (v3: design_handoff_flexhub_mobile/README.md §Design
+   tokens + Theme Sheet Stone and Amber.dc.html, which supersede the v2 palette; the tint/radius
+   axis mechanism is still v2, design_handoff_flexhub_v2/README.md §Theming). Wrapped in
    Tailwind's `@theme` (not plain `:root`) so every fixed token below both stays usable as
    `var(--color-text-primary)` in plain CSS AND generates a matching Tailwind utility. Never
    hardcode a hex value in a component file; use these tokens (or their Tailwind utility)
-   instead.
+   instead — a unit test (design-tokens.test.ts) fails on any hex literal outside this file.
+
+   Token NAMES are unchanged from v2 on purpose: `--color-neutral-900` is now stone-900 rather
+   than slate-900, so the re-skin is a value change here, not an edit in every component.
+
+   Gotcha: Tailwind only emits an @theme variable into the built CSS if some scanned source file
+   references it, so a token nobody reads is dropped (verify by searching the built index CSS in
+   dist/assets for the variable name). Reference tokens as literal var(--color-x) strings; a name
+   assembled at runtime from a template string is invisible to the scan and vanishes from production.
 
    Theme-axis tokens (tint / radius) live in a separate plain `:root` block below —
    Tailwind's `@theme` only ever emits *default* values as real CSS custom properties, so
@@ -19,35 +27,49 @@
 
   /* Tailwind's default breakpoint scale (`sm`/`md`/`lg`/`xl`/`2xl`) is reset too, replaced
      with this project's own 2-tier scale. Mobile is the unprefixed default; `tablet:` is
-     the mockup's ≤860px cut aligned to the codebase's existing 768px convention. */
+     the mockup's ≤860px cut aligned to the codebase's existing 768px convention. These are
+     rem-based and for Tailwind variants ONLY — JS decisions use the px query in
+     lib/use-media-query.ts (CLAUDE.md "Responsive rendering rules" #2). */
   --breakpoint-*: initial;
   --breakpoint-tablet: 48rem; /* 768px */
   --breakpoint-desktop: 64rem; /* 1024px */
 
-  /* Neutral/gray ramp — exact hexes from the mockup's Design Tokens section. */
-  --color-neutral-900: #111827; /* primary text */
-  --color-neutral-600: #475569;
-  --color-neutral-500: #6b7280; /* secondary text */
-  --color-neutral-400: #9ca3af; /* muted text */
-  --color-neutral-300: #d1d5db; /* disabled text */
-  --color-neutral-200: #e5e7eb; /* control borders */
-  --color-neutral-150: #f1f1f3; /* card borders */
-  --color-neutral-100: #f5f5f6; /* row dividers */
-  --color-neutral-75: #f9fafb; /* input bg */
-  --color-neutral-50: #f3f4f6; /* page bg */
+  /* Typography (design_handoff_flexhub_mobile/README.md §Design tokens): Rubik for UI text,
+     Schibsted Grotesk for display/brand. The `... Variable` family names are what the
+     @fontsource-variable packages register (see main.tsx); the system stack stays as the
+     fallback shown while the font file loads (font-display: swap). */
+  --font-ui: 'Rubik Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Schibsted Grotesk Variable', 'Rubik Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    system-ui, sans-serif;
+
+  /* Neutral ramp — Tailwind "stone" (warm grays), README §Neutrals. The 150 step has no stone
+     equivalent: it is the shimmer highlight paired with 50 in every loading skeleton, so it
+     reuses the 200 hairline. */
+  --color-neutral-900: #1c1917; /* primary text */
+  --color-neutral-700: #44403c; /* text-mid: legal-list rows */
+  --color-neutral-600: #57534e;
+  --color-neutral-500: #78716c; /* muted text */
+  --color-neutral-400: #a8a29e; /* placeholder / disabled */
+  --color-neutral-300: #d6d3d1; /* border-strong */
+  --color-neutral-200: #e7e5e4; /* control borders, border-subtle */
+  --color-neutral-150: #e7e5e4; /* skeleton shimmer highlight */
+  --color-neutral-100: #f5f5f4; /* surface-sunken */
+  --color-neutral-75: #fafaf9; /* input bg */
+  --color-neutral-50: #f5f5f4; /* skeleton shimmer base */
   --color-neutral-0: #ffffff;
 
-  /* Categorical/secondary palette — member avatars (lib/avatar.ts), deterministically
-     hashed by member id. Carries no brand or status meaning. */
-  --color-data-1: #2563eb;
-  --color-data-2: #7c3aed;
-  --color-data-3: #059669;
-  --color-data-4: #b45309;
-  --color-data-5: #be123c;
-  --color-data-6: #0891b2;
+  /* Categorical palette — member avatars only (lib/avatar.ts), deterministically hashed by
+     member id. Carries no brand or status meaning. v3 README §Avatars: warm ambers and stones
+     (the list intentionally repeats two values — that is the design, not a typo). */
+  --color-data-1: #b45309;
+  --color-data-2: #b45309;
+  --color-data-3: #92400e;
+  --color-data-4: #292524;
+  --color-data-5: #92400e;
+  --color-data-6: #1c1917;
 
-  /* Status — badge strength (chips/pills) and a lighter "subtle" strength (banners),
-     both from the mockup's per-screen banner specs. */
+  /* Status — badge strength (chips/pills) and a lighter "subtle" strength (banners). Danger and
+     success banners are unchanged from v2 (README §Status). */
   --color-status-success-bg: #dcfce7;
   --color-status-success-bg-subtle: #ecfdf5;
   --color-status-success-border: #a7f3d0;
@@ -66,48 +88,95 @@
   --color-status-danger-text: #b91c1c;
   --color-status-danger-text-deep: #dc2626;
 
-  --color-status-neutral-bg: #f3f4f6;
-  --color-status-neutral-text: #6b7280;
+  --color-status-neutral-bg: #f5f5f4;
+  --color-status-neutral-text: #57534e; /* "No plan" */
 
-  --color-surface-page: #f3f4f6;
+  /* v3 membership pills (README §Status ladder, Members/Detail screens): Active is a NEUTRAL stone
+     pill — amber is reserved for "can still act", red for lapsed — so it gets its own pair rather
+     than reusing the success green. Amber/red pills use the warning-*-subtle / danger tokens above. */
+  --color-status-active-bg: #f5f5f4;
+  --color-status-active-text: #292524;
+
+  --color-surface-page: #fafaf9;
   --color-surface-card: #ffffff;
-  --color-surface-input: #f9fafb;
+  --color-surface-input: #fafaf9;
+  --color-surface-inverse: #292524; /* header avatar, inverse chrome */
+  --color-surface-dots: #f4e2ce; /* the 18px dot-grid on the page background */
 
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
-  --color-text-disabled: #d1d5db;
+  --color-text-primary: #1c1917;
+  --color-text-secondary: #57534e;
+  --color-text-muted: #78716c;
+  --color-text-disabled: #a8a29e;
   --color-text-inverse: #ffffff;
 
-  --color-border-default: #e5e7eb;
-  --color-border-card: #f1f1f3;
-  --color-border-divider: #f5f5f6;
+  --color-border-default: #e7e5e4;
+  --color-border-card: #e7e5e4;
+  --color-border-divider: #f3e8db; /* warm row divider (README §Neutrals) */
 
-  --color-interactive-disabled-bg: #e5e7eb;
-  --color-interactive-disabled-text: #9ca3af;
+  --color-interactive-disabled-bg: #f5f5f4;
+  --color-interactive-disabled-text: #a8a29e;
+
+  /* Not part of the theme proper, but real colors that must still live here (rule 14). */
+  --color-media-backdrop: #000000; /* behind the live camera preview */
+  /* Reports donut: Cash follows the tint accent; UPI and Card get fixed, clearly distinct stones so
+     the three slices stay separable under ANY tint (amber accent + an amber UPI would not be). */
+  --color-chart-upi: #44403c;
+  --color-chart-card: #a8a29e;
+  /* Settings > Appearance swatches preview each tint while another is active, so they need the
+     tint's accent as a fixed value (the live --tint-accent only ever shows the current one). */
+  --color-tint-preview-amber: #d97706;
+  --color-tint-preview-wild: #ff5a2c;
+  --color-tint-preview-sky: #2563eb;
+  --color-tint-preview-violet: #7c3aed;
 }
 
-/* Theme-axis tokens — tint (3) x radius (2), matching design_handoff_flexhub_v2/README.md
-   §Theming (tint / radius). Plain :root, not @theme, since these are meant to be overridden
-   at runtime by attribute selectors (see below), not just Tailwind-generated defaults.
-   Defaults = wild + soft, the v2 handoff's stated default combo. ThemeProvider
-   (context/theme.context.tsx) sets data-tint/data-radius on <html> and persists the choice
-   to localStorage.
+/* Theme-axis tokens — tint (4) x radius (2). Plain :root, not @theme, since these are meant to be
+   overridden at runtime by attribute selectors (see below), not just Tailwind-generated defaults.
+   Defaults = amber + soft (v3 Stone & Amber). ThemeProvider (context/theme.context.tsx) sets
+   data-tint/data-radius on <html> and persists the choice to localStorage.
 
-   CTA is no longer an independent axis — each tint owns its own CTA gradient (--cta-from/to)
-   so no clashing tint/CTA pairs can be produced (v2 README §Theming). Every tint also now
-   carries FOUR color roles, not one — using the right one is what keeps the UI at WCAG AA:
-     --tint-accent   decorative fills only (progress bars, avatar tiles, chart bars) — never
+   CTA is not an independent axis — each tint owns its own CTA gradient (--cta-from/to) so no
+   clashing tint/CTA pairs can be produced. Every tint carries FOUR color roles, not one — using the
+   right one is what keeps the UI at WCAG AA:
+     --tint-accent   decorative fills only (progress bars, avatar tiles, chart bars, rules) — never
                      sits under small text.
      --tint-ink      accent-colored text/icons on white or --color-surface-page (>=4.5:1).
      --tint-solid    fills that carry WHITE text (selected pills/tabs, count badges, CTAs
                      that reuse the tint instead of --cta-from/to) (>=4.5:1 with #fff).
      --tint-on-pill  text on --tint-pill-bg (active nav label, applied filter chips,
                      role badges) (>=4.5:1 on pillBg).
-   Do not collapse these into a single "primary" color when re-skinning a screen — see
-   design_handoff_flexhub_v2/README.md §Accessibility contract. */
+   Do not collapse these into a single "primary" color when re-skinning a screen — the Theme Sheet's
+   rule is the same: amber 600 is NOT a text colour (below AA), amber 700 is. */
 :root {
-  /* tint: wild (default) */
+  /* tint: amber (default) — Theme Sheet "action-primary" #b45309, "accent-mark" #d97706 */
+  --tint-card-from: #fffbeb;
+  --tint-card-to: #ffffff;
+  --tint-border: #fde68a;
+  --tint-accent: #d97706;
+  --tint-ink: #b45309;
+  --tint-solid: #b45309;
+  --tint-on-pill: #92400e;
+  --tint-pill-bg: #fef3c7;
+  --tint-focus-ring: rgba(180, 83, 9, 0.22);
+
+  /* cta: README §CTA — linear-gradient(145deg, #b45309, #92400e) */
+  --cta-from: #b45309;
+  --cta-to: #92400e;
+
+  /* radius: soft (default) */
+  --radius-card: 28px;
+  --radius-el: 12px; /* inputs/buttons */
+  --radius-tile: 16px; /* tiles/icon buttons */
+  --radius-pill: 999px; /* chips/badges/avatars — varies by radius axis in v2, unlike v1 */
+
+  /* Ambient card/overlay shadow (warm, low — README §Shadows) and modal/drawer backdrop (README
+     §Members: filter drawer backdrop rgba(17,24,39,0.35), unchanged). */
+  --color-shadow: rgba(58, 31, 12, 0.08);
+  --color-backdrop: rgba(17, 24, 39, 0.35);
+}
+
+/* The v2 default, kept selectable. */
+:root[data-tint='wild'] {
   --tint-card-from: #fff4f0;
   --tint-card-to: #ffffff;
   --tint-border: #ffdccf;
@@ -118,20 +187,9 @@
   --tint-pill-bg: #ffe4d9;
   --tint-focus-ring: rgba(255, 90, 44, 0.18);
 
-  /* cta: wild owns the orange/rust gradient (README §Theming CTA gradients) */
+  /* cta: wild owns the orange/rust gradient */
   --cta-from: #c2410c;
   --cta-to: #9a3412;
-
-  /* radius: soft (default) */
-  --radius-card: 28px;
-  --radius-el: 12px; /* inputs/buttons */
-  --radius-tile: 16px; /* tiles/icon buttons */
-  --radius-pill: 999px; /* chips/badges/avatars — varies by radius axis in v2, unlike v1 */
-
-  /* Ambient card/overlay shadow and modal/drawer backdrop — exact rgba from the mockup's
-     Design Tokens / Filter-drawer specs, both derived from neutral-900 (#111827). */
-  --color-shadow: rgba(17, 24, 39, 0.08);
-  --color-backdrop: rgba(17, 24, 39, 0.35);
 }
 
 :root[data-tint='sky'] {
@@ -146,8 +204,8 @@
   --tint-focus-ring: rgba(37, 99, 235, 0.18);
 
   /* cta: charcoal (README table — sky's CTA is the neutral charcoal gradient, not blue) */
-  --cta-from: #374151;
-  --cta-to: #111827;
+  --cta-from: #44403c;
+  --cta-to: #1c1917;
 }
 
 :root[data-tint='violet'] {
@@ -161,11 +219,10 @@
   --tint-pill-bg: #ede9fe;
   --tint-focus-ring: rgba(124, 58, 237, 0.18);
 
-  /* cta: "violet → charcoal" per README table — no separate violet CTA gradient is defined
-     anywhere in the handoff, so this resolves to charcoal (the same fallback the handoff's
-     own `CTAS[tint.cta] ?? CTAS.charcoal` guard-lookups example demonstrates). */
-  --cta-from: #374151;
-  --cta-to: #111827;
+  /* cta: "violet → charcoal" per the v2 README table — no separate violet CTA gradient is defined
+     anywhere in the handoff, so this resolves to charcoal (now stone-based, matching the v3 "stone" CTA tint). */
+  --cta-from: #44403c;
+  --cta-to: #1c1917;
 }
 
 :root[data-radius='sharp'] {

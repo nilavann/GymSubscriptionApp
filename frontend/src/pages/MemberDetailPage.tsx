@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   Pencil,
   X,
   Check,
@@ -14,21 +13,24 @@ import {
   Plus,
 } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { BackLink } from '../components/BackLink';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import { PhotoLightbox } from '../components/PhotoLightbox';
 import { withTimeout } from '../lib/with-timeout';
 import { formatDate, toLocalDisplay, todayDate } from '../lib/datetime';
 import { sanitizeDigits, sanitizeDecimal } from '../lib/input-masks';
-import { deriveStatus, STATUS_LABEL, STATUS_BADGE_CLASS } from '../lib/status';
+import { deriveStatus, STATUS_LABEL, STATUS_BADGE_CLASS, EXPIRING_SOON_THRESHOLD_DAYS } from '../lib/status';
 import { getAvatarColor, getInitials } from '../lib/avatar';
 import type { Gender, Member } from '../types/member';
 import type { Plan } from '../types/plan';
 import type { Profile } from '../types/profile';
+import type { Branch } from '../types/branch';
 import type { MemberCurrentItem } from '../types/member-current-item';
 import type { MemberListRow } from '../types/member-list';
 import type { PaymentMode, Subscription, SubscriptionItem } from '../types/subscription';
 import type { MemberEditDraft, MemberEditFormErrors } from '../services/member.service';
 import './MemberDetailPage.css';
+import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
@@ -56,8 +58,15 @@ export function MemberDetailPage() {
   const location = useLocation();
   /** /members/:id/edit is a deep-linkable route that just pre-opens this same page in edit mode (screens.md WSCR-03 recommendation, member-detail.md §5). */
   const startInEditMode = location.pathname.endsWith('/edit');
-  const { memberRepository, memberService, subscriptionRepository, planRepository, profileRepository, memberListRepository } =
-    useServices();
+  const {
+    memberRepository,
+    memberService,
+    subscriptionRepository,
+    planRepository,
+    profileRepository,
+    memberListRepository,
+    branchRepository,
+  } = useServices();
   /** Set by RenewSubscriptionPage on success navigation (renew-checkout-page.md §7's "toast" — no
    * app-wide toast system exists yet, so a dismissible banner fills that role here). */
   const [successMessage, setSuccessMessage] = useState<string | null>((location.state as { toast?: string } | null)?.toast ?? null);
@@ -70,6 +79,13 @@ export function MemberDetailPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [memberRows, setMemberRows] = useState<MemberListRow[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
+  /** Personal card's progressive-disclosure state (member-detail-page design §6) — local
+   * to this screen, not persisted; reset below whenever `memberId` changes so navigating
+   * from one member to another (without a full remount) doesn't carry an expanded card
+   * over to a different member. */
+  const [personalOpen, setPersonalOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -104,8 +120,9 @@ export function MemberDetailPage() {
     setIsLoading(true);
     setLoadError(null);
     setLoadErrorKind(null);
+    setPersonalOpen(false);
     try {
-      const [memberData, items, historyData, planRows, profileRows, allProfileRows, listRows] = await Promise.all([
+      const [memberData, items, historyData, planRows, profileRows, allProfileRows, listRows, branchRows] = await Promise.all([
         withTimeout(memberRepository.getById(memberId), FETCH_TIMEOUT_MS, new Error('member-fetch-timeout')),
         withTimeout(
           subscriptionRepository.getCurrentItemsForMember(memberId),
@@ -117,6 +134,7 @@ export function MemberDetailPage() {
         withTimeout(profileRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('profiles-fetch-timeout')),
         withTimeout(profileRepository.getAllNonDeleted(), FETCH_TIMEOUT_MS, new Error('all-profiles-fetch-timeout')),
         withTimeout(memberListRepository.getAll(), FETCH_TIMEOUT_MS, new Error('members-fetch-timeout')),
+        withTimeout(branchRepository.getAllActive(), FETCH_TIMEOUT_MS, new Error('branches-fetch-timeout')),
       ]);
       if (!memberData) {
         setLoadErrorKind('not-found');
@@ -137,12 +155,13 @@ export function MemberDetailPage() {
       setProfiles(profileRows);
       setAllProfiles(allProfileRows);
       setMemberRows(listRows);
+      setBranches(branchRows);
       if (startInEditMode) {
         setMemberForm(memberService.editDraftFromMember(memberData));
         setIsEditingMember(true);
       }
     } catch (err) {
-      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || err.message === 'Failed to fetch');
+      const isTimeoutOrNetwork = err instanceof Error && (err.message.endsWith('-timeout') || isNetworkError(err));
       setLoadErrorKind(isTimeoutOrNetwork ? 'network' : 'generic');
       setLoadError(isTimeoutOrNetwork ? NETWORK_ERROR_MESSAGE : GENERIC_ERROR_MESSAGE);
     } finally {
@@ -178,6 +197,19 @@ export function MemberDetailPage() {
     if (memberForm) setMemberErrors(memberService.validateMemberEdit(memberForm));
   }
 
+  /** Gender is chip buttons, not a native input — there's no separate blur event, so the
+   * value update and validation have to happen together against the same merged draft.
+   * (Calling updateField() then handleBlur('gender') back to back would validate against
+   * the pre-update `memberForm` closure, since setMemberForm's update hasn't committed yet
+   * — that flashed a spurious "Select a gender" error on the very first selection.) */
+  function selectGender(gender: Gender) {
+    if (!memberForm) return;
+    const next = { ...memberForm, gender };
+    setMemberForm(next);
+    setTouched((prev) => ({ ...prev, gender: true }));
+    setMemberErrors(memberService.validateMemberEdit(next));
+  }
+
   async function handleSaveMember(event: FormEvent) {
     event.preventDefault();
     if (!memberForm || !member) return;
@@ -203,7 +235,7 @@ export function MemberDetailPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('phone')) {
         setMemberSaveError('This phone number is already used by another member.');
-      } else if (message === 'Failed to fetch') {
+      } else if (isNetworkError(message)) {
         setMemberSaveError("Couldn't save this member — check your connection and try again.");
       } else {
         setMemberSaveError('Something went wrong saving this member. Please try again.');
@@ -236,7 +268,7 @@ export function MemberDetailPage() {
       navigate('/', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Failed to fetch') {
+      if (isNetworkError(message)) {
         setDeleteError("Couldn't delete this member — check your connection and try again.");
       } else if (message) {
         // Includes the "Cannot delete — used by X subscription/add-on record(s)" message
@@ -280,7 +312,7 @@ export function MemberDetailPage() {
       );
       setEditingSubscriptionId(null);
     } catch (err) {
-      const message = err instanceof Error && err.message === 'Failed to fetch';
+      const message = err instanceof Error && isNetworkError(err);
       setHistoryEditError(
         message ? "Couldn't save — check your connection and try again." : 'Something went wrong saving. Please try again.'
       );
@@ -302,10 +334,7 @@ export function MemberDetailPage() {
       <div className="member-detail-page">
         <div className="member-detail-load-error">
           <p>{loadError}</p>
-          <Link to="/" className="member-detail-back-link">
-            <ArrowLeft size={16} strokeWidth={2} />
-            Back to Members
-          </Link>
+          <BackLink to="/">Back to Members</BackLink>
         </div>
       </div>
     );
@@ -336,6 +365,7 @@ export function MemberDetailPage() {
 
   const planById = new Map(plans.map((p) => [p.id, p]));
   const profileById = new Map(allProfiles.map((p) => [p.id, p]));
+  const branchById = new Map(branches.map((b) => [b.id, b]));
   const memberNameById = new Map(memberRows.map((m) => [m.id, m.name]));
   const historyItemsBySubscription = new Map<number, SubscriptionItem[]>();
   for (const item of historyItems) {
@@ -346,13 +376,27 @@ export function MemberDetailPage() {
 
   const showError = (field: keyof MemberEditDraft) => touched[field] && memberErrors[field];
 
+  const handledByName = member.handled_by_staff ? profileById.get(member.handled_by_staff)?.full_name ?? 'Unknown' : 'Not set';
+
+  /** Personal card's fields hidden behind "Show N more details" (member-detail-page design
+   * §6) — built as a list rather than a hardcoded count so the disclosure label always
+   * matches what's actually rendered, per the design's own "keep it accurate if fields
+   * change" note. */
+  const personalExpandedFields: { label: string; value: string }[] = [
+    { label: 'Date of birth', value: `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} yrs)` },
+    { label: 'Email', value: member.email ?? '—' },
+    { label: 'Occupation', value: member.occupation ?? '—' },
+    { label: 'Aadhaar number', value: member.aadhaar_number ?? '—' },
+    { label: 'Pincode', value: member.pincode ?? '—' },
+    { label: 'Address', value: member.residential_address ?? '—' },
+    { label: 'Branch', value: branchById.get(member.branch_id)?.name ?? 'Unknown' },
+    { label: 'Created by', value: member.created_by ? profileById.get(member.created_by)?.full_name ?? 'Unknown' : '—' },
+  ];
+
   return (
     <div className="member-detail-page">
       <div className="member-detail-header">
-        <Link to="/" className="member-detail-back-link">
-          <ArrowLeft size={16} strokeWidth={2} />
-          Members
-        </Link>
+        <BackLink to="/">Members</BackLink>
       </div>
 
       {successMessage && (
@@ -410,11 +454,14 @@ export function MemberDetailPage() {
           <PhotoLightbox src={member.photo_url} alt={member.name} onClose={() => setIsPhotoEnlarged(false)} />
         )}
         <div className="member-detail-hero-info">
-          <span className="member-detail-name">{member.name}</span>
-          <div className="member-detail-hero-meta">
+          <div className="member-detail-name-row">
+            <span className="member-detail-name">{member.name}</span>
             <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
-            <span className="member-detail-number">{member.member_number}</span>
           </div>
+          <p className="member-detail-hero-meta-1">
+            {member.member_number} · {member.phone} · {member.gender} · joined {formatDate(member.date_of_joining)}
+          </p>
+          <p className="member-detail-hero-meta-2">Handled by: {handledByName}</p>
           {isUploadingPhoto && <p className="member-detail-photo-status">Uploading photo…</p>}
           {photoError && (
             <p className="member-detail-photo-error">
@@ -451,396 +498,125 @@ export function MemberDetailPage() {
             </>
           )}
         </div>
-      </div>
 
-      <div className="member-detail-columns">
-        <div className="member-detail-column-left">
-          <form id="member-detail-form" onSubmit={handleSaveMember} noValidate>
-            <fieldset className="member-detail-section">
-              <legend>Personal</legend>
-              {!isEditingMember || !memberForm ? (
-                <dl className="member-detail-view-grid">
-                  <ViewField label="Name" value={member.name} />
-                  <ViewField label="Phone" value={member.phone} />
-                  <ViewField label="Date of birth" value={formatDate(member.date_of_birth)} />
-                  <ViewField label="Date of joining" value={formatDate(member.date_of_joining)} />
-                  <ViewField label="Gender" value={member.gender} />
-                  <ViewField label="Email" value={member.email ?? '—'} />
-                  <ViewField label="Occupation" value={member.occupation ?? '—'} />
-                  <ViewField label="Aadhaar number" value={member.aadhaar_number ?? '—'} />
-                  <ViewField label="Address" value={member.residential_address ?? '—'} span />
-                </dl>
-              ) : (
-                <div className="member-detail-field-grid">
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-name">
-                      Name
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-name"
-                      value={memberForm.name}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      onBlur={() => handleBlur('name')}
-                    />
-                    {showError('name') && <p className="member-detail-error">{memberErrors.name}</p>}
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-phone">
-                      Phone
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-phone"
-                      type="tel"
-                      inputMode="numeric"
-                      value={memberForm.phone}
-                      onChange={(e) => updateField('phone', sanitizeDigits(e.target.value, 10))}
-                      onBlur={() => handleBlur('phone')}
-                    />
-                    {showError('phone') && <p className="member-detail-error">{memberErrors.phone}</p>}
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-date_of_birth">
-                      Date of birth
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-date_of_birth"
-                      type="date"
-                      value={memberForm.date_of_birth}
-                      onChange={(e) => updateField('date_of_birth', e.target.value)}
-                      onBlur={() => handleBlur('date_of_birth')}
-                    />
-                    {showError('date_of_birth') && <p className="member-detail-error">{memberErrors.date_of_birth}</p>}
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-date_of_joining">
-                      Date of joining
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-date_of_joining"
-                      type="date"
-                      value={memberForm.date_of_joining}
-                      onChange={(e) => updateField('date_of_joining', e.target.value)}
-                      onBlur={() => handleBlur('date_of_joining')}
-                    />
-                    {showError('date_of_joining') && <p className="member-detail-error">{memberErrors.date_of_joining}</p>}
-                  </div>
-                  <div className="member-detail-field">
-                    <span className="member-detail-chip-label">
-                      Gender
-                      <Req />
-                    </span>
-                    <div className="member-detail-chip-row" role="group" aria-label="Gender">
-                      {GENDERS.map((gender) => (
-                        <button
-                          key={gender}
-                          type="button"
-                          className={`member-detail-chip${memberForm.gender === gender ? ' member-detail-chip-selected' : ''}`}
-                          onClick={() => {
-                            updateField('gender', gender);
-                            handleBlur('gender');
-                          }}
-                        >
-                          {gender}
-                        </button>
-                      ))}
-                    </div>
-                    {showError('gender') && <p className="member-detail-error">{memberErrors.gender}</p>}
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-email">Email (optional)</label>
-                    <input
-                      id="detail-email"
-                      type="email"
-                      value={memberForm.email}
-                      onChange={(e) => updateField('email', e.target.value)}
-                      onBlur={() => handleBlur('email')}
-                    />
-                    {showError('email') && <p className="member-detail-error">{memberErrors.email}</p>}
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-occupation">Occupation (optional)</label>
-                    <input id="detail-occupation" value={memberForm.occupation} onChange={(e) => updateField('occupation', e.target.value)} />
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-aadhaar_number">Aadhaar number (optional)</label>
-                    <input
-                      id="detail-aadhaar_number"
-                      value={memberForm.aadhaar_number}
-                      onChange={(e) => updateField('aadhaar_number', sanitizeDigits(e.target.value, 12))}
-                    />
-                  </div>
-                  <div className="member-detail-field member-detail-field-span-2">
-                    <label htmlFor="detail-residential_address">Address (optional)</label>
-                    <textarea
-                      id="detail-residential_address"
-                      rows={4}
-                      value={memberForm.residential_address}
-                      onChange={(e) => updateField('residential_address', e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-            </fieldset>
-
-            <fieldset className="member-detail-section">
-              <legend>Body Metrics</legend>
-              {!isEditingMember || !memberForm ? (
-                <dl className="member-detail-view-grid">
-                  <ViewField label="Weight" value={`${member.weight_kg} kg`} />
-                  <ViewField label="Height" value={`${member.height_cm} cm`} />
-                </dl>
-              ) : (
-                <div className="member-detail-metrics-row">
-                  <div>
-                    <label htmlFor="detail-weight_kg">
-                      Weight (kg)
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-weight_kg"
-                      type="text"
-                      inputMode="decimal"
-                      value={memberForm.weight_kg}
-                      onChange={(e) => updateField('weight_kg', sanitizeDecimal(e.target.value, 2))}
-                      onBlur={() => handleBlur('weight_kg')}
-                    />
-                    {showError('weight_kg') && <p className="member-detail-error">{memberErrors.weight_kg}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="detail-height_cm">
-                      Height (cm)
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-height_cm"
-                      type="text"
-                      inputMode="decimal"
-                      value={memberForm.height_cm}
-                      onChange={(e) => updateField('height_cm', sanitizeDecimal(e.target.value, 2))}
-                      onBlur={() => handleBlur('height_cm')}
-                    />
-                    {showError('height_cm') && <p className="member-detail-error">{memberErrors.height_cm}</p>}
-                  </div>
-                </div>
-              )}
-            </fieldset>
-
-            <fieldset className="member-detail-section">
-              <legend>Medical</legend>
-              {!isEditingMember || !memberForm ? (
-                <dl className="member-detail-view-grid">
-                  <ViewField label="Under doctor's care" value={member.under_doctor_care ? 'Yes' : 'No'} />
-                  {member.under_doctor_care && <ViewField label="Details" value={member.doctor_care_details ?? '—'} span />}
-                </dl>
-              ) : (
-                <>
-                  <label className="member-detail-toggle-row">
-                    <span>Under doctor's care</span>
-                    <span
-                      className={`member-detail-toggle${memberForm.under_doctor_care ? ' member-detail-toggle-on' : ''}`}
-                      role="switch"
-                      aria-checked={memberForm.under_doctor_care}
-                      tabIndex={0}
-                      onClick={() => updateField('under_doctor_care', !memberForm.under_doctor_care)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          updateField('under_doctor_care', !memberForm.under_doctor_care);
-                        }
-                      }}
-                    >
-                      <span className="member-detail-toggle-knob" />
-                    </span>
-                  </label>
-                  {memberForm.under_doctor_care && (
-                    <>
-                      <label htmlFor="detail-doctor_care_details">
-                        Details
-                        <Req />
-                      </label>
-                      <textarea
-                        id="detail-doctor_care_details"
-                        value={memberForm.doctor_care_details}
-                        onChange={(e) => updateField('doctor_care_details', e.target.value)}
-                        onBlur={() => handleBlur('doctor_care_details')}
-                      />
-                      {showError('doctor_care_details') && <p className="member-detail-error">{memberErrors.doctor_care_details}</p>}
-                    </>
-                  )}
-                </>
-              )}
-            </fieldset>
-
-            <fieldset className="member-detail-section">
-              <legend>Emergency contact</legend>
-              {!isEditingMember || !memberForm ? (
-                <dl className="member-detail-view-grid">
-                  <ViewField label="Name" value={member.emergency_contact_name} />
-                  <ViewField label="Phone" value={member.emergency_contact_phone} />
-                  <ViewField label="Relationship" value={member.emergency_contact_relationship} />
-                </dl>
-              ) : (
-                <div className="member-detail-field-grid">
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-emergency_contact_name">
-                      Name
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-emergency_contact_name"
-                      value={memberForm.emergency_contact_name}
-                      onChange={(e) => updateField('emergency_contact_name', e.target.value)}
-                      onBlur={() => handleBlur('emergency_contact_name')}
-                    />
-                    {showError('emergency_contact_name') && (
-                      <p className="member-detail-error">{memberErrors.emergency_contact_name}</p>
-                    )}
-                  </div>
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-emergency_contact_phone">
-                      Phone
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-emergency_contact_phone"
-                      type="tel"
-                      inputMode="numeric"
-                      value={memberForm.emergency_contact_phone}
-                      onChange={(e) => updateField('emergency_contact_phone', sanitizeDigits(e.target.value, 10))}
-                      onBlur={() => handleBlur('emergency_contact_phone')}
-                    />
-                    {showError('emergency_contact_phone') && (
-                      <p className="member-detail-error">{memberErrors.emergency_contact_phone}</p>
-                    )}
-                  </div>
-                  <div className="member-detail-field member-detail-field-span-2">
-                    <label htmlFor="detail-emergency_contact_relationship">
-                      Relationship
-                      <Req />
-                    </label>
-                    <input
-                      id="detail-emergency_contact_relationship"
-                      value={memberForm.emergency_contact_relationship}
-                      onChange={(e) => updateField('emergency_contact_relationship', e.target.value)}
-                      onBlur={() => handleBlur('emergency_contact_relationship')}
-                    />
-                    {showError('emergency_contact_relationship') && (
-                      <p className="member-detail-error">{memberErrors.emergency_contact_relationship}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </fieldset>
-
-            <fieldset className="member-detail-section">
-              <legend>System</legend>
-              <dl className="member-detail-view-grid">
-                <ViewField label="Member number" value={member.member_number} />
-                <ViewField label="Created by" value={member.created_by ? profileById.get(member.created_by)?.full_name ?? 'Unknown' : '—'} />
-                {!isEditingMember || !memberForm ? (
-                  <ViewField
-                    label="Handled by staff"
-                    value={member.handled_by_staff ? profileById.get(member.handled_by_staff)?.full_name ?? 'Unknown' : 'Not set'}
-                  />
-                ) : (
-                  <div className="member-detail-field">
-                    <label htmlFor="detail-handled_by_staff">Handled by staff</label>
-                    <select
-                      id="detail-handled_by_staff"
-                      value={memberForm.handled_by_staff}
-                      onChange={(e) => updateField('handled_by_staff', e.target.value)}
-                    >
-                      <option value="">Not set</option>
-                      {profiles.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.full_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </dl>
-            </fieldset>
-          </form>
-        </div>
-
-        <div className="member-detail-column-right">
-          <section className="member-detail-section">
-            <h2 className="member-detail-section-title">Current Membership</h2>
-            {!currentMembershipItem ? (
-              <div className="member-detail-empty">
-                <p>No active membership</p>
-                <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
-                  <Plus size={16} strokeWidth={2} />
-                  Add Subscription
-                </Link>
-              </div>
-            ) : (
-              <div className="member-detail-item-card">
-                <div className="member-detail-item-card-top">
-                  <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
-                  <Link to={`/members/${member.id}/renew`} className="member-detail-renew-button">
-                    Renew
-                  </Link>
-                </div>
-                <p className="member-detail-item-detail">
-                  {formatDate(currentMembershipItem.start_date)} –{' '}
-                  {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
-                  {'  '}
-                  <span className={`status-badge ${STATUS_BADGE_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
-                </p>
-                <p className="member-detail-item-amount">₹{currentMembershipItem.amount_paid}</p>
-                {currentMembershipItem.end_date &&
-                  (() => {
-                    const { pct, daysRemaining } = membershipProgress(currentMembershipItem.start_date, currentMembershipItem.end_date);
-                    return (
-                      <>
-                        <div className="member-detail-progress-track">
-                          <div className="member-detail-progress-fill" style={{ transform: `scaleX(${pct / 100})` }} />
-                        </div>
-                        <p className="member-detail-progress-label">
-                          {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}
-                        </p>
-                      </>
-                    );
-                  })()}
-              </div>
-            )}
-          </section>
-
-          {currentAddonItems.length > 0 && (
-            <section className="member-detail-section">
-              <h2 className="member-detail-section-title">Current Add-ons</h2>
-              <div className="member-detail-addon-list">
-                {currentAddonItems.map((item) => (
-                  <div key={item.subscription_item_id} className="member-detail-addon-row">
-                    <span>{item.plan_name}</span>
-                    <span className="member-detail-addon-dates">
-                      {formatDate(item.start_date)} – {item.end_date ? formatDate(item.end_date) : 'No expiry'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="member-detail-section">
-            <div className="member-detail-history-header">
-              <h2 className="member-detail-section-title">Subscription History</h2>
-              <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
-                <Plus size={16} strokeWidth={2} />
-                Add Subscription
+        {/* Merged profile+membership card (v2 - design_handoff_flexhub_v2/README.md §4):
+            a lower "strip" whose state (active/expired/no plan) follows the same
+            currentMembershipItem/status this page already derives - the header status
+            badge above uses the exact same status, so the two never disagree. */}
+        {!currentMembershipItem ? (
+          <div className="member-detail-membership-strip member-detail-membership-strip-none">
+            <p className="member-detail-strip-empty-text">No active membership</p>
+            <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
+              <Plus size={16} strokeWidth={2} />
+              Add membership
+            </Link>
+          </div>
+        ) : status === 'expired' ? (
+          <div className="member-detail-membership-strip member-detail-membership-strip-expired">
+            <p className="member-detail-strip-label member-detail-strip-label-expired">Membership expired</p>
+            <div className="member-detail-item-card-top">
+              <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
+              <Link
+                to={`/members/${member.id}/renew`}
+                className="member-detail-renew-button member-detail-renew-button-danger"
+              >
+                Renew now
               </Link>
             </div>
-            {history.length === 0 ? (
-              <p className="member-detail-empty-inline">No subscription history yet</p>
-            ) : (
-              <div className="member-detail-history-list">
-                {history.map((sub) => {
+            <p className="member-detail-item-detail">
+              {formatDate(currentMembershipItem.start_date)} –{' '}
+              {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
+            </p>
+            <p className="member-detail-strip-blocked">Entry blocked at the gate</p>
+          </div>
+        ) : (
+          <div className="member-detail-membership-strip member-detail-membership-strip-active">
+            <p className="member-detail-strip-label">Current membership</p>
+            <div className="member-detail-item-card-top">
+              <span className="member-detail-item-name">{currentMembershipItem.plan_name}</span>
+              <Link to={`/members/${member.id}/renew`} className="member-detail-renew-button">
+                Renew
+              </Link>
+            </div>
+            <p className="member-detail-item-detail">
+              {formatDate(currentMembershipItem.start_date)} –{' '}
+              {currentMembershipItem.end_date ? formatDate(currentMembershipItem.end_date) : 'No expiry'}
+            </p>
+            <p className="member-detail-item-amount">₹{currentMembershipItem.amount_paid}</p>
+            {currentMembershipItem.end_date &&
+              (() => {
+                const { pct, daysRemaining } = membershipProgress(currentMembershipItem.start_date, currentMembershipItem.end_date);
+                return (
+                  <>
+                    <div className="member-detail-progress-track">
+                      <div className="member-detail-progress-fill" style={{ transform: `scaleX(${pct / 100})` }} />
+                    </div>
+                    <p className="member-detail-progress-label">
+                      {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expiring'}
+                    </p>
+                  </>
+                );
+              })()}
+          </div>
+        )}
+      </div>
+
+      <div className="member-detail-main">
+        {/* Add-ons (member-detail-page design §4) — full width, always rendered (an empty
+            state instead of disappearing when there are none), reusing the same shared
+            active/expiring status-badge classes as the hero. member_current_items is
+            already filtered server-side to unexpired/indefinite rows, so "Expired" never
+            applies here (addonBadgeStatus above). */}
+        <section className="member-detail-section">
+          <div className="member-detail-history-header">
+            <h2 className="member-detail-section-title">Add-ons</h2>
+            <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
+              <Plus size={16} strokeWidth={2} />
+              Add
+            </Link>
+          </div>
+          {currentAddonItems.length === 0 ? (
+            <div className="member-detail-addon-empty">
+              <p className="member-detail-strip-empty-text">No add-ons yet</p>
+            </div>
+          ) : (
+            <div className="member-detail-addon-list">
+              {currentAddonItems.map((item) => {
+                const badge = addonBadgeStatus(item.end_date);
+                return (
+                  <div key={item.subscription_item_id} className="member-detail-addon-row">
+                    <div className="member-detail-addon-info">
+                      <span className="member-detail-addon-name">{item.plan_name}</span>
+                      <span className="member-detail-addon-dates">
+                        {item.end_date ? `till ${formatDate(item.end_date)}` : 'No expiry'}
+                      </span>
+                    </div>
+                    <span className={`status-badge ${badge === 'active' ? 'status-badge-active' : 'status-badge-expiring'}`}>
+                      {badge === 'active' ? 'Active' : 'Expiring Soon'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Subscription History (design §5) — also full width now, moved out of the old
+            two-column layout; content/behaviour (expand for line items, inline edit)
+            unchanged, the design's own static mockup doesn't model those interactions. */}
+        <section className="member-detail-section">
+          <div className="member-detail-history-header">
+            <h2 className="member-detail-section-title">Subscription History</h2>
+            <Link to={`/members/${member.id}/renew`} className="member-detail-add-sub-link">
+              <Plus size={16} strokeWidth={2} />
+              Add Subscription
+            </Link>
+          </div>
+          {history.length === 0 ? (
+            <p className="member-detail-empty-inline">No subscription history yet</p>
+          ) : (
+            <div className="member-detail-history-list">
+              {history.map((sub) => {
                   const items = historyItemsBySubscription.get(sub.id) ?? [];
                   const total = items.reduce((sum, i) => sum + i.amount_paid, 0);
                   const expanded = expandedSubscriptionIds.has(sub.id);
@@ -931,7 +707,316 @@ export function MemberDetailPage() {
               </div>
             )}
           </section>
-        </div>
+
+          {/* Medical / Emergency contact (left) · Personal (right, collapsible) — design
+              §6/§7's two-column row (member-detail-page design's .gm-detail-grid), all
+              inside the one native <form> so the hero's external "Save" button (linked via
+              form="member-detail-form") still submits every editable field regardless of
+              which visual column it now renders in. */}
+          <form id="member-detail-form" onSubmit={handleSaveMember} noValidate>
+            <div className="member-detail-grid">
+              <div className="member-detail-grid-col">
+                <fieldset className="member-detail-section">
+                  <legend>Medical</legend>
+                  {!isEditingMember || !memberForm ? (
+                    <dl className="member-detail-view-grid">
+                      <ViewField label="Under doctor's care" value={member.under_doctor_care ? 'Yes' : 'No'} />
+                      {member.under_doctor_care && <ViewField label="Details" value={member.doctor_care_details ?? '—'} span />}
+                    </dl>
+                  ) : (
+                    <>
+                      <label className="member-detail-toggle-row">
+                        <span>Under doctor's care</span>
+                        <span
+                          className={`member-detail-toggle${memberForm.under_doctor_care ? ' member-detail-toggle-on' : ''}`}
+                          role="switch"
+                          aria-checked={memberForm.under_doctor_care}
+                          tabIndex={0}
+                          onClick={() => updateField('under_doctor_care', !memberForm.under_doctor_care)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              updateField('under_doctor_care', !memberForm.under_doctor_care);
+                            }
+                          }}
+                        >
+                          <span className="member-detail-toggle-knob" />
+                        </span>
+                      </label>
+                      {memberForm.under_doctor_care && (
+                        <>
+                          <label htmlFor="detail-doctor_care_details">
+                            Details
+                            <Req />
+                          </label>
+                          <textarea
+                            id="detail-doctor_care_details"
+                            value={memberForm.doctor_care_details}
+                            onChange={(e) => updateField('doctor_care_details', e.target.value)}
+                            onBlur={() => handleBlur('doctor_care_details')}
+                          />
+                          {showError('doctor_care_details') && <p className="member-detail-error">{memberErrors.doctor_care_details}</p>}
+                        </>
+                      )}
+                    </>
+                  )}
+                </fieldset>
+
+                <fieldset className="member-detail-section">
+                  <legend>Emergency contact</legend>
+                  {!isEditingMember || !memberForm ? (
+                    <dl className="member-detail-view-grid">
+                      <ViewField label="Name" value={member.emergency_contact_name} />
+                      <ViewField label="Phone" value={member.emergency_contact_phone} />
+                      <ViewField label="Relationship" value={member.emergency_contact_relationship} />
+                    </dl>
+                  ) : (
+                    <div className="member-detail-field-grid">
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-emergency_contact_name">
+                          Name
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-emergency_contact_name"
+                          value={memberForm.emergency_contact_name}
+                          onChange={(e) => updateField('emergency_contact_name', e.target.value)}
+                          onBlur={() => handleBlur('emergency_contact_name')}
+                        />
+                        {showError('emergency_contact_name') && (
+                          <p className="member-detail-error">{memberErrors.emergency_contact_name}</p>
+                        )}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-emergency_contact_phone">
+                          Phone
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-emergency_contact_phone"
+                          type="tel"
+                          inputMode="numeric"
+                          value={memberForm.emergency_contact_phone}
+                          onChange={(e) => updateField('emergency_contact_phone', sanitizeDigits(e.target.value, 10))}
+                          onBlur={() => handleBlur('emergency_contact_phone')}
+                        />
+                        {showError('emergency_contact_phone') && (
+                          <p className="member-detail-error">{memberErrors.emergency_contact_phone}</p>
+                        )}
+                      </div>
+                      <div className="member-detail-field member-detail-field-span-2">
+                        <label htmlFor="detail-emergency_contact_relationship">
+                          Relationship
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-emergency_contact_relationship"
+                          value={memberForm.emergency_contact_relationship}
+                          onChange={(e) => updateField('emergency_contact_relationship', e.target.value)}
+                          onBlur={() => handleBlur('emergency_contact_relationship')}
+                        />
+                        {showError('emergency_contact_relationship') && (
+                          <p className="member-detail-error">{memberErrors.emergency_contact_relationship}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </fieldset>
+              </div>
+
+              <div className="member-detail-grid-col">
+                <fieldset className="member-detail-section">
+                  <legend>Personal</legend>
+                  {!isEditingMember || !memberForm ? (
+                    <>
+                      <dl className="member-detail-view-grid">
+                        <ViewField label="Gender" value={member.gender} />
+                        <ViewField label="Phone" value={member.phone} />
+                        <ViewField label="Weight" value={`${member.weight_kg} kg`} />
+                        <ViewField label="Height" value={`${member.height_cm} cm`} />
+                        {personalOpen && personalExpandedFields.map((f) => <ViewField key={f.label} label={f.label} value={f.value} />)}
+                      </dl>
+                      <button
+                        type="button"
+                        className="member-detail-disclosure-button"
+                        onClick={() => setPersonalOpen((open) => !open)}
+                      >
+                        {personalOpen ? 'Show less' : `Show ${personalExpandedFields.length} more details`}
+                        {personalOpen ? <ChevronUp size={14} strokeWidth={2} /> : <ChevronDown size={14} strokeWidth={2} />}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="member-detail-field-grid">
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-name">
+                          Name
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-name"
+                          value={memberForm.name}
+                          onChange={(e) => updateField('name', e.target.value)}
+                          onBlur={() => handleBlur('name')}
+                        />
+                        {showError('name') && <p className="member-detail-error">{memberErrors.name}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-phone">
+                          Phone
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-phone"
+                          type="tel"
+                          inputMode="numeric"
+                          value={memberForm.phone}
+                          onChange={(e) => updateField('phone', sanitizeDigits(e.target.value, 10))}
+                          onBlur={() => handleBlur('phone')}
+                        />
+                        {showError('phone') && <p className="member-detail-error">{memberErrors.phone}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-date_of_birth">
+                          Date of birth
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-date_of_birth"
+                          type="date"
+                          value={memberForm.date_of_birth}
+                          onChange={(e) => updateField('date_of_birth', e.target.value)}
+                          onBlur={() => handleBlur('date_of_birth')}
+                        />
+                        {showError('date_of_birth') && <p className="member-detail-error">{memberErrors.date_of_birth}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-date_of_joining">
+                          Date of joining
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-date_of_joining"
+                          type="date"
+                          value={memberForm.date_of_joining}
+                          onChange={(e) => updateField('date_of_joining', e.target.value)}
+                          onBlur={() => handleBlur('date_of_joining')}
+                        />
+                        {showError('date_of_joining') && <p className="member-detail-error">{memberErrors.date_of_joining}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <span className="member-detail-chip-label">
+                          Gender
+                          <Req />
+                        </span>
+                        <div className="member-detail-chip-row" role="group" aria-label="Gender">
+                          {GENDERS.map((gender) => (
+                            <button
+                              key={gender}
+                              type="button"
+                              className={`member-detail-chip${memberForm.gender === gender ? ' member-detail-chip-selected' : ''}`}
+                              onClick={() => selectGender(gender)}
+                            >
+                              {gender}
+                            </button>
+                          ))}
+                        </div>
+                        {showError('gender') && <p className="member-detail-error">{memberErrors.gender}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-weight_kg">
+                          Weight (kg)
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-weight_kg"
+                          type="text"
+                          inputMode="decimal"
+                          value={memberForm.weight_kg}
+                          onChange={(e) => updateField('weight_kg', sanitizeDecimal(e.target.value, 2))}
+                          onBlur={() => handleBlur('weight_kg')}
+                        />
+                        {showError('weight_kg') && <p className="member-detail-error">{memberErrors.weight_kg}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-height_cm">
+                          Height (cm)
+                          <Req />
+                        </label>
+                        <input
+                          id="detail-height_cm"
+                          type="text"
+                          inputMode="decimal"
+                          value={memberForm.height_cm}
+                          onChange={(e) => updateField('height_cm', sanitizeDecimal(e.target.value, 2))}
+                          onBlur={() => handleBlur('height_cm')}
+                        />
+                        {showError('height_cm') && <p className="member-detail-error">{memberErrors.height_cm}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-email">Email (optional)</label>
+                        <input
+                          id="detail-email"
+                          type="email"
+                          value={memberForm.email}
+                          onChange={(e) => updateField('email', e.target.value)}
+                          onBlur={() => handleBlur('email')}
+                        />
+                        {showError('email') && <p className="member-detail-error">{memberErrors.email}</p>}
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-occupation">Occupation (optional)</label>
+                        <input id="detail-occupation" value={memberForm.occupation} onChange={(e) => updateField('occupation', e.target.value)} />
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-aadhaar_number">Aadhaar number (optional)</label>
+                        <input
+                          id="detail-aadhaar_number"
+                          value={memberForm.aadhaar_number}
+                          onChange={(e) => updateField('aadhaar_number', sanitizeDigits(e.target.value, 12))}
+                        />
+                      </div>
+                      <div className="member-detail-field">
+                        <label htmlFor="detail-pincode">Pincode (optional)</label>
+                        <input
+                          id="detail-pincode"
+                          inputMode="numeric"
+                          value={memberForm.pincode}
+                          onChange={(e) => updateField('pincode', sanitizeDigits(e.target.value, 6))}
+                          onBlur={() => handleBlur('pincode')}
+                        />
+                        {showError('pincode') && <p className="member-detail-error">{memberErrors.pincode}</p>}
+                      </div>
+                      <div className="member-detail-field member-detail-field-span-2">
+                        <label htmlFor="detail-residential_address">Address (optional)</label>
+                        <textarea
+                          id="detail-residential_address"
+                          rows={3}
+                          placeholder="Door / flat no, street, area, city, state"
+                          value={memberForm.residential_address}
+                          onChange={(e) => updateField('residential_address', e.target.value)}
+                        />
+                      </div>
+                      <div className="member-detail-field member-detail-field-span-2">
+                        <label htmlFor="detail-handled_by_staff">Handled by staff</label>
+                        <select
+                          id="detail-handled_by_staff"
+                          value={memberForm.handled_by_staff}
+                          onChange={(e) => updateField('handled_by_staff', e.target.value)}
+                        >
+                          <option value="">Not set</option>
+                          {profiles.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.full_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </fieldset>
+              </div>
+            </div>
+          </form>
       </div>
 
       {deleteConfirmOpen && (
@@ -968,6 +1053,27 @@ function membershipProgress(start: string, end: string) {
   const pct = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
   const daysRemaining = Math.max(0, Math.round(totalDays - elapsedDays));
   return { pct, daysRemaining };
+}
+
+/** Whole-years age from a plain YYYY-MM-DD date_of_birth — pure calendar-date arithmetic,
+ * no Date-object timezone conversion (Timezone Rule, lib/datetime.ts). */
+function calculateAge(dateOfBirth: string): number {
+  const [by, bm, bd] = dateOfBirth.split('-').map(Number);
+  const [ty, tm, td] = todayDate().split('-').map(Number);
+  let age = ty - by;
+  if (tm < bm || (tm === bm && td < bd)) age -= 1;
+  return age;
+}
+
+/** Add-ons badge state — member_current_items is already filtered server-side to
+ * end_date is null or >= today (views_and_audit.sql), so a current add-on is never
+ * "Expired"; only Active vs Expiring Soon apply here. */
+function addonBadgeStatus(endDate: string | null): 'active' | 'expiring' {
+  if (endDate === null) return 'active';
+  const [ey, em, ed] = endDate.split('-').map(Number);
+  const [ty, tm, td] = todayDate().split('-').map(Number);
+  const daysRemaining = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
+  return daysRemaining <= EXPIRING_SOON_THRESHOLD_DAYS ? 'expiring' : 'active';
 }
 
 function ViewField({ label, value, span }: { label: string; value: string; span?: boolean }) {
