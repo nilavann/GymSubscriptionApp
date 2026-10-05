@@ -112,7 +112,21 @@ supabase/
 
 ## Testing
 
-Two layers, both dev-only (nothing here ships to the browser). The binding rules are in [CLAUDE.md](CLAUDE.md#testing-rules-binding).
+Four suites, all dev-only (nothing here ships to the browser): frontend unit/component tests, Playwright E2E, Edge Function tests, and database tests. The binding rules for the frontend suites are in [CLAUDE.md](CLAUDE.md#testing-rules-binding); the requirement-by-requirement coverage map for the server-side suites is in [spec/test-traceability.md](spec/test-traceability.md).
+
+From the repo root:
+
+```bash
+npm run test:frontend      # Vitest + React Testing Library (see below)
+npm run test:e2e:frontend  # Playwright (see below)
+npm run test:functions     # Deno: all Edge Functions, with supabase-js replaced by a scriptable fake (needs Deno 2.x)
+npm run test:db            # applies the real migrations to a throwaway local Postgres and runs SQL assertions (needs psql + a superuser)
+npm test                   # test:frontend + test:functions + test:db (not E2E, which builds the app and is slower)
+```
+
+Server-side tests for behaviour the spec requires but the code doesn't yet deliver are kept (not skipped) and marked `GAP` — they pass while the gap exists and fail once it's fixed, so they must then be promoted to normal tests.
+
+### Frontend
 
 ```bash
 # from frontend/ (or from the repo root as `npm run test:frontend` / `npm run test:e2e:frontend`)
@@ -131,7 +145,7 @@ First run of the E2E suite on a machine: `npx playwright install chromium webkit
 
 **E2E tests** (`frontend/e2e/`) run against the **production build** (`vite build` + `vite preview`, not the dev server — StrictMode double-runs effects in dev, which would corrupt the render-once and request-count assertions). Supabase is replaced at the network layer by `e2e/fixtures/supabase-mock.ts`: PostgREST tables, Auth, Edge Functions, Postgres functions (`rpc`) and Storage are answered from in-memory data, and **any request nobody mocked fails the test**. Specs assert the requests the client sends — those payloads are the contract with the database and the Edge Functions.
 
-What this deliberately does **not** cover: RLS policies, triggers and Edge Function code (the mock fakes *answers*; verifying the server needs a real local Supabase — a planned follow-up), pixel-level visuals (`e2e/screens-visual.spec.ts` only produces screenshots for review), and iOS Safari's safe-area, focus-zoom and address-bar behaviour (Playwright WebKit does not reproduce them — check a Vercel preview on a real phone).
+What the frontend suites deliberately do **not** cover: RLS policies, triggers and Edge Function code (the E2E mock fakes *answers* — those are verified by the Deno and database suites above, not here; a real local-Supabase E2E run is a planned follow-up), pixel-level visuals (`e2e/screens-visual.spec.ts` only produces screenshots for review), and iOS Safari's safe-area, focus-zoom and address-bar behaviour (Playwright WebKit does not reproduce them — check a Vercel preview on a real phone).
 
 ### Coverage matrix
 
@@ -143,7 +157,7 @@ What this deliberately does **not** cover: RLS policies, triggers and Edge Funct
 | Components (16 + `nav-items`) | `src/components/*.test.tsx` | RTL; shell/nav assert exactly one navigation structure at 390 / 767 / 768 / 1024 |
 | Pages (16) | `src/pages/*.test.tsx` | RTL with fake services — loading / success / empty / error + retry, role gating, key interactions; list pages assert exactly one of table / cards |
 | Route table | `src/App.test.tsx` | The documented route set, guards, `hideTabBar` handles |
-| Repositories (10) | — (no unit tests) | Thin supabase-js wrappers; their queries and payloads are asserted through the E2E request log |
+| Repositories (10) | `src/repositories/*.test.ts` (subscription, member, profile, audit log, Edge Function-backed deletes) | Request shapes against a mocked supabase-js; the remaining repositories are thin wrappers asserted through the E2E request log |
 | Shell, theme, scroll, overflow, render-once | `e2e/shell-responsive`, `theme`, `scroll`, `mobile-conventions`, `lists-render-once` | Real browsers and real CSS, three projects |
 | Sign-in, access, deep links | `e2e/smoke`, `auth` | Wrong password, deactivated and never-invited accounts, forgot password, a dead token mid-session, refresh on a deep URL (Google OAuth is unit-tested only) |
 | Members, Add / Edit / Delete member | `e2e/members` | List search/filter/open, create/edit/delete payloads, phone hero layout |
@@ -156,6 +170,13 @@ What this deliberately does **not** cover: RLS policies, triggers and Edge Funct
 | Navigation under a slow connection | `e2e/navigation-race` | Back pressed while the next lazy screen is still loading |
 | Fonts | `e2e/fonts` | Only the Latin subsets download; body is Rubik, the brand wordmark Schibsted Grotesk |
 | Phone screens for review | `e2e/screens-visual` | Eight screens plus Login, attached to the report (not a gate) |
+
+### Edge Functions and database
+
+| Area | Where | How it is tested |
+|---|---|---|
+| Edge Functions (all 10) | `supabase/functions/_tests/` | Deno, with `@supabase/supabase-js` swapped for a scriptable fake — auth gates, validation, guards and payload shaping |
+| Schema, constraints, triggers, RLS, RPCs, views, audit log, concurrency | `supabase/tests/` | The real migrations applied to a throwaway Postgres (Supabase `auth`/`storage`/roles stubbed), then SQL assertions and a 2,000-member load check |
 
 ## Notes
 

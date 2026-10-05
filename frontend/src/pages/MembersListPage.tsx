@@ -9,7 +9,15 @@ import { deriveStatus, STATUS_LABEL, STATUS_BADGE_CLASS } from '../lib/status';
 import { getAvatarColor, getInitials } from '../lib/avatar';
 import { PhotoLightbox } from '../components/PhotoLightbox';
 import { FilterDrawer } from '../components/FilterDrawer';
-import type { MemberListRow, MemberStatus } from '../types/member-list';
+import {
+  applyStatusPill,
+  filterBeforeStatus,
+  sortMembers,
+  statusPillCounts as computeStatusPillCounts,
+  type SortOption,
+  type StatusPill,
+} from '../lib/member-list-filters';
+import type { MemberListRow } from '../types/member-list';
 import type { Gender } from '../types/member';
 import type { Plan } from '../types/plan';
 import './MembersListPage.css';
@@ -17,21 +25,8 @@ import { isNetworkError } from '../lib/network-error';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
-type SortOption = 'join-date' | 'name' | 'expiry';
-type StatusPill = 'all' | MemberStatus;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
 type ViewMode = 'table' | 'cards';
-
-function matchesSearch(row: MemberListRow, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const qDigits = q.replace(/\s+/g, '');
-  return (
-    row.name.toLowerCase().includes(q) ||
-    row.member_number.toLowerCase().includes(q) ||
-    row.phone.replace(/\s+/g, '').toLowerCase().includes(qDigits)
-  );
-}
 
 export function MembersListPage() {
   const { memberListRepository, planRepository } = useServices();
@@ -87,47 +82,23 @@ export function MembersListPage() {
 
   /** Every filter EXCEPT the status pill itself — feeds each pill's own count (below), so
       clicking a pill shows how many rows it would surface given the other active filters. */
-  const rowsBeforeStatusFilter = useMemo(() => {
-    let result = rows.filter((row) => matchesSearch(row, search));
-    if (selectedGenders.length > 0) {
-      result = result.filter((row) => selectedGenders.includes(row.gender));
-    }
-    if (selectedAddonPlanIds.length > 0) {
-      result = result.filter((row) => row.current_addon_plan_ids.some((id) => selectedAddonPlanIds.includes(id)));
-    }
-    if (selectedPlanIds.length > 0) {
-      result = result.filter(
-        (row) => row.current_membership_plan_id !== null && selectedPlanIds.includes(row.current_membership_plan_id)
-      );
-    }
-    return result;
-  }, [rows, search, selectedGenders, selectedAddonPlanIds, selectedPlanIds]);
+  const rowsBeforeStatusFilter = useMemo(
+    () =>
+      filterBeforeStatus(rows, {
+        search,
+        genders: selectedGenders,
+        addonPlanIds: selectedAddonPlanIds,
+        planIds: selectedPlanIds,
+      }),
+    [rows, search, selectedGenders, selectedAddonPlanIds, selectedPlanIds]
+  );
 
-  const statusPillCounts = useMemo(() => {
-    const counts: Record<StatusPill, number> = { all: rowsBeforeStatusFilter.length, active: 0, expiring: 0, expired: 0 };
-    for (const row of rowsBeforeStatusFilter) {
-      counts[deriveStatus(row)] += 1;
-    }
-    return counts;
-  }, [rowsBeforeStatusFilter]);
+  const statusPillCounts = useMemo(() => computeStatusPillCounts(rowsBeforeStatusFilter), [rowsBeforeStatusFilter]);
 
-  const filteredRows = useMemo(() => {
-    const result = statusPill === 'all' ? rowsBeforeStatusFilter : rowsBeforeStatusFilter.filter((row) => deriveStatus(row) === statusPill);
-
-    const sorted = [...result];
-    if (sort === 'name') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === 'expiry') {
-      sorted.sort((a, b) => {
-        if (a.current_membership_end_date === null) return 1;
-        if (b.current_membership_end_date === null) return -1;
-        return a.current_membership_end_date.localeCompare(b.current_membership_end_date);
-      });
-    } else {
-      sorted.sort((a, b) => b.date_of_joining.localeCompare(a.date_of_joining));
-    }
-    return sorted;
-  }, [rowsBeforeStatusFilter, statusPill, sort]);
+  const filteredRows = useMemo(
+    () => sortMembers(applyStatusPill(rowsBeforeStatusFilter, statusPill), sort),
+    [rowsBeforeStatusFilter, statusPill, sort]
+  );
 
   function toggleInArray<T>(list: T[], value: T, setList: (next: T[]) => void) {
     setList(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
