@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import './AdminTabs.css';
 
 // Pill sub-tab row shared by every admin/data-management screen (frontend/mockups/README.md
-// §Settings/Admin) — Hub/Plans/Branches/Users/Roles/Audit Log/Numbering all render this at
+// §Settings/Admin) — Hub/Plans/Branches/Users/Roles/Audit Log/Numbering/Backup all render this at
 // the top so an admin can jump between them without going back through the Settings hub.
 const ADMIN_TABS = [
   { label: 'Hub', path: '/settings' },
@@ -12,6 +12,7 @@ const ADMIN_TABS = [
   { label: 'Roles', path: '/roles' },
   { label: 'Audit Log', path: '/audit-log' },
   { label: 'Numbering', path: '/member-numbering' },
+  { label: 'Backup', path: '/data-backup' },
 ];
 
 export function AdminTabs() {

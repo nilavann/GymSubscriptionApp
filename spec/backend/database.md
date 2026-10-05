@@ -892,6 +892,16 @@ This one-time step must be documented in the project's deployment runbook — it
 
 ---
 
+## Import RPC — `import_workbook` (REQ-ADMIN-008) — specified, not yet created
+
+One `service_role`-only `SECURITY DEFINER` function behind the `import-data` Edge Function: `import_workbook(p_caller_id uuid, p_payload jsonb, p_update_existing boolean, p_skip_invalid boolean, p_dry_run boolean) returns jsonb`. It uses the same `set_config('request.jwt.claim.sub', …)` attribution trick as the RPCs above so the importing admin is recorded by `set_audit_fields()`/`audit_row_changes()`; runs each row in its own sub-block so a failing row (and its member-number counter bump) rolls back alone; creates subscriptions by calling `create_subscription_with_items`; and, on `p_dry_run` or an aborted import, rolls the whole transaction back while still returning the per-row outcome list. **Privileges must be revoked from `public, anon, authenticated` explicitly** (see test-traceability.md F10 — do not copy the `revoke … from public` pattern above). No schema change for Merge: no new table or column. Full semantics, validation and tests: [data-export-import.md §5–§6](./data-export-import.md#5-import--merge-semantics).
+
+## Restore RPC and staging table (REQ-ADMIN-009) — specified, not yet created
+
+The one deliberate exception to the audit/number/id triggers above. A new internal table `restore_staging(job_id, sheet, row_no, data jsonb, created_at)` (RLS enabled, **no policies**, `revoke all … from anon, authenticated`; not a business table, purged after use) holds the uploaded workbook rows so a very large restore — including the whole audit log — can run as **one transaction**. `restore_from_staging(p_caller_id, p_job_id, p_dry_run)` (`security definer`, `service_role` only, explicit revoke from `public, anon, authenticated`) takes an advisory lock, checks the empty-target precondition **before** any DDL, then — inside that single transaction — disables the write-path triggers **by name** (`trg_*_audit`, `trg_*_audit_fields`, `trg_members_generate_number`, `trg_user_roles_audit_fields`; `*_no_hard_delete` and all foreign keys stay enforced), loads every table in dependency order with `OVERRIDING SYSTEM VALUE`, resets the identity sequences, verifies post-conditions, and re-enables the triggers (DDL is transactional, so a failure or dry run restores trigger state automatically). Existing audit rows are never altered; those already in the target are re-numbered above the restored ones. Full contract, sanity checks and tests: [data-restore.md §4–§7](./data-restore.md#4-sanity-checks-and-validations).
+
+---
+
 ## Query Conventions
 
 - All client queries go through `supabase-js`, which parameterizes automatically — never build raw SQL strings from user input, on the client or in an Edge Function.

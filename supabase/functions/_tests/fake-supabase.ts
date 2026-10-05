@@ -55,6 +55,7 @@ class Query {
   update(...a: unknown[]) { return this.add('update', a); }
   upsert(...a: unknown[]) { return this.add('upsert', a); }
   eq(...a: unknown[]) { return this.add('eq', a); }
+  gt(...a: unknown[]) { return this.add('gt', a); }
   in(...a: unknown[]) { return this.add('in', a); }
   is(...a: unknown[]) { return this.add('is', a); }
   or(...a: unknown[]) { return this.add('or', a); }

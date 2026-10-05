@@ -63,7 +63,7 @@ supabase/
   migrations/       Postgres schema, applied in order via supabase db push
   functions/        Edge Functions — create-subscription, update-subscription, delete-plan,
                      delete-branch, delete-member, delete-role, invite-user, list-users,
-                     update-user, update-member-number-sequence
+                     update-user, update-member-number-sequence, export-data
 ```
 
 **Layer rules** (see spec/architecture.md for the full contract):
@@ -92,6 +92,7 @@ Other things worth knowing before editing this codebase:
 - "The device is offline" is detected with `isNetworkError()` from `frontend/src/lib/network-error.ts` — never by comparing an error message to a literal such as `'Failed to fetch'`. Safari says "Load failed", Firefox another thing, supabase-js prefixes `TypeError: ` on a failed read, and an Edge Function call reports `FunctionsFetchError` (normalised in `lib/edge-function-error.ts`). An exact-string check silently turns every offline state into a generic error. Note that supabase-js also retries a failed GET three times (1s + 2s + 4s), so the offline screen appears about 7s after the request.
 - Schema changes go through `supabase/migrations/` only, never hand-edited in the hosted dashboard.
 - Operational constants (e.g. member-number sequence start/increment/padding) belong in the `configuration` table, not hardcoded — see [spec/backend/database.md](spec/backend/database.md).
+- **Excel data export is implemented; import (Merge) and Restore (REQ-ADMIN-008/009) are specified but not yet implemented.** Export = `supabase/functions/export-data`, `frontend/src/lib/data-transfer/` (`workbook-schema.ts` is the one place a sheet column is named), `data-export.service.ts`, `DataBackupPage` at `/data-backup`. Specs — [spec/backend/data-export-import.md](spec/backend/data-export-import.md) (workbook, export, **Merge**), [spec/backend/data-restore.md](spec/backend/data-restore.md) (**Restore**) and [spec/frontend/data-export-import.md](spec/frontend/data-export-import.md); read them before touching it. Rules that bind the implementation: there are **two import modes, never blended** — *Merge* keeps every trigger and regenerates ids, member numbers and audit stamps (importing admin as `created_by`; never deletes, never edits subscription line items); *Restore* preserves ids, `created_by`/audit stamps, `member_number` and the audit log, only into a project with no member/subscription/item data, all-or-nothing, committed only when the admin types `RESTORE`, with the write-path triggers disabled **by name only inside** the service-role `restore_from_staging` RPC (FKs stay enforced; database constraints are errors, app format rules are warnings; audit rows are never altered). The uploaded workbook is untrusted and re-validated server-side. `export-data` is the **one** place a service-role read intentionally includes soft-deleted rows. Any new service-role RPC or internal table must `revoke … from public, anon, authenticated` explicitly (test-traceability.md F10 — the older `revoke … from public` pattern leaves it callable by signed-in users). The xlsx/zip libraries (`write-excel-file`, `fflate`) load via dynamic `import()` only — keep it that way. `import-data` is not in the function list above until it exists.
 
 ## Responsive rendering rules (binding)
 

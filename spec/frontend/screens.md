@@ -28,6 +28,7 @@ Every screen re-fetches its data on route entry (see [rules.md](./rules.md)) —
 | WSCR-14 | Audit Log             | `/audit-log`             | Admin   |
 | WSCR-15 | Manage Roles          | `/roles`                 | Admin   |
 | WSCR-16 | Member Numbering      | `/member-numbering`      | Admin   |
+| WSCR-17 | Data Backup           | `/data-backup`           | Admin   |
 
 ---
 
@@ -603,3 +604,15 @@ Same loading/error/retry shape as the other Settings-hub screens (skeleton, netw
 ### Non-functional compliance
 
 Every value shown is either a direct RLS-guarded read (`configuration`, `member_number_sequences` — both admin-only `select` policies) or a client-side preview computed from one; every write goes through a service-role Edge Function, never a raw client update — consistent with this app's server-side-authority principle (architecture.md) and with the collision-avoidance logic specifically needing to query `members`, something RLS alone can't gate safely for this purpose.
+
+---
+
+## WSCR-17 — Data Backup
+
+**Route:** `/data-backup` · Admin only. Reached from the Settings hub's Data Management grid (WSCR-11, a **Data Backup** card with no count) and the **Backup** pill in `AdminTabs` — no primary-nav entry. REQ-ADMIN-007 (export to Excel + photo zip), REQ-ADMIN-008 (merge import) and REQ-ADMIN-009 (full-fidelity restore into an empty project) — the import section has an explicit mode choice.
+
+The full screen spec — layout, every state (export; merge import; the five-step restore stepper with its typed `RESTORE` confirmation), file-level validation, accessibility, layering and test plan — lives in [data-export-import.md](./data-export-import.md); the workbook format, Edge Functions, RPCs and security model are in [../backend/data-export-import.md](../backend/data-export-import.md) (export + Merge) and [../backend/data-restore.md](../backend/data-restore.md) (Restore). **The screen and the Export section are implemented; the Import section (Merge) and Restore are specified, not yet implemented.**
+
+### Non-functional compliance
+
+Admin-only (`RequireAdmin`, same as every screen in this section) and re-checked server-side by both functions. Single column at every width; the only alternate rendering is the import preview's table-vs-cards switch, which renders exactly one (`useIsTabletUp()`, CLAUDE.md responsive rule 1). Every failed operation shows a specific message plus Retry, and offline is detected with `isNetworkError()` (rules.md 29–31).

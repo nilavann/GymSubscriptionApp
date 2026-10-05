@@ -16,6 +16,7 @@ describe('AdminTabs', () => {
       ['Roles', '/roles'],
       ['Audit Log', '/audit-log'],
       ['Numbering', '/member-numbering'],
+      ['Backup', '/data-backup'],
     ]);
   });
 

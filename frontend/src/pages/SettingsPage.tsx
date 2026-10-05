@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { KeyRound, LogOut, Users, Layers, Building2, UserCog, ShieldCheck, Repeat, RefreshCw, History, Hash } from 'lucide-react';
+import { KeyRound, LogOut, Users, Layers, Building2, UserCog, ShieldCheck, Repeat, RefreshCw, History, Hash, Download } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
@@ -185,6 +185,8 @@ export function SettingsPage() {
             to="/member-numbering"
             fetchCount={branchRepository.getCount}
           />
+          {/* A destination, not a record type — no count (spec/frontend/data-export-import.md §1). */}
+          <DataManagementCard icon={<Download size={20} strokeWidth={2} />} label="Data Backup" to="/data-backup" />
         </div>
       </section>
 
@@ -203,12 +205,14 @@ function DataManagementCard({
   icon: ReactNode;
   label: string;
   to?: string;
-  fetchCount: () => Promise<number>;
+  /** Omit for a card that only links somewhere (no count, no loading state). */
+  fetchCount?: () => Promise<number>;
 }) {
-  const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [state, setState] = useState<'loading' | 'loaded' | 'error'>(fetchCount ? 'loading' : 'loaded');
   const [count, setCount] = useState<number | null>(null);
 
   async function load() {
+    if (!fetchCount) return;
     setState('loading');
     try {
       const value = await withTimeout(fetchCount(), FETCH_TIMEOUT_MS, new Error('count-timeout'));
@@ -229,7 +233,7 @@ function DataManagementCard({
       <span className="settings-card-icon">{icon}</span>
       <span className="settings-card-label">{label}</span>
       {state === 'loading' && <span className="settings-card-count-skeleton" aria-label="Loading" />}
-      {state === 'loaded' && <span className="settings-card-count">{count}</span>}
+      {fetchCount && state === 'loaded' && <span className="settings-card-count">{count}</span>}
       {state === 'error' && (
         <button
           type="button"

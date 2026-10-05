@@ -41,6 +41,7 @@ describe('route map (navigation.md)', () => {
         '/action-center',
         '/audit-log',
         '/branches',
+        '/data-backup',
         '/login',
         '/member-numbering',
         '/members/:id',
@@ -87,12 +88,19 @@ describe('the auth shell', () => {
 });
 
 describe('admin-only routes are guarded by RequireAdmin (UX only — RLS is the real boundary)', () => {
-  it.each(['/settings', '/plans', '/branches', '/users', '/users/invite', '/roles', '/audit-log', '/member-numbering'])(
-    '%s',
-    (path) => {
-      expect(elementType(path)).toBe(RequireAdmin);
-    }
-  );
+  it.each([
+    '/settings',
+    '/plans',
+    '/branches',
+    '/users',
+    '/users/invite',
+    '/roles',
+    '/audit-log',
+    '/member-numbering',
+    '/data-backup',
+  ])('%s', (path) => {
+    expect(elementType(path)).toBe(RequireAdmin);
+  });
 
   it.each(['/', '/action-center', '/reports', '/members/new', '/members/:id', '/members/:id/renew', '/members/:id/edit'])(
     '%s is open to every signed-in user',

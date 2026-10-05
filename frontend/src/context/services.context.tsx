@@ -17,6 +17,8 @@ import { subscriptionRepository, type SubscriptionRepository } from '../reposito
 import { auditLogRepository, type AuditLogRepository } from '../repositories/audit-log.repository';
 import { memberNumberingRepository, type MemberNumberingRepository } from '../repositories/member-numbering.repository';
 import { memberNumberingService, type MemberNumberingService } from '../services/member-numbering.service';
+import { dataTransferRepository, type DataTransferRepository } from '../repositories/data-transfer.repository';
+import { createDataExportService, type DataExportService } from '../services/data-export.service';
 
 export interface Services {
   authService: AuthService;
@@ -37,6 +39,8 @@ export interface Services {
   auditLogRepository: AuditLogRepository;
   memberNumberingRepository: MemberNumberingRepository;
   memberNumberingService: MemberNumberingService;
+  dataTransferRepository: DataTransferRepository;
+  dataExportService: DataExportService;
 }
 
 const defaultServices: Services = {
@@ -58,6 +62,9 @@ const defaultServices: Services = {
   auditLogRepository,
   memberNumberingRepository,
   memberNumberingService,
+  dataTransferRepository,
+  // Wired here (not imported inside the service) so the service only ever sees the repository interface.
+  dataExportService: createDataExportService(dataTransferRepository),
 };
 
 const ServicesContext = createContext<Services>(defaultServices);

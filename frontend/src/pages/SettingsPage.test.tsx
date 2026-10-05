@@ -128,6 +128,16 @@ describe('SettingsPage — data management', () => {
     expect(card('Subscriptions')).not.toHaveAttribute('href'); // a count only — no screen for it
   });
 
+  it('has a Data Backup card that links to /data-backup and shows no count or loading state', async () => {
+    renderSettings();
+    await ready();
+    const backup = card('Data Backup');
+    expect(backup).toHaveAttribute('href', '/data-backup');
+    expect(backup.querySelector('.settings-card-count')).toBeNull();
+    expect(backup.querySelector('.settings-card-count-skeleton')).toBeNull();
+    expect(within(backup).queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+  });
+
   it('a failing count shows its own Retry without breaking the other cards', async () => {
     const plan = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(6);
     const { user } = renderSettings({ counts: { plan } });

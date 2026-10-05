@@ -173,6 +173,8 @@ export class SupabaseMock {
   /** Every request the app made, in order — assert request payloads/contracts against this. */
   readonly requests: RecordedRequest[] = [];
   readonly unmocked: string[] = [];
+  /** Storage objects that answer 404 on an authenticated download, as `<bucket>/<path>` (e.g. `member-photos/2/original-2.jpg`). */
+  readonly missingObjects = new Set<string>();
   /** When true, every Supabase request fails at the network level (the "can't reach the server" state). */
   offline = false;
 
@@ -386,6 +388,14 @@ export class SupabaseMock {
       ));
     }
     if (method === 'GET' && pathname.startsWith('/storage/v1/object/sign/')) {
+      return void (await route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/png' }, body: PIXEL_PNG }));
+    }
+    // Authenticated download (`storage.from(bucket).download(path)` -> GET /object/<bucket>/<path>), used by the data export.
+    if (method === 'GET' && pathname.startsWith('/storage/v1/object/') && !pathname.startsWith('/storage/v1/object/public/')) {
+      const key = decodeURIComponent(pathname.slice('/storage/v1/object/'.length));
+      if (this.missingObjects.has(key)) {
+        return void (await this.json(route, 404, { statusCode: '404', error: 'not_found', message: 'Object not found' }));
+      }
       return void (await route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/png' }, body: PIXEL_PNG }));
     }
     if ((method === 'POST' || method === 'PUT') && pathname.startsWith('/storage/v1/object/')) {

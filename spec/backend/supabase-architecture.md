@@ -266,6 +266,10 @@ Edge Functions are the place for logic that should not be exposed to the client.
 - **get-report-data** — monthly membership/add-on item counts (split by `plans.category`) plus the itemized transaction list for a date range; read-only, available to staff too.
 - Audit log reads need no Edge Function — RLS already grants admin-only `select`.
 
+### Data export / import (specified, not yet implemented)
+- **export-data** — admin-only paged read of whitelisted tables (including soft-deleted rows, a documented exception); the Excel workbook and photo zip are assembled in the browser.
+- **import-data** — admin-only; `mode: "merge"` validates the uploaded workbook's rows and runs one atomic `import_workbook` RPC (additive, dry-run capable); `mode: "restore"` stages the rows, creates missing accounts with their original ids (banned until commit) and runs one atomic `restore_from_staging` RPC that preserves every id, audit stamp and the audit log. See [data-export-import.md](./data-export-import.md) and [data-restore.md](./data-restore.md).
+
 ### Deferred
 The old `update-subscription-secondary-member`, `cancel-subscription`, `attach-addon`, and `cancel-subscription-addon` functions have no equivalent in this revision — see [edge-functions.md](./edge-functions.md) for what's deferred and why.
 
@@ -285,6 +289,8 @@ Use a Supabase Storage bucket named something like:
 3. frontend saves both public URLs (`photo_url`, `photo_thumbnail_url`) on the member record
 
 This is better than storing binary data directly in Postgres.
+
+**Data export (REQ-ADMIN-007):** an admin's browser downloads the originals through the same signed-URL/RLS read path to build a photo `.zip`; every export counts as Storage egress against the project's plan allowance, and a database dump does **not** contain these files (only their metadata) — see [data-export-import.md §4.5](./data-export-import.md#45-photos-zip-client-side).
 
 ---
 

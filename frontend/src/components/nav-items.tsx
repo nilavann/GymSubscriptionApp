@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: <Settings size={20} strokeWidth={2} />,
     adminOnly: true,
     // Every admin sub-screen carries <AdminTabs/>, so they live "under" Settings.
-    matchPrefixes: ['/plans', '/branches', '/users', '/roles', '/audit-log', '/member-numbering'],
+    matchPrefixes: ['/plans', '/branches', '/users', '/roles', '/audit-log', '/member-numbering', '/data-backup'],
   },
 ];
 
