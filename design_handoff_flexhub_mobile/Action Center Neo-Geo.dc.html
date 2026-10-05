@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#fafaf9;font-family:Archivo,"Helvetica Neue",Helvetica,sans-serif}
+  button{font-family:inherit}
+  a{color:#92400e;text-decoration:none}
+  a:hover{color:#1c1917}
+  @keyframes ngRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .ng-hscroll{scrollbar-width:thin;scrollbar-color:#a8a29e transparent}
+  .ng-hscroll::-webkit-scrollbar{height:8px}
+  .ng-hscroll::-webkit-scrollbar-track{background:#f5f5f4}
+  .ng-hscroll::-webkit-scrollbar-thumb{background:#292524}
+  .ng-card{flex:0 0 calc((100% - 32px) / 3);min-width:290px}
+  .ng-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  @media (max-width:1180px){ .ng-card{flex:0 0 calc((100% - 16px) / 2)} }
+  @media (max-width:860px){
+    .ng-rail{display:none !important}
+    .ng-card{flex:0 0 86%;min-width:0}
+    .ng-stats{grid-template-columns:1fr}
+  }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#fafaf9;color:#1c1917">
+
+  <header style="flex:0 0 auto;box-sizing:border-box;height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;background:#292524;color:#fff;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-28px;right:286px;width:96px;height:96px;border-radius:999px;background:rgba(217,119,6,0.92)"></div>
+    <div style="position:absolute;bottom:0;right:396px;width:38px;height:19px;border-radius:19px 19px 0 0;background:rgba(255,255,255,0.14)"></div>
+    <div style="display:flex;align-items:center;gap:11px;position:relative">
+      <div style="width:30px;height:30px;border-radius:15px 15px 15px 3px;background:#b45309;display:flex;align-items:center;justify-content:center">
+        <img src="assets/logo.png" alt="Fit &amp; Fine Gym" style="height:15px;width:20px;display:block">
+      </div>
+      <span style="font-size:16px;font-weight:800;letter-spacing:-0.02em;white-space:nowrap">Fit &amp; Fine Gym</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;position:relative">
+      <span style="font-size:12px;font-weight:500;color:#e7e5e4">Priya S · Admin</span>
+      <div style="width:30px;height:30px;border-radius:999px;background:#fff;color:#292524;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800">PS</div>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0">
+
+    <nav class="ng-rail" style="width:214px;flex-shrink:0;box-sizing:border-box;background:#292524;padding:18px 12px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden">
+      <div style="{{ navActive }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 8v4.5l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+        Action Center
+        <span style="margin-left:auto;min-width:21px;padding:2px 6px;border-radius:999px;background:#1c1917;color:#fff;font-size:10.5px;font-weight:800;text-align:center">{{ total }}</span>
+      </div>
+      <div style="{{ navIdle }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"></circle><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"></path><circle cx="17" cy="8" r="2.3"></circle><path d="M15 20c.3-2.6 2-4.4 4.5-4.9"></path></svg>
+        Members
+      </div>
+      <div style="{{ navIdle }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20V10M10 20V4M17 20v-7"></path></svg>
+        Reports
+      </div>
+      <div style="{{ navIdle }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M20.5 13.5a8.5 8.5 0 000-3l-2.2-.5a6.6 6.6 0 00-1-1.7l.7-2.1a8.5 8.5 0 00-2.6-1.5l-1.5 1.7a6.8 6.8 0 00-2 0L10.4 4.7A8.5 8.5 0 007.8 6.2l.7 2.1a6.6 6.6 0 00-1 1.7l-2.2.5a8.5 8.5 0 000 3l2.2.5a6.6 6.6 0 001 1.7l-.7 2.1a8.5 8.5 0 002.6 1.5l1.5-1.7a6.8 6.8 0 002 0l1.5 1.7a8.5 8.5 0 002.6-1.5l-.7-2.1a6.6 6.6 0 001-1.7z"></path></svg>
+        Settings
+      </div>
+      <div style="flex:1"></div>
+      <div style="width:74px;height:37px;border-radius:74px 74px 0 0;background:rgba(217,119,6,0.55);margin:0 auto -18px"></div>
+    </nav>
+
+    <main style="{{ canvasStyle }}">
+      <div style="max-width:1120px">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div style="min-width:0">
+            <h1 style="margin:0;font-size:30px;font-weight:800;letter-spacing:-0.035em;line-height:1.05">Action Center</h1>
+            <p style="margin:7px 0 0;font-size:13px;line-height:1.5;color:#57534e;max-width:540px">Expiring inside 7 days, and everything already lapsed. Members with more than a week left stay in Members.</p>
+          </div>
+          <button disabled="{{ true }}" title="Coming soon" style="flex-shrink:0;padding:10px 18px;border-radius:9px 9px 9px 2px;border:1px solid #e7e5e4;background:#f5f5f4;color:#6b6560;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:not-allowed">Send reminders</button>
+        </div>
+
+        <div class="ng-stats" style="margin-top:22px">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+            <div style="{{ s.cardStyle }}">
+              <div style="{{ s.blob }}"></div>
+              <div style="{{ s.labelStyle }}">{{ s.label }}</div>
+              <div style="{{ s.valueStyle }}">{{ s.value }}</div>
+              <div style="{{ s.noteStyle }}">{{ s.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:24px">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+            <button style="{{ t.style }}" onclick="{{ t.pick }}">{{ t.label }} <span style="{{ t.countStyle }}">{{ t.count }}</span></button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-bottom:10px;border-bottom:2px solid #1c1917">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#57534e">{{ countLabel }}</span>
+          <div style="display:flex;gap:7px">
+            <button title="Previous" style="{{ arrowStyle }}" onclick="{{ prev }}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+            </button>
+            <button title="Next" style="{{ arrowStyle }}" onclick="{{ next }}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:9px;padding:52px 20px;margin-top:18px;border-radius:14px 14px 14px 30px;background:#f5f5f4;border:1.5px dashed #d6d3d1;text-align:center">
+            <div style="width:44px;height:44px;border-radius:22px 22px 22px 4px;background:#292524;display:flex;align-items:center;justify-content:center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 8v4.5l3 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+            </div>
+            <div style="font-size:15px;font-weight:800;letter-spacing:-0.01em">{{ emptyTitle }}</div>
+            <div style="font-size:13px;color:#57534e;max-width:320px;line-height:1.5">{{ emptyBody }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isFilled }}" hint-placeholder-val="{{ true }}">
+          <div class="ng-hscroll" ref="{{ scrollRef }}" style="display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;padding:18px 2px 16px">
+            <sc-for list="{{ rows }}" as="a" hint-placeholder-count="4">
+              <div class="ng-card" style="{{ a.cardStyle }}">
+                <div style="{{ a.cornerStyle }}"></div>
+                <div style="position:relative;display:flex;align-items:flex-start;gap:14px">
+                  <div style="{{ a.photoStyle }}">{{ a.initials }}</div>
+                  <div style="min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <div title="{{ a.name }}" style="font-size:15.5px;font-weight:800;letter-spacing:-0.02em;color:#1c1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.name }}</div>
+                    <div style="font-size:12px;font-weight:600;letter-spacing:.06em;color:#57534e">{{ a.memberNumber }}</div>
+                    <div style="font-size:12.5px;color:#57534e">{{ a.phone }}</div>
+                    <div style="display:flex;margin-top:5px"><span style="{{ a.statusStyle }}">{{ a.statusLabel }}</span></div>
+                  </div>
+                </div>
+                <div style="position:relative;display:flex;flex-direction:column;gap:3px;margin-top:14px;padding-top:12px;border-top:1px solid #e7e5e4">
+                  <span style="font-size:12.5px;color:#57534e">{{ a.plan }}</span>
+                  <span style="font-size:13px;font-weight:700;color:#1c1917">Expiry {{ a.dateText }}</span>
+                </div>
+                <div style="position:relative;display:flex;gap:8px;margin-top:14px">
+                  <button style="{{ a.renewStyle }}">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+                    {{ a.renewLabel }}
+                  </button>
+                  <button style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 0;border-radius:999px;border:1px solid #292524;background:#fff;color:#292524;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>
+                    View
+                  </button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:840},&quot;pattern&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;geometric&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;geometric&quot;,&quot;plain&quot;],&quot;section&quot;:&quot;Neo-Geo&quot;}}">
+const TODAY = new Date("2026-09-04T00:00:00");
+const ACTION_ROWS = [
+  { name: "Sneha Iyer", memberNumber: "FF-0142", phone: "97766 55443", plan: "Silver Plan", date: "2026-09-04" },
+  { name: "Rohan Mehta", memberNumber: "FF-0198", phone: "91234 56780", plan: "Silver Plan", date: "2026-09-05" },
+  { name: "Karan Verma", memberNumber: "FF-0287", phone: "90011 22334", plan: "Gold Plan", date: "2026-09-08" },
+  { name: "Lakshmi Narasimhan Venkataraghavan", memberNumber: "FF-0427", phone: "98400 11223", plan: "Platinum Plan", date: "2026-09-16" },
+  { name: "Priya Nair", memberNumber: "FF-0301", phone: "99887 66554", plan: "Platinum Plan", date: "2026-09-29" },
+  { name: "Kabir Shetty", memberNumber: "FF-0318", phone: "98220 44551", plan: "Gold Plan", date: "2026-08-27" },
+  { name: "Aditi Sharma", memberNumber: "FF-0231", phone: "98765 43210", plan: "Gold Plan", date: "2026-07-29" },
+  { name: "Farhan Ali", memberNumber: "FF-0410", phone: "98123 45098", plan: "Platinum Plan", date: "2026-07-08" },
+  { name: "Vikram Rao", memberNumber: "FF-0355", phone: "96655 44332", plan: "Gold Plan", date: "2026-06-12" },
+  { name: "Meera Joshi", memberNumber: "FF-0264", phone: "95544 33221", plan: "Silver Plan", date: "2026-04-27" },
+  { name: "Rahul Bose", memberNumber: "FF-0177", phone: "94433 22110", plan: "Gold Plan", date: "2026-02-14" },
+  { name: "Divya Menon", memberNumber: "FF-0120", phone: "93322 11009", plan: "Silver Plan", date: "2025-12-03" },
+  { name: "Sanjay Kamath", memberNumber: "FF-0064", phone: "92211 00998", plan: "Platinum Plan", date: "2025-10-19" },
+  { name: "Nisha Reddy", memberNumber: "FF-0038", phone: "91100 99887", plan: "Gold Plan", date: "2025-09-08" },
+];
+
+const URGENT_DAYS = 7;   // owner's call: inside a week is saveable, beyond it is just Active
+const RECENT_DAYS = 90;  // past this a lapsed member is a win-back, not a renewal
+
+// Amber = still saveable, red = already gone. Rank inside each family is carried by fill
+// weight, so the two groups stay apart on an uncalibrated laptop screen.
+const LADDER = {
+  today:   { pillBg: "#b45309", pillInk: "#ffffff", edge: "#b45309", text: "Expires today" },
+  week:    { pillBg: "#fffbeb", pillInk: "#92400e", pillBorder: "#d97706", edge: "#d97706" },
+  lapsed:  { pillBg: "#b91c1c", pillInk: "#ffffff", edge: "#b91c1c" },
+  dormant: { pillBg: "#ffffff", pillInk: "#991b1b", pillBorder: "#fecaca", edge: "#fecaca" },
+};
+const SHAPES = ["16px 16px 16px 3px", "999px", "3px 16px 16px 16px", "16px 3px 16px 16px"];
+
+class Component extends DCLogic {
+  state = { filter: "This week" };
+  scroller = React.createRef();
+
+  slide(dir) {
+    const el = this.scroller.current;
+    if (!el) return;
+    const card = el.querySelector(".ng-card");
+    const step = card ? card.getBoundingClientRect().width + 16 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  }
+
+  renderVals() {
+    const showPattern = (this.props.pattern ?? "geometric") === "geometric";
+    const filter = this.state.filter;
+    const day = 86400000;
+
+    const all = ACTION_ROWS.map((a, i) => {
+      const d = new Date(a.date + "T00:00:00");
+      const diff = Math.round((d - TODAY) / day);
+      const abs = Math.abs(diff);
+      const rung = diff === 0 ? "today"
+        : diff > 0 ? (diff <= URGENT_DAYS ? "week" : "active")
+        : (abs <= RECENT_DAYS ? "lapsed" : "dormant");
+      const L = LADDER[rung] || LADDER.week;
+      const statusLabel = rung === "today" ? "Expires today"
+        : rung === "week" ? (diff === 1 ? "Tomorrow" : `In ${diff} days`)
+        : rung === "active" ? `In ${diff} days`
+        : rung === "lapsed" ? (abs === 1 ? "Lapsed 1 day ago" : `Lapsed ${abs} days ago`)
+        : `Dormant · ${Math.round(abs / 30)} months`;
+      const gone = rung === "lapsed" || rung === "dormant";
+      return {
+        ...a, diff, rung, gone, statusLabel,
+        initials: a.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase(),
+        dateText: d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+        statusStyle: `display:inline-block;padding:4px 11px;border-radius:${gone ? "9px 9px 9px 2px" : "999px"};background:${L.pillBg};color:${L.pillInk};${L.pillBorder ? `border:1px solid ${L.pillBorder};` : ""}font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;`,
+        photoStyle: `width:60px;height:60px;border-radius:${SHAPES[i % SHAPES.length]};background:${gone ? (rung === "lapsed" ? "#b91c1c" : "#7f1d1d") : (rung === "today" ? "#b45309" : "#92400e")};color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;letter-spacing:.01em;flex-shrink:0;`,
+        cardStyle: `position:relative;overflow:hidden;box-sizing:border-box;scroll-snap-align:start;padding:18px;background:#fff;border:1px solid #e7e5e4;border-left:4px solid ${L.edge};border-radius:${i % 2 ? "14px 14px 14px 30px" : "14px 14px 30px 14px"};animation:ngRise .32s ease both;`,
+        cornerStyle: showPattern
+          ? `position:absolute;top:0;right:0;width:64px;height:32px;border-radius:0 0 64px 64px;background:${gone ? "rgba(185,28,28,0.10)" : "rgba(180,83,9,0.12)"};`
+          : "display:none;",
+        renewLabel: gone ? "Win back" : "Renew",
+        renewStyle: `flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 0;border-radius:8px 8px 8px 2px;border:none;background:${gone ? "#b91c1c" : "#b45309"};color:#fff;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;`,
+      };
+    });
+
+    const today = all.filter(a => a.rung === "today");
+    const week = all.filter(a => a.rung === "week").sort((a, b) => a.diff - b.diff);
+    const lapsed = all.filter(a => a.rung === "lapsed").sort((a, b) => b.diff - a.diff);
+    const dormant = all.filter(a => a.rung === "dormant").sort((a, b) => b.diff - a.diff);
+
+    const thisWeek = today.concat(week);
+    const groups = { "This week": thisWeek, "Lapsed": lapsed, "Dormant": dormant };
+    const shown = groups[filter] || thisWeek;
+    const queue = thisWeek.length + lapsed.length + dormant.length;
+
+    const tab = (label, count) => {
+      const on = filter === label;
+      const hot = label === "This week";
+      return {
+        label, count,
+        pick: () => this.setState({ filter: label }),
+        style: `display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:${on ? "10px 10px 10px 2px" : "999px"};border:1px solid ${on ? "#292524" : "#d6d3d1"};background:${on ? "#292524" : "transparent"};color:${on ? "#fff" : "#44403c"};font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;`,
+        countStyle: `display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:${on ? (hot ? "#b45309" : "#b91c1c") : "#f5f5f4"};color:${on ? "#fff" : "#57534e"};font-size:10.5px;font-weight:800;letter-spacing:0;`,
+      };
+    };
+
+    const statCard = (variant) => {
+      if (variant === "hero") return {
+        cardStyle: "position:relative;overflow:hidden;box-sizing:border-box;padding:18px 20px;border-radius:12px 12px 12px 26px;background:#b45309;color:#fff;animation:ngRise .3s ease both;",
+        blob: "position:absolute;top:-30px;right:-18px;width:104px;height:104px;border-radius:999px;background:rgba(255,255,255,0.13);",
+        labelStyle: "position:relative;font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#ffffff;",
+        valueStyle: "position:relative;font-size:46px;font-weight:800;letter-spacing:-0.045em;line-height:1;margin-top:8px;color:#ffffff;",
+        noteStyle: "position:relative;font-size:12px;font-weight:500;margin-top:6px;color:#ffffff;",
+      };
+      const red = variant === "red";
+      return {
+        cardStyle: `position:relative;overflow:hidden;box-sizing:border-box;padding:18px 20px;border-radius:${red ? "12px 12px 26px 12px" : "12px"};background:#fff;border:1px solid #e7e5e4;animation:ngRise .3s .05s ease both;`,
+        blob: `position:absolute;top:0;right:0;width:76px;height:38px;border-radius:0 0 76px 76px;background:${red ? "rgba(185,28,28,0.09)" : "rgba(41,37,36,0.07)"};`,
+        labelStyle: "position:relative;font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#57534e;",
+        valueStyle: `position:relative;font-size:46px;font-weight:800;letter-spacing:-0.045em;line-height:1;margin-top:8px;color:${red ? "#b91c1c" : "#292524"};`,
+        noteStyle: "position:relative;font-size:12px;font-weight:500;margin-top:6px;color:#57534e;",
+      };
+    };
+
+    return {
+      total: queue,
+      stats: [
+        { label: "Expiring this week", value: thisWeek.length, note: today.length ? `${today.length} expiring today` : "Call before the weekend", ...statCard("hero") },
+        { label: "Lapsed · under 90 days", value: lapsed.length, note: "Still worth a call", ...statCard("red") },
+        { label: "Dormant · over 90 days", value: dormant.length, note: "Win-back list", ...statCard("stone") },
+      ],
+      tabs: [tab("This week", thisWeek.length), tab("Lapsed", lapsed.length), tab("Dormant", dormant.length)],
+      rows: shown,
+      isEmpty: shown.length === 0,
+      isFilled: shown.length > 0,
+      emptyTitle: filter === "This week" ? "Nothing expires this week" : filter === "Lapsed" ? "Nobody lapsed in the last 90 days" : "No dormant members",
+      emptyBody: "Switch tabs to see the rest of the queue.",
+      countLabel: `Showing ${shown.length} of ${queue}`,
+      canvasStyle: "flex:1;min-width:0;box-sizing:border-box;padding:26px 28px 40px;background-color:#fafaf9;" +
+        (showPattern
+          ? "background-image:radial-gradient(circle at 100% 0,rgba(180,83,9,0.10) 0 150px,transparent 150px),radial-gradient(circle at 0 100%,rgba(41,37,36,0.06) 0 120px,transparent 120px);background-repeat:no-repeat;"
+          : ""),
+      navActive: "display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px 10px 10px 2px;background:#b45309;color:#fff;font-size:12.5px;font-weight:800;letter-spacing:.02em;cursor:pointer;",
+      navIdle: "display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:#d6d3d1;font-size:12.5px;font-weight:600;cursor:pointer;",
+      arrowStyle: "width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid #1c1917;background:transparent;color:#1c1917;cursor:pointer;",
+      scrollRef: this.scroller,
+      prev: () => this.slide(-1),
+      next: () => this.slide(1),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

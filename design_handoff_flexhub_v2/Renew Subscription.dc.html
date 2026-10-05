@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#fafafa;font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#c2410c;text-decoration:none}
+  a:hover{color:#9a3412;text-decoration:underline}
+  .rs-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  @media (max-width:640px){ .rs-grid{grid-template-columns:1fr} }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fafafa;padding:0 0 48px">
+
+  <div style="max-width:760px;margin:0 auto;padding:22px 20px 0;display:flex;gap:8px;flex-wrap:wrap">
+    <sc-for list="{{ stateChips }}" as="c" hint-placeholder-count="3">
+      <button style="{{ c.style }}" onclick="{{ c.pick }}">{{ c.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="max-width:760px;box-sizing:border-box;margin:0 auto;padding:22px 20px 40px;width:100%">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <button style="width:32px;height:32px;border-radius:9px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+      </button>
+      <h1 style="margin:0;font-size:21px;font-weight:700;color:#111827">Renew / Add Subscription</h1>
+    </div>
+    <p style="margin:0 0 18px 42px;font-size:13px;color:#6b7280">Aditi Sharma · FF-0231 · one checkout, one or more items</p>
+
+    <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:14px 18px;margin-bottom:14px">
+      <div style="width:44px;height:44px;border-radius:14px;background:#ff5a2c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0">AS</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:700;color:#111827">Aditi Sharma</div>
+        <div style="font-size:12.5px;color:#6b7280;margin-top:2px">Gold Plan expires 12 Aug 2026 · 12 days left</div>
+      </div>
+      <span style="display:inline-block;padding:3px 10px;border-radius:999px;background:#fef3c7;color:#b45309;font-size:11.5px;font-weight:600;flex-shrink:0">Expiring Soon</span>
+    </div>
+
+    <div style="background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:20px 22px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="display:inline-block;padding:3px 10px;border-radius:999px;background:#ffe4d9;color:#9a3412;font-size:11.5px;font-weight:700;letter-spacing:.03em">Membership</span>
+        <button style="width:28px;height:28px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"></path></svg>
+        </button>
+      </div>
+      <div class="rs-grid">
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Plan <span style="color:#dc2626">*</span></label>
+          <select style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827"><option>Gold Plan · 6 months · ₹12,000</option></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Start date</label>
+          <input type="date" defaultValue="2026-08-13" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827">
+          <div style="font-size:11.5px;color:#6b7280;margin-top:4px">Defaults to day after current membership expires.</div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Quantity</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ qtyMembership }}" as="q" hint-placeholder-count="6">
+              <button style="{{ q.style }}" onclick="{{ q.pick }}">{{ q.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Amount paid (₹)</label>
+          <input defaultValue="12,000" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827">
+          <div style="font-size:11.5px;color:#6b7280;margin-top:4px">Defaults to price × quantity, editable.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;padding:9px 12px;border-radius:10px;background:#f9fafb;border:1px dashed #e5e7eb;font-size:12.5px;color:#374151">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+        Ends <strong style="margin-left:4px">12 Feb 2027</strong><span style="margin-left:6px;opacity:.6">(computed on save)</span>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:20px 22px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="display:inline-block;padding:3px 10px;border-radius:999px;background:#f3f4f6;color:#374151;font-size:11.5px;font-weight:700;letter-spacing:.03em">Add-on</span>
+        <button style="width:28px;height:28px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"></path></svg>
+        </button>
+      </div>
+      <div class="rs-grid">
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Plan <span style="color:#dc2626">*</span></label>
+          <select style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827"><option>Personal Training · 1 month · ₹2,500</option></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Start date</label>
+          <input type="date" defaultValue="2026-08-01" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827">
+          <div style="font-size:11.5px;color:#6b7280;margin-top:4px">Defaults to day after current add-on expires.</div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Quantity</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ qtyAddon }}" as="q" hint-placeholder-count="6">
+              <button style="{{ q.style }}" onclick="{{ q.pick }}">{{ q.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Amount paid (₹)</label>
+          <input defaultValue="2,500" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827">
+          <div style="font-size:11.5px;color:#6b7280;margin-top:4px">Defaults to price × quantity, editable.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;padding:9px 12px;border-radius:10px;background:#f9fafb;border:1px dashed #e5e7eb;font-size:12.5px;color:#374151">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+        Ends <strong style="margin-left:4px">31 Aug 2026</strong><span style="margin-left:6px;opacity:.6">(computed on save)</span>
+      </div>
+      <sc-if value="{{ showOverlap }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;margin-top:12px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+          <div style="flex:1">
+            <div style="font-size:12.5px;color:#92400e;line-height:1.45">Overlaps with current <strong>Personal Training</strong> (till 5 Aug 2026).</div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button style="padding:5px 12px;border-radius:8px;border:1px solid #fde68a;background:#fff;color:#92400e;font-size:12px;font-weight:600;cursor:pointer">Cancel</button>
+              <button style="padding:5px 12px;border-radius:8px;border:none;background:#b45309;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Save anyway</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <button style="width:100%;padding:12px 0;border-radius:12px;border:1.5px dashed #d1d5db;background:transparent;color:#374151;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px">+ Add another item</button>
+
+    <div style="background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:20px 22px;margin-bottom:14px">
+      <div style="font-size:11.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px">Payment</div>
+      <div class="rs-grid">
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Payment mode <span style="color:#dc2626">*</span></label>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ payChips }}" as="p" hint-placeholder-count="3">
+              <button style="{{ p.style }}" onclick="{{ p.pick }}">{{ p.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Notes <span style="font-weight:400;color:#6b7280">(optional, ≤ 200 chars)</span></label>
+          <input placeholder="e.g. paid partially, balance next week" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-family:inherit;font-size:13px;color:#111827">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f5f5f6">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#6b7280"><span>Gold Plan · 6 months</span><span style="color:#374151;font-weight:600">₹12,000</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#6b7280"><span>Personal Training · 1 month</span><span style="color:#374151;font-weight:600">₹2,500</span></div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showNetErr }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;margin-bottom:14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M1 1l22 22M16.7 11.6A6.5 6.5 0 0119 16M5 12.5a10 10 0 012.9-2.1M8.5 16a4.5 4.5 0 015.7-.6M12 20h.01M2 8.8A15 15 0 0112 5c2.5 0 4.9.6 7 1.8"></path></svg>
+        <span style="flex:1;font-size:13px;color:#92400e;line-height:1.45">Checkout couldn't be saved — network error. No payment was recorded; your items are kept.</span>
+        <button style="padding:7px 12px;border-radius:10px;border:1px solid #fde68a;background:#fff;color:#92400e;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0" onclick="{{ clearNetErr }}">Retry save</button>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid #f1f1f3;border-radius:16px;padding:16px 22px">
+      <div>
+        <div style="font-size:12px;color:#6b7280">Total this visit</div>
+        <div style="font-size:19px;font-weight:700;color:#111827">₹14,500</div>
+        <div style="font-size:11.5px;color:#15803d;margin-top:2px">✓ Contains exactly one membership item</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button style="padding:9px 16px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button style="padding:9px 16px;border-radius:12px;border:none;background-image:linear-gradient(145deg,#c2410c,#9a3412);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 10px rgba(17,24,39,0.12)">Save checkout</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1200}}">
+class Component extends DCLogic {
+  state = { pay: "UPI", qtyM: "×6", qtyA: "×1", variant: "Default" };
+
+  chip(on, radius) {
+    const r = radius ?? 999;
+    return on
+      ? `padding:6px 11px;border-radius:${r}px;border:1.5px solid #ff5a2c;background:#fff4f0;color:#c2410c;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;`
+      : `padding:6px 11px;border-radius:${r}px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;`;
+  }
+
+  renderVals() {
+    const v = this.state.variant;
+    const qty = (sel, key) => ["×1", "×2", "×3", "×6", "×12", "Custom"].map(q => ({
+      label: q, style: this.chip(q === sel), pick: () => this.setState({ [key]: q }),
+    }));
+    return {
+      stateChips: ["Default", "Overlap warning", "Network error"].map(label => ({
+        label, style: this.chip(v === label), pick: () => this.setState({ variant: label }),
+      })),
+      showOverlap: v === "Overlap warning",
+      showNetErr: v === "Network error",
+      clearNetErr: () => this.setState({ variant: "Default" }),
+      qtyMembership: qty(this.state.qtyM, "qtyM"),
+      qtyAddon: qty(this.state.qtyA, "qtyA"),
+      payChips: ["Cash", "UPI", "Card"].map(p => ({
+        label: p,
+        pick: () => this.setState({ pay: p }),
+        style: this.state.pay === p
+          ? `flex:1;padding:8px 0;border-radius:12px;border:1.5px solid #ff5a2c;background:#fff4f0;color:#c2410c;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;`
+          : `flex:1;padding:8px 0;border-radius:12px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;`,
+      })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

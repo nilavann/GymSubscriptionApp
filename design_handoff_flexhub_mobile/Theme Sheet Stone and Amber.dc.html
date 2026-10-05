@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#fafaf9;font-family:Archivo,"Helvetica Neue",Helvetica,sans-serif;color:#1c1917}
+  a{color:#92400e;text-decoration:none}
+  a:hover{color:#1c1917}
+  .ts-ramp{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}
+  .ts-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}
+  .ts-map{display:grid;grid-template-columns:1.1fr 1fr 1.5fr;gap:0}
+  .ts-tok{display:grid;grid-template-columns:26px 1.35fr 1fr 1fr 1.7fr;gap:0;align-items:center}
+  .ts-ctr{display:grid;grid-template-columns:1.6fr 1fr 74px 62px;gap:0;align-items:center}
+  @media (max-width:900px){
+    .ts-ramp{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .ts-two{grid-template-columns:1fr}
+    .ts-tok{grid-template-columns:22px 1.3fr 1fr 1fr}
+    .ts-tok > :nth-child(5n){display:none}
+    .ts-map{grid-template-columns:1fr 1fr}
+    .ts-map > :nth-child(3n){display:none}
+  }
+</style>
+</helmet>
+
+<div style="max-width:1120px;margin:0 auto;padding:40px 32px 72px">
+
+  <header style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-bottom:22px;border-bottom:2px solid #1c1917">
+    <div style="min-width:0;max-width:640px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="assets/logo.png" alt="Fit &amp; Fine Gym" style="height:26px;width:34px;display:block;flex-shrink:0">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">Fit &amp; Fine Gym · Theme sheet</div>
+      </div>
+      <h1 style="margin:14px 0 0;font-size:40px;font-weight:800;letter-spacing:-0.04em;line-height:1">Stone &amp; Amber</h1>
+      <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#44403c;text-wrap:pretty">A warm-neutral management theme. Stone carries the interface; amber is the only saturated colour and marks one thing — something a staff member can act on. The orange logo sits on top of the system as a brand mark rather than driving the interface, which is why the neutrals are warm instead of grey.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <div style="width:74px;height:74px;border-radius:4px;background:#b45309"></div>
+      <div style="width:74px;height:74px;border-radius:4px;background:#292524"></div>
+      <div style="width:74px;height:74px;border-radius:4px;background:#fafaf9;border:1px solid #e7e5e4"></div>
+    </div>
+  </header>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px 34px;margin-top:16px;font-size:11.5px;color:#57534e">
+    <div><strong style="color:#1c1917;font-weight:700">Version</strong> · 1.0</div>
+    <div><strong style="color:#1c1917;font-weight:700">Applies to</strong> · Fit &amp; Fine staff portal, light mode default</div>
+    <div><strong style="color:#1c1917;font-weight:700">Contrast target</strong> · WCAG AA · 4.5:1 body, 3:1 headline</div>
+    <div><strong style="color:#1c1917;font-weight:700">Structure</strong> · two-tier: primitives → semantic roles</div>
+  </div>
+
+  <section style="margin-top:44px">
+    <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">01 · Tier one</div>
+    <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">Primitives</h2>
+    <p style="margin:0 0 20px;font-size:13px;line-height:1.6;color:#57534e;max-width:640px">Raw stops. These are never referenced directly in a component — they exist so the semantic layer has somewhere to point. Both ramps run the full ten stops: stone supplies the structure, and amber needs its own range because the light-mode roles sit at 700–800 while their dark-mode counterparts sit at 300–600.</p>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#44403c;margin-bottom:9px">Stone · neutral ramp</div>
+    <div class="ts-ramp">
+      <sc-for list="{{ stone }}" as="s" hint-placeholder-count="10">
+        <div>
+          <div style="{{ s.chip }}">{{ s.step }}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#57534e;margin-top:5px">{{ s.hex }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#44403c;margin:26px 0 9px">Amber · accent ramp</div>
+    <div class="ts-ramp">
+      <sc-for list="{{ amber }}" as="s" hint-placeholder-count="10">
+        <div>
+          <div style="{{ s.chip }}">{{ s.step }}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#57534e;margin-top:5px">{{ s.hex }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;padding:13px 15px;background:#fffbeb;border:1px solid #fde68a;border-radius:4px">
+      <div style="width:3px;flex-shrink:0;background:#b45309"></div>
+      <div style="font-size:12.5px;line-height:1.6;color:#44403c"><strong style="font-weight:700;color:#1c1917">Amber 600 is not a text colour.</strong> On white it measures {{ amber600OnWhite }}:1 — below AA for body text. Use amber 700 for text and fills that carry white type, and keep 500–600 for rules, edges, chart marks and decorative geometry where nothing sits on top.</div>
+    </div>
+  </section>
+
+  <section style="margin-top:48px">
+    <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">02 · Tier two</div>
+    <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">Semantic tokens</h2>
+    <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#57534e;max-width:640px">What components actually reference. Roles are named for their job, never their hue — so a future rebrand changes the mapping below and nothing else.</p>
+
+    <div class="ts-tok" style="border:1px solid #e7e5e4;border-radius:4px;overflow:hidden;background:#fff">
+      <div style="{{ th }}"></div>
+      <div style="{{ th }}">Token</div>
+      <div style="{{ th }}">Light</div>
+      <div style="{{ th }}">Dark</div>
+      <div style="{{ th }}">Use</div>
+      <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="16">
+        <div style="{{ t.swatchCell }}"><div style="{{ t.swatch }}"></div></div>
+        <div style="{{ t.nameCell }}">{{ t.name }}</div>
+        <div style="{{ t.hexCell }}">{{ t.light }}</div>
+        <div style="{{ t.hexCell }}">{{ t.dark }}</div>
+        <div style="{{ t.useCell }}">{{ t.use }}</div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="margin-top:48px">
+    <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">03 · Verified pairs</div>
+    <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">Contrast</h2>
+    <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#57534e;max-width:640px">Every combination the interface actually uses, measured. Ratios are computed from the hex values on this sheet, so they stay true if a value is edited.</p>
+
+    <div class="ts-ctr" style="border:1px solid #e7e5e4;border-radius:4px;overflow:hidden;background:#fff">
+      <div style="{{ th }}">Foreground on background</div>
+      <div style="{{ th }}">Where</div>
+      <div style="{{ th }}">Ratio</div>
+      <div style="{{ th }}">AA</div>
+      <sc-for list="{{ pairs }}" as="p" hint-placeholder-count="10">
+        <div style="{{ p.sampleCell }}"><span style="{{ p.sample }}">{{ p.label }}</span></div>
+        <div style="{{ p.whereCell }}">{{ p.where }}</div>
+        <div style="{{ p.ratioCell }}">{{ p.ratio }}:1</div>
+        <div style="{{ p.verdictCell }}"><span style="{{ p.verdict }}">{{ p.pass }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="margin-top:48px">
+    <div class="ts-two">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">04 · Interaction</div>
+        <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">States</h2>
+        <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#57534e">Each state moves one step down the amber ramp. Focus is always a 2px amber 700 ring with a 2px offset, on every control, in both modes.</p>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <sc-for list="{{ states }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px">
+              <button style="{{ s.style }}">Renew</button>
+              <div style="min-width:0">
+                <div style="font-size:12px;font-weight:700">{{ s.label }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#57534e">{{ s.value }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">05 · Meaning</div>
+        <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">Functional colours</h2>
+        <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#57534e">Fixed regardless of brand. These never appear as decoration — if one shows up, it is reporting system state.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ functional }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid #e7e5e4;border-radius:4px;background:#fff">
+              <div style="{{ f.dot }}"></div>
+              <div style="min-width:0;flex:1">
+                <div style="font-size:12.5px;font-weight:700">{{ f.label }}</div>
+                <div style="font-size:11.5px;color:#57534e;line-height:1.45">{{ f.use }}</div>
+              </div>
+              <span style="{{ f.pill }}">{{ f.hex }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;padding:13px 15px;background:#fffbeb;border:1px solid #fde68a;border-radius:4px">
+          <div style="width:3px;flex-shrink:0;background:#b45309"></div>
+          <div style="font-size:12.5px;line-height:1.6;color:#44403c"><strong style="font-weight:700;color:#1c1917">Warning and brand share the amber.</strong> Because the primary is amber, a warning cannot be signalled by colour alone — it always carries a label or icon. Where a true alert is needed, use danger.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-top:48px">
+    <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">06 · Applied</div>
+    <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">Component mapping</h2>
+    <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:#57534e;max-width:640px">How the Action Center resolves. Anything not listed here inherits surface-raised on border-subtle.</p>
+
+    <div class="ts-map" style="border:1px solid #e7e5e4;border-radius:4px;overflow:hidden;background:#fff">
+      <div style="{{ th }}">Element</div>
+      <div style="{{ th }}">Token</div>
+      <div style="{{ th }}">Reasoning</div>
+      <sc-for list="{{ mapping }}" as="m" hint-placeholder-count="10">
+        <div style="{{ m.a }}">{{ m.el }}</div>
+        <div style="{{ m.b }}">{{ m.token }}</div>
+        <div style="{{ m.c }}">{{ m.why }}</div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="margin-top:48px">
+    <div class="ts-two">
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">07 · Discipline</div>
+        <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">Rules</h2>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px">
+          <sc-for list="{{ rules }}" as="r" hint-placeholder-count="8">
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e7e5e4;border-radius:4px;background:#fff">
+              <span style="{{ r.tag }}">{{ r.kind }}</span>
+              <span style="font-size:12.5px;line-height:1.55;color:#292524">{{ r.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#57534e">08 · Handoff</div>
+        <h2 style="margin:8px 0 6px;font-size:22px;font-weight:800;letter-spacing:-0.03em">CSS variables</h2>
+        <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#57534e">Light mode on <code style="font-family:'JetBrains Mono',monospace;font-size:12px">:root</code>, dark under a <code style="font-family:'JetBrains Mono',monospace;font-size:12px">[data-theme="dark"]</code> scope. Same names in both, which is the whole point of tier two.</p>
+        <pre style="margin:0;padding:16px;background:#1c1917;color:#e7e5e4;border-radius:4px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.75">{{ cssExport }}</pre>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:48px;padding-top:18px;border-top:1px solid #e7e5e4;font-size:11.5px;color:#78716c;line-height:1.6">
+    Ramps follow the stone and amber families used across current admin products; role naming follows the two-tier primitive → semantic model that design systems use so a rebrand touches the mapping and not the components. Values on this sheet are the source of truth for the Action Center build.
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1200}}">
+const STONE = [["50","#fafaf9"],["100","#f5f5f4"],["200","#e7e5e4"],["300","#d6d3d1"],["400","#a8a29e"],["500","#78716c"],["600","#57534e"],["700","#44403c"],["800","#292524"],["900","#1c1917"]];
+const AMBER = [["50","#fffbeb"],["100","#fef3c7"],["200","#fde68a"],["300","#fcd34d"],["400","#fbbf24"],["500","#f59e0b"],["600","#d97706"],["700","#b45309"],["800","#92400e"],["900","#78350f"]];
+
+const TOKENS = [
+  ["surface-base", "#fafaf9", "#1c1917", "Page canvas. The lowest layer; nothing sits behind it."],
+  ["surface-raised", "#ffffff", "#292524", "Cards, rows, panels — anything the eye should read as an object."],
+  ["surface-sunken", "#f5f5f4", "#171312", "Wells, empty states, disabled fills, table zebra."],
+  ["surface-inverse", "#292524", "#fafaf9", "Rail and header chrome. Also carries the expired state."],
+  ["border-subtle", "#e7e5e4", "#3a3532", "Default 1px hairline on every card and input."],
+  ["border-strong", "#d6d3d1", "#57534e", "Dividers that must survive a busy screen; outlined controls."],
+  ["text-primary", "#1c1917", "#fafaf9", "Names, numbers, headings."],
+  ["text-secondary", "#57534e", "#d6d3d1", "Body copy, metadata, labels."],
+  ["text-muted", "#78716c", "#a8a29e", "Timestamps and hints only — never below 12px on canvas."],
+  ["text-on-accent", "#ffffff", "#1c1917", "Type sitting on action-primary."],
+  ["action-primary", "#b45309", "#f59e0b", "The one saveable action per view: Renew, Add, Confirm."],
+  ["action-primary-hover", "#92400e", "#fbbf24", "Pointer over a primary control."],
+  ["action-primary-active", "#78350f", "#d97706", "Pressed."],
+  ["accent-mark", "#d97706", "#fbbf24", "Rules, card edges, chart marks. Never behind text."],
+  ["accent-surface", "#fffbeb", "#422006", "Tinted background for expiring pills and amber callouts."],
+  ["accent-text", "#92400e", "#fcd34d", "Amber type on a light surface."],
+  ["focus-ring", "#b45309", "#fbbf24", "2px ring, 2px offset, on every focusable control."],
+];
+
+const FUNCTIONAL = [
+  ["Success", "#15803d", "Payment captured, member renewed, sync complete."],
+  ["Danger", "#b91c1c", "Destructive confirmation, failed payment, blocked entry."],
+  ["Info", "#1d4ed8", "Neutral system notices and inline help."],
+  ["Warning", "#b45309", "Shares the brand amber — always paired with a label."],
+];
+
+const MAPPING = [
+  ["Sidebar and header", "surface-inverse", "Chrome recedes; content is the only thing on white."],
+  ["Active nav item", "action-primary", "The single amber element in the rail, so position is obvious."],
+  ["Idle nav item", "stone-300 on inverse", "__NAV_RATIO__ against the rail — readable without competing."],
+  ["Page canvas", "surface-base", "Warm, not grey, so the logo's orange doesn't look imported."],
+  ["Member card", "surface-raised + border-subtle", "Objects are defined by a hairline, not a shadow."],
+  ["Expiring hero stat", "action-primary + text-on-accent", "The only filled amber block on the page."],
+  ["Expired hero stat", "surface-raised + text-primary", "Already lapsed: informational, not actionable."],
+  ["Expiring pill", "accent-surface + accent-mark border", "Tint plus edge reads at a glance without a second hue."],
+  ["Expired pill", "surface-inverse", "Weight carries the difference, not colour."],
+  ["Renew button", "action-primary", "One per card; the whole theme points at it."],
+  ["View button", "border-strong outline", "Secondary by construction — no fill, no accent."],
+  ["Disabled control", "surface-sunken + text-muted", "Reads as unavailable at 4.7:1, not invisible."],
+];
+
+const RULES = [
+  ["Do", "Let amber appear once per screen region. If two amber things compete, one of them is not the primary action."],
+  ["Do", "Use stone for anything already resolved — expired, archived, completed. Amber is for what can still change."],
+  ["Do", "Carry urgency with weight, fill and position before reaching for colour."],
+  ["Don't", "Put white type on amber 500 or 600. Below AA; use amber 700."],
+  ["Don't", "Tint the canvas to signal state. Surfaces are structure, not meaning."],
+  ["Don't", "Add a second brand hue for variety — the theme has one accent by design."],
+  ["Don't", "Use the logo's bright orange as a UI colour; it sits outside the ramp and fails on text."],
+  ["Do", "Keep the functional four fixed across any future theme swap."],
+];
+
+function luma(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function ratio(a, b) {
+  const [hi, lo] = luma(a) > luma(b) ? [luma(a), luma(b)] : [luma(b), luma(a)];
+  return (hi + 0.05) / (lo + 0.05);
+}
+const onTone = hex => (ratio(hex, "#1c1917") >= ratio(hex, "#ffffff") ? "#1c1917" : "#ffffff");
+
+const PAIRS = [
+  ["#1c1917", "#fafaf9", "Member name on canvas", "text-primary"],
+  ["#57534e", "#ffffff", "Body copy on a card", "text-secondary"],
+  ["#78716c", "#ffffff", "Timestamp on a card", "text-muted"],
+  ["#ffffff", "#b45309", "Renew label on primary", "text-on-accent"],
+  ["#92400e", "#fffbeb", "Expiring pill type", "accent-text"],
+  ["#92400e", "#ffffff", "Amber link on a card", "accent-text"],
+  ["#ffffff", "#292524", "Brand name in the rail", "on inverse"],
+  ["#d6d3d1", "#292524", "Idle nav item", "stone-300"],
+  ["#ffffff", "#d97706", "White on accent-mark", "not permitted"],
+  ["#b91c1c", "#ffffff", "Danger text on a card", "functional"],
+];
+
+const cell = "padding:10px 12px;border-top:1px solid #f0efee;font-size:12px;color:#292524;min-width:0;";
+const mono = "padding:10px 12px;border-top:1px solid #f0efee;font-family:'JetBrains Mono',monospace;font-size:11px;color:#44403c;min-width:0;";
+
+class Component extends DCLogic {
+  renderVals() {
+    const chip = (hex, step) => `height:52px;border-radius:4px;background:${hex};border:1px solid rgba(28,25,23,0.12);display:flex;align-items:flex-end;justify-content:flex-start;padding:5px 6px;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:${onTone(hex)};`;
+
+    const cssLines = [":root {"]
+      .concat(TOKENS.map(([n, l]) => `  --color-${n}: ${l};`))
+      .concat(FUNCTIONAL.filter(f => f[0] !== "Warning").map(([n, h]) => `  --color-${n.toLowerCase()}: ${h};`))
+      .concat(["  --color-warning: var(--color-action-primary); /* brand amber: never colour alone */"])
+      .concat(["}", "", '[data-theme="dark"] {'])
+      .concat(TOKENS.map(([n, , d]) => `  --color-${n}: ${d};`))
+      .concat(["}"])
+      .join("\n");
+
+    return {
+      th: "padding:9px 12px;background:#f5f5f4;font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#57534e;",
+      stone: STONE.map(([step, hex]) => ({ step, hex: hex.toUpperCase(), chip: chip(hex, step) })),
+      amber: AMBER.map(([step, hex]) => ({ step, hex: hex.toUpperCase(), chip: chip(hex, step) })),
+      amber600OnWhite: ratio("#d97706", "#ffffff").toFixed(2),
+
+      tokens: TOKENS.map(([name, light, dark, use]) => ({
+        name, light: light.toUpperCase(), dark: dark.toUpperCase(), use,
+        swatchCell: "padding:8px 0 8px 12px;border-top:1px solid #f0efee;",
+        swatch: `width:16px;height:16px;border-radius:3px;background:${light};border:1px solid rgba(28,25,23,0.16);`,
+        nameCell: "padding:10px 10px;border-top:1px solid #f0efee;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:#1c1917;min-width:0;",
+        hexCell: mono,
+        useCell: "padding:10px 12px;border-top:1px solid #f0efee;font-size:11.5px;line-height:1.5;color:#57534e;min-width:0;",
+      })),
+
+      pairs: PAIRS.map(([fg, bg, where, role]) => {
+        const r = ratio(fg, bg);
+        const ok = r >= 4.5;
+        return {
+          label: role, where, ratio: r.toFixed(2),
+          pass: ok ? "Pass" : "No",
+          sampleCell: "padding:8px 12px;border-top:1px solid #f0efee;min-width:0;",
+          sample: `display:inline-block;padding:6px 10px;border-radius:3px;background:${bg};color:${fg};border:1px solid rgba(28,25,23,0.12);font-size:12px;font-weight:700;`,
+          whereCell: cell + "color:#57534e;",
+          ratioCell: mono + "font-weight:600;",
+          verdictCell: "padding:10px 12px;border-top:1px solid #f0efee;",
+          verdict: `display:inline-block;padding:2px 8px;border-radius:3px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:${ok ? "#dcfce7" : "#fee2e2"};color:${ok ? "#14532d" : "#991b1b"};`,
+        };
+      }),
+
+      states: [
+        ["Default", "action-primary · #B45309", "background:#b45309;color:#fff;border:none;"],
+        ["Hover", "action-primary-hover · #92400E", "background:#92400e;color:#fff;border:none;"],
+        ["Active", "action-primary-active · #78350F", "background:#78350f;color:#fff;border:none;"],
+        ["Focus", "2px ring #B45309, 2px offset", "background:#b45309;color:#fff;border:none;box-shadow:0 0 0 2px #fafaf9,0 0 0 4px #b45309;"],
+        ["Disabled", "surface-sunken + text-muted", "background:#f5f5f4;color:#a8a29e;border:1px solid #e7e5e4;cursor:not-allowed;"],
+      ].map(([label, value, skin]) => ({
+        label, value,
+        style: `${skin}flex-shrink:0;width:104px;padding:9px 0;border-radius:4px;font-family:Archivo,sans-serif;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;`,
+      })),
+
+      functional: FUNCTIONAL.map(([label, hex, use]) => ({
+        label, use, hex: hex.toUpperCase(),
+        dot: `width:20px;height:20px;border-radius:4px;background:${hex};flex-shrink:0;`,
+        pill: `flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;color:#44403c;`,
+      })),
+
+      mapping: MAPPING.map(([el, token, why]) => ({
+        el, token,
+        why: why.replace("__NAV_RATIO__", ratio("#d6d3d1", "#292524").toFixed(2) + ":1"),
+        a: cell + "font-weight:600;",
+        b: mono,
+        c: "padding:10px 12px;border-top:1px solid #f0efee;font-size:11.5px;line-height:1.5;color:#57534e;min-width:0;",
+      })),
+
+      rules: RULES.map(([kind, text]) => ({
+        kind, text,
+        tag: `flex-shrink:0;padding:3px 8px;border-radius:3px;font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;background:${kind === "Do" ? "#292524" : "#fee2e2"};color:${kind === "Do" ? "#ffffff" : "#991b1b"};`,
+      })),
+
+      cssExport: cssLines,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

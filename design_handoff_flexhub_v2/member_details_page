@@ -1,0 +1,178 @@
+# Member Detail — design specification
+
+Screen: `Member Detail` in `Gym App Mockups v2.dc.html` (`state.screen === "detail"`).
+Reached from: Members list (row **View** / card tap), Action Center card **View**.
+Exits to: Members (back arrow), Edit Member (**Edit**), Renew / Add Subscription (**Renew**, **+ Add** in Add-ons).
+
+All values below are literal — the screen is inline-styled, no classes except the layout helper `.gm-detail-grid`.
+
+---
+
+## 1. Page frame
+
+| Property | Value |
+|---|---|
+| Page background | `#fafafa` (app shell) |
+| Content column | `max-width: 960px`, centred, `padding: 26px 20px 40px` |
+| Card gap | `margin-bottom: 14px` (16px under the hero card) |
+| Header | back button 32×32, radius 9px, `1px solid #e5e7eb` on `#fff`, icon `#6b7280`, 15px arrow; title 21px/700 `#111827`, gap 10px, `margin-bottom: 18px` |
+| Variant chips | demo-only control row, `gap: 8px`, `margin-bottom: 14px` — remove in production |
+
+### Vertical order (top → bottom)
+
+1. **Hero card** — identity + membership strip (full width)
+2. **Add-ons** (full width)
+3. **Subscription history** (full width)
+4. **Two-column row** — left: Medical, Emergency contact · right: Personal (collapsible)
+
+Rationale: transactional, frequently-changed data first; static profile data last and partly collapsed.
+
+### `.gm-detail-grid`
+
+```css
+.gm-detail-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:0 16px}
+@media (max-width:760px){ .gm-detail-grid{grid-template-columns:1fr} }
+```
+
+Each column is `display:flex;flex-direction:column`. Below 760px the row stacks: Medical → Emergency contact → Personal.
+
+---
+
+## 2. Card shell (used by every card)
+
+```
+background:#fff;
+border:1px solid #f1f1f3;
+border-radius:16px;      /* soft radius; sharp theme = 10px */
+padding:20px 22px;
+margin-bottom:14px;
+```
+
+Section title: `11.5px / 700 / #6b7280`, uppercase, `letter-spacing:.05em`, `margin-bottom:14px`
+(no bottom margin when it sits in a flex header row next to a button).
+
+---
+
+## 3. Hero card
+
+- Shell as above, `margin-bottom:16px`.
+- Top row: `flex`, `align-items:center`, `gap:16px`, `flex-wrap:wrap`.
+- **Avatar** 68×68, radius `tile` (16px soft / 10px sharp), background `tint.accent`, initials 21px/700 `#fff`.
+- **Name** 19px/700 `#111827`; status badge beside it (gap 10px).
+- **Meta line 1** 13px `#6b7280`, `margin-top:4px` — `FF-0231 · 98765 43210 · Female · joined 14 Feb 2026`.
+- **Meta line 2** 12px `#6b7280`, `margin-top:3px` — `Handled by: …`.
+- **Actions** right, `gap:8px`, `flex-shrink:0`: `Edit` (ghost) and `Delete` (danger ghost).
+
+### Membership strip (inside hero, `margin-top:18px`, `padding:18px 20px`, radius 14px)
+
+Three states, driven by membership status:
+
+| State | Strip background / border | Label (11.5/700 uppercase) | CTA | Progress + footnote |
+|---|---|---|---|---|
+| **Active** | `linear-gradient(to bottom, tint.bg, #fff)` · `1px solid tint.border` | "Current membership", `tint.ink` | `Renew` | bar 92% `tint.accent`; foot `12 days remaining` `#6b7280` |
+| **Expired** | `linear-gradient(to bottom, #fef2f2, #fff)` · `1px solid #fecaca` | "Membership expired", `#b91c1c` | `Renew now` | bar 100% `#dc2626`; foot `Expired 34 days ago · entry blocked at the gate` `#b91c1c` |
+| **No plan** | `#fafafa` · `1.5px dashed #d1d5db` | "No active membership", `#6b7280` | `+ Add membership` | no bar, no footnote |
+
+Strip body: plan 17px/700 `#111827` (`margin-top:6px`), meta 13px `#6b7280` (`margin-top:3px`).
+Progress track: `height:6px`, radius 999px, `rgba(17,24,39,0.08)`, `margin-top:14px`, `overflow:hidden`; footnote 11.5px/500, `margin-top:6px`.
+CTA button: `padding:9px 16px`, radius `el` (12px soft / 6px sharp), no border, `background-image: <theme CTA gradient>`, 13px/600 `#fff`, `white-space:nowrap`.
+
+---
+
+## 4. Add-ons (full width)
+
+- Header row: `flex`, `space-between`, `align-items:center`, `margin-bottom:12px` — title left, `+ Add` ghost button right (opens Renew).
+- Row: `flex`, `space-between`, `align-items:center`, `gap:12px`, `padding:10px 0`, `border-bottom:1px solid #f5f5f6`. Last row: `padding:10px 0 0`, no border.
+- Row left: name 13.5px/600 `#111827`; sub-line 12px `#6b7280`, `margin-top:2px` (`till 5 Aug 2026`).
+- Row right: status badge — `Active` `#dcfce7`/`#15803d`, `Expiring Soon` `#fef3c7`/`#b45309`, `Expired` `#fee2e2`/`#b91c1c`.
+- Empty state: dashed `1.5px #d1d5db` panel on `#fafafa`, 13px `#6b7280` copy + `+ Add` action (same pattern as Renew / Action Center empties).
+
+Badge recipe: `display:inline-block;padding:3px 10px;border-radius:<pill>;font-size:11.5px;font-weight:600;`
+
+---
+
+## 5. Subscription history (full width)
+
+- Row: `flex`, `align-items:flex-start`, `gap:10px`, `padding:9px 0`, `border-bottom:1px solid #f5f5f6`.
+- Dot: 8×8, radius 999px, `margin-top:5px`, `flex-shrink:0`. Colour by kind — membership `tint.accent`, add-on `#b45309`, past/inactive `#6b7280`.
+- Title 13px/600 `#111827`; meta 11.5px `#6b7280`, `margin-top:1px` — `range · payment mode · by <staff>`.
+- Amount right, 12.5px/600 `#374151`, `flex-shrink:0`.
+- Newest first. Show 4 rows; paginate or "View all" beyond that (not yet designed).
+
+---
+
+## 6. Personal card — progressive disclosure
+
+Default (collapsed) shows the three fields staff read most:
+
+1. Gender
+2. Phone
+3. Weight / Height
+
+Expanded adds: Date of birth (with age), Email, Occupation, Address, Branch.
+
+Key/value row:
+
+```
+display:flex; justify-content:space-between; gap:14px;
+padding:8px 0; border-bottom:1px solid #f5f5f6;
+```
+
+- Key: 12.5px `#6b7280`, `flex-shrink:0`
+- Value: 13px/500 `#111827`, `text-align:right`
+- Last visible row keeps its border because the disclosure button follows it.
+
+Disclosure button (`margin-top:12px`): text-only, no border/background, `color: tint.ink`, 12.5px/600, `gap:5px`, caret `⌄` 14px that rotates 180° with `transform .18s ease`.
+Labels: **"Show 5 more details"** ↔ **"Show less"**. The count in the label is the number of hidden fields — keep it accurate if fields change.
+
+State: `state.personalOpen` (boolean, default `false`). Collapse resets on navigating away.
+
+---
+
+## 7. Medical / Emergency contact (left column)
+
+Same card shell and key/value rows as Personal.
+
+- **Medical** — one row: `Under doctor's care` → `Yes` / `No`. When `Yes`, show the note field value on a second row.
+- **Emergency contact** — Name, Phone, Relationship. If none on file, show a single dashed row: 12.5px `#6b7280` "Not provided" + `Add` ghost button.
+
+---
+
+## 8. Tokens used on this screen
+
+**Colour roles per tint** (`accent` = fills/bars/tiles, `ink` = text + icons ≥4.5:1, `solid` = fills carrying white labels, `onPill` = text on `pillBg`):
+
+| Tint | bg | border | accent | ink | solid | pillBg | onPill | CTA gradient |
+|---|---|---|---|---|---|---|---|---|
+| wild | `#fff4f0` | `#ffdccf` | `#ff5a2c` | `#c2410c` | `#c2410c` | `#ffe4d9` | `#9a3412` | `linear-gradient(145deg,#c2410c,#9a3412)` |
+| sky | `#eff6ff` | `#dbeafe` | `#2563eb` | `#1d4ed8` | `#1d4ed8` | `#dbeafe` | `#1e3a8a` | `linear-gradient(to bottom,#374151,#111827)` |
+| violet | `#f5f3ff` | `#ede9fe` | `#7c3aed` | `#6d28d9` | `#6d28d9` | `#ede9fe` | `#5b21b6` | `linear-gradient(to bottom,#374151,#111827)` |
+
+**Neutrals** — ink `#111827`, body `#374151`, secondary `#6b7280` (4.8:1 on white), disabled `#9ca3af` only, hairline `#f5f5f6`, card border `#f1f1f3`, control border `#e5e7eb`, surface `#fff`, page `#fafafa`.
+
+**Status** (reserved for membership/add-on state, never decorative) — active `#dcfce7`/`#15803d`, expiring `#fef3c7`/`#b45309`, expired `#fee2e2`/`#b91c1c`, none `#f3f4f6`/`#6b7280`.
+
+**Radii** — soft: card 28 / element 12 / tile 16 / pill 999. sharp: 10 / 6 / 10 / 6. Cards on this screen use a fixed 16px shell radius; `tile`, `el` and `pill` follow the theme.
+
+**Type scale** — 21 / 19 / 17 / 13.5 / 13 / 12.5 / 12 / 11.5 px; weights 400 · 500 · 600 · 700; section labels uppercase with `.05em` tracking.
+
+**Buttons**
+- Ghost: `padding:8px 14px`, radius `el`, `1px solid #e5e7eb`, `#fff`, 12.5px/500 `#374151`, `white-space:nowrap`
+- Danger ghost: same box, `1px solid #fecaca`, 12.5px/600 `#dc2626`
+- CTA: `padding:9px 16px`, radius `el`, no border, theme gradient, 13px/600 `#fff`
+
+---
+
+## 9. Behaviour notes
+
+- `Renew`, `Renew now`, `+ Add membership` and Add-ons `+ Add` all open **Renew / Add Subscription** pre-scoped to this member; the Add-ons entry pre-selects the Add-on category.
+- `Edit` opens **Edit Member** with fields pre-filled; the profile data on this screen is read-only here.
+- `Delete` should confirm in a modal (not yet designed) and is permission-gated.
+- "Handled by" is editable by managers only.
+- Personal disclosure state is local to the screen — not persisted.
+
+## 10. Open items
+
+- Confirmation modal for Delete.
+- "View all" / pagination for Subscription history beyond 4 rows.
+- Attendance or check-in history block, if it belongs on this screen.
