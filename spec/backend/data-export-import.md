@@ -1,6 +1,6 @@
 # Data Export / Import (Excel + Photos) — Backend Spec
 
-> **Status: §4 Export (REQ-ADMIN-007) is implemented (Phase 1). §5–§8 Merge (REQ-ADMIN-008) and Restore ([data-restore.md](./data-restore.md)) are specification only.** Requirements: [REQ-ADMIN-007 / REQ-ADMIN-008](../requirements-template.md#9-feature-area-admin-data-management). Frontend counterpart: [../frontend/data-export-import.md](../frontend/data-export-import.md).
+> **Status: §4 Export (REQ-ADMIN-007) is implemented. The Merge BACKEND (§5–§6: `import-data` function + `import_workbook` RPC) is implemented and tested; the Merge screen, spreadsheet reader and photo import (§7, and the frontend spec §4) are not yet. Restore ([data-restore.md](./data-restore.md)) is specification only.** Requirements: [REQ-ADMIN-007 / REQ-ADMIN-008](../requirements-template.md#9-feature-area-admin-data-management). Frontend counterpart: [../frontend/data-export-import.md](../frontend/data-export-import.md).
 > Import mode B (full-fidelity **Restore** — same ids, `created_by`, audit stamps and audit log): [data-restore.md](./data-restore.md), requirement [REQ-ADMIN-009](../requirements-template.md#9-feature-area-admin-data-management).
 > Read first: [architecture.md](../architecture.md) (server-side authority), [database.md](./database.md) (triggers/RLS the import must respect), [edge-functions.md](./edge-functions.md), [rules.md](./rules.md).
 
@@ -196,6 +196,17 @@ grant execute on function import_workbook(…) to service_role;
 - After all rows: if `not p_skip_invalid` and any `error` outcome exists → raise a sentinel exception (everything rolls back, `committed = false`); if `p_dry_run` → raise a second sentinel (everything rolls back, `committed = false`, outcomes are what a real run would produce).
 - The outcome list is a PL/pgSQL **local variable**, which survives the rollback of the block's database changes (documented PL/pgSQL behaviour) — the function catches the sentinels in the outer handler and returns the list. This is verified by a SQL test rather than assumed.
 - Dry run therefore consumes no member numbers and writes no audit rows; it may leave gaps in `identity` sequences (harmless, not rolled back by Postgres).
+
+### 6.2a Implementation notes (what was built, and where it deliberately differs from the first draft)
+
+- **Files:** `supabase/migrations/20261006000000_import_workbook.sql` (`import_workbook` + the `import_error_message` helper), `supabase/functions/import-data/{index.ts,merge-validation.ts}`, tests `supabase/tests/70_import_workbook.test.sql`, `supabase/functions/_tests/{import-data,merge-validation}.test.ts`, shared fixture `supabase/functions/_tests/fixtures/member-validation-cases.json`.
+- **The Edge Function validates the FORMAT of every value that is present** (and the key fields: branch `code`, plan `name`, member `phone`, subscription ref). **Presence of required columns on a row that must be created is enforced by the database's NOT NULL / CHECK constraints**, which the RPC reports in plain words (`Name is required`, `Weight kg is required`, `Branch is required`, `A membership plan needs a duration`). Reason: on an *update* import a blank cell legitimately means "no change", so the function cannot know up front whether a blank is an error.
+- **Parity:** `validateMemberFields(row, strict)` in `merge-validation.ts` is the server copy of the Add Member form's `validateMemberFields`; `strict` reproduces the form exactly. A 62-case fixture is run by both the Deno suite and the frontend vitest suite. The server is deliberately **stricter** about dates (a real calendar date in `YYYY-MM-DD`; the form only checks "not empty") and about gender (one of the three values).
+- **`dry_run` is a required boolean** in the request — never defaulted — so a forgotten flag cannot commit an import. Under `on_error: "abort"` any invalid row (found by the function or by the database) means nothing is committed; the valid rows are still run **as a forced dry run** so the preview shows the whole picture. A file whose rows are all invalid/deleted never calls the RPC.
+- **Plan updates:** `category` is never changed; a file whose category differs from the stored one is an `error` row ("its category cannot be changed"), not silently ignored. A blank `duration_days` on an update means "no change" (a plan cannot be made indefinite by import).
+- **Handled-by staff:** `handled_by_email` is matched case-insensitively to an *active, non-deleted* profile; an unknown or deactivated user is a **warning** (member still imported, field left empty).
+- **PostgreSQL 18 detail:** NOT NULL violations now carry a generated constraint name, so the friendly "`<Field>` is required" mapping keys on the message + column, not on a missing constraint name.
+- **Row cap:** 2,000 rows per file (a safety rail, not a tuned limit — size is not a concern for now); larger data is imported in several files, which is safe because re-importing is idempotent.
 
 ### 6.3 Audit effects
 

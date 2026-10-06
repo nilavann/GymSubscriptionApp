@@ -154,10 +154,10 @@ Full contract, workbook format and security notes: [data-export-import.md](./dat
 ### `export-data` — implemented
 `supabase/functions/export-data/index.ts`; tests `supabase/functions/_tests/export-data.test.ts` (55). Returns one page of a **whitelisted** table (`branches, plans, roles, members, subscriptions, subscription_items, configuration, member_number_sequences, audit_log, users`), keyset-paginated on `id`, ≤ 1,000 rows. **Includes soft-deleted rows on purpose** — the one documented exception to the "service-role reads filter `deleted_at is null`" convention (rules.md rule 21; data-export-import.md §4.3). `users` pages `auth.admin.listUsers` like `list-users` and never returns hashes/tokens. The `.xlsx` and photo `.zip` are assembled in the browser; photo bytes never pass through a function.
 
-### `import-data` — specified, not yet implemented
+### `import-data` — `merge` mode implemented; `restore` mode specified, not yet implemented
 Two modes, selected by the request's `mode`; both validate input built from the uploaded workbook (untrusted), run one atomic RPC (with `dry_run` doing the same work and rolling back), and report data problems as per-row outcomes inside a 200, never as HTTP errors.
 
-- **`mode: "merge"`** — one call to `import_workbook` (database.md §Import RPC): inserts, plus opt-in updates of non-blank fields on matched branches/plans/members; regenerates ids, member numbers and audit stamps; never deletes, never edits subscription line items, never imports users/roles/configuration/audit history.
+- **`mode: "merge"`** (implemented: `supabase/functions/import-data/`; tests `_tests/import-data.test.ts` (27) and `_tests/merge-validation.test.ts` (106)) — one call to `import_workbook` (database.md §Import RPC): inserts, plus opt-in updates of non-blank fields on matched branches/plans/members; regenerates ids, member numbers and audit stamps; never deletes, never edits subscription line items, never imports users/roles/configuration/audit history.
 - **`mode: "restore"`** — full-fidelity, id-preserving restore into a project with no member data ([data-restore.md](./data-restore.md)). Actions: `stage` (chunked upload into `restore_staging`), `check` (sanity checks R1–R15), `accounts` (create missing auth users with their original ids, banned until commit), `run` (calls `restore_from_staging`; `dry_run` or committed; commit requires `confirm: "RESTORE"`), `cleanup`. Preserves every id, `created_by`/`changed_by`, `member_number`, soft-delete state and the audit log.
 
 ---
