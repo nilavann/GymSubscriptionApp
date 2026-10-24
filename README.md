@@ -67,7 +67,7 @@ Fit & Fine replaces paper registers and spreadsheets at a gym. Front-desk staff 
 | **Plans and subscriptions** | One catalogue of membership plans and add-ons; multi-item checkout with quantity multipliers; couple plans with a shared member; one-time (indefinite) items; renewals with an overlap warning |
 | **Action Center** | A work queue of members whose subscriptions are expiring or have expired |
 | **Reports** | Monthly membership and add-on counts, and an itemised transaction list |
-| **Administration** | Users and invitations, roles, plans, branches, audit log, member-number sequences, Excel data export and import |
+| **Administration** | Users and invitations, roles, plans, branches, audit log, member-number sequences |
 | **Responsive UI** | One layout switch at 768 px: bottom tab bar and cards on phones, sidebar and tables on tablet and desktop |
 
 ### 1.2 Design principles
@@ -84,10 +84,7 @@ At the time of writing (see [TODO.md](TODO.md) for the live list):
 | Feature | State |
 |---|---|
 | Members, plans, checkout and renewal, Action Center, reports, admin screens | Implemented |
-| Excel data export (REQ-ADMIN-007) | Implemented |
 | Permanent member delete and the reserved `system_admin` role (REQ-MEM-008, REQ-ADMIN-010) | Built; its migration and functions are not yet applied to a hosted project |
-| Merge import (REQ-ADMIN-008) | Backend and screen built; the screen has no tests yet and the migration is not yet applied to a hosted project |
-| Restore (REQ-ADMIN-009) | Specified only |
 | Subscription cancellation and refund | Deferred by design |
 | Server-side subscription overlap enforcement | Deliberately client-side only (REQ-SUB-005/008) |
 
@@ -101,7 +98,6 @@ At the time of writing (see [TODO.md](TODO.md) for the live list):
 | **Routing** | React Router 6 | Data router with `v7_startTransition`; route `handle` metadata drives the tab bar |
 | **Styling** | Plain per-page CSS + shared design tokens; Tailwind CSS 4 | Tailwind supplies the token theme and the `tablet:` / `desktop:` breakpoints. No UI component library (no MUI, Chakra, shadcn, Bootstrap) |
 | **Icons and fonts** | `lucide-react`; Fontsource Rubik and Schibsted Grotesk | Fonts are self-hosted variable fonts |
-| **Data transfer** | `write-excel-file`, `read-excel-file`, `fflate` | Loaded with dynamic `import()` only, so they never reach the main bundle |
 | **Backend** | Supabase: Postgres 17, Row Level Security, Auth, Storage, Edge Functions | No custom server. Edge Functions are Deno 2 / TypeScript |
 | **Client SDK** | `@supabase/supabase-js` 2 | Created in exactly one file: `frontend/src/lib/supabase-client.ts` |
 | **Authentication** | Supabase Auth: email and password, Google OAuth | Invite-only for both |
@@ -126,7 +122,7 @@ At the time of writing (see [TODO.md](TODO.md) for the live list):
 │   │   ├── services/             Client-side validation and orchestration, one per entity
 │   │   ├── repositories/         Supabase data access (queries and function invocations)
 │   │   ├── context/              Auth, services (dependency injection) and theme providers
-│   │   ├── lib/                  Supabase client, datetime, network-error, data-transfer, ...
+│   │   ├── lib/                  Supabase client, datetime, network-error, ...
 │   │   ├── styles/               tokens.css (design tokens) and shared status styles
 │   │   ├── types/                Database row types, named exactly like the columns
 │   │   └── test/                 Test helpers: renderWithProviders, fakeServices, builders
@@ -291,14 +287,14 @@ There is no application server. Simple reads and writes go straight from the bro
 | **Repository pattern** | `repositories/` | Isolates Supabase specifics behind typed interfaces |
 | **Dependency injection via React Context** | `ServicesProvider`, `useServices()` | Services and repositories are wired in one place; tests pass fakes |
 | **Secured command endpoints** | `supabase/functions/*` | Writes that carry business rules run server-side with the service role after re-checking the caller's JWT |
-| **Transactional RPC** | `create_subscription_with_items`, `import_workbook`, `purge_member` | A multi-row write lands entirely or not at all |
+| **Transactional RPC** | `create_subscription_with_items`, `purge_member` | A multi-row write lands entirely or not at all |
 | **Append-only line items** | `subscription_items` | Items are immutable after checkout; changes mean a new checkout |
 | **Soft delete plus trigger-enforced audit trail** | Every business table | Reversible deletes and full accountability |
 | **Configuration table** | `configuration` | Operational constants (member-number start, increment, padding) are data, not code |
 | **Route guards and route metadata** | `RequireAuth`, `RequireAdmin`, `handle: { hideTabBar }` | Access UX and layout decisions are declared on the route, not path-matched in components |
 | **Single-render responsive branching** | `useIsTabletUp()` | Exactly one of table or cards is mounted; no hidden twin |
 | **Code splitting with an error boundary** | `React.lazy`, `Suspense`, `ChunkLoadErrorBoundary` | Small first load; a stale chunk after a redeploy fails gracefully |
-| **Single source of truth modules** | `nav-items.tsx`, `workbook-schema.ts`, `supabase-client.ts`, `tokens.css` | One place to change a nav item, a sheet column, the Supabase client or a design token |
+| **Single source of truth modules** | `nav-items.tsx`, `supabase-client.ts`, `tokens.css` | One place to change a nav item, the Supabase client or a design token |
 
 ### 5.5 Data model
 
@@ -346,8 +342,6 @@ All functions re-validate the caller from the request JWT before doing anything 
 | `list-users` | Admin | Lists users with their emails (needs the Admin API) |
 | `update-user` | Admin | Edits name, roles, active flag, or soft-deletes a user; protects against self-change and last-admin lockout |
 | `update-member-number-sequence` | Admin | Retargets a branch's member-number counter safely |
-| `export-data` | Admin | Paged read of whitelisted tables, including soft-deleted rows, for the Excel export |
-| `import-data` | Admin | Merge-mode import: validates the workbook and runs one atomic RPC (dry run supported) |
 
 Reports need no function: they are RLS-guarded reads available to every active user. Full contracts: [spec/backend/edge-functions.md](spec/backend/edge-functions.md).
 
@@ -374,7 +368,7 @@ Details: [spec/backend/business-logic.md](spec/backend/business-logic.md).
 | **Data integrity** | No orphaned, partial or silently altered records | Soft delete with `prevent_hard_delete()`; `CHECK`, `UNIQUE` and `RESTRICT` constraints; atomic RPCs for multi-row writes; immutable line items | SQL tests, including a concurrency test |
 | **Auditability** | Every change is attributable | Audit columns stamped from `auth.uid()` by trigger; field-level `audit_log` written only by trigger and readable only by admins | SQL tests |
 | **Reliability and resilience** | The app fails clearly and recovers | Offline detection via `isNetworkError()` (not message matching); every data screen has loading, error and retry states; profile lookup times out after 10 s; a 401 anywhere returns the user to Login; sessions are re-checked when a tab regains focus; stale lazy chunks are caught by `ChunkLoadErrorBoundary` | Unit and E2E tests (offline, dead token, navigation race) |
-| **Performance** | Fast first load; member list under 1 s at roughly 2,000 members | Route-level code splitting; React and Supabase vendor chunks; Excel and zip libraries loaded on demand; one render branch per breakpoint; keyset-paged export; audit log capped at 500 rows per query | Production build chunk output; `supabase/tests/60_performance.test.sql` (database side of the budget) |
+| **Performance** | Fast first load; member list under 1 s at roughly 2,000 members | Route-level code splitting; React and Supabase vendor chunks; one render branch per breakpoint; audit log capped at 500 rows per query | Production build chunk output; `supabase/tests/60_performance.test.sql` (database side of the budget) |
 | **Usability and responsiveness** | Front desk can work one-handed on a phone | One breakpoint (768 px); bottom tab bar on phones, sidebar on larger screens; drill-in screens show a back link; 16 px form controls (no iOS zoom); `100dvh` shells and safe-area insets | E2E in desktop and mobile projects |
 | **Accessibility** | Usable by touch, keyboard and assistive tech | Touch targets of at least 44 × 44 px; status never conveyed by colour alone; tests query by role, label and visible text; dialogs manage focus | Component and E2E tests |
 | **Maintainability** | Safe to change without surprises | Strict layering; strict TypeScript with no `any`; types named after columns; migrations only for schema; one source of truth per concern; specs kept in step with code | Typecheck in the build; spec traceability matrix |
@@ -396,7 +390,6 @@ Binding rules live in [CLAUDE.md](CLAUDE.md), [spec/backend/rules.md](spec/backe
 - **Dates** go through `frontend/src/lib/datetime.ts`. Never compute or trust a client-supplied `end_date`.
 - **Offline detection** uses `isNetworkError()` from `lib/network-error.ts`, never a comparison against a message such as `'Failed to fetch'`.
 - **Operational constants** belong in the `configuration` table, not in code.
-- **Data-transfer libraries** (`write-excel-file`, `fflate`, `read-excel-file`) are loaded with dynamic `import()` only.
 
 ### 7.2 Styling and UI
 
@@ -428,7 +421,7 @@ The whole app switches at **one** breakpoint: `768px`.
 - **Schema changes only through `supabase/migrations/`.** Never edit an applied migration; add a new one. Never hand-edit the hosted schema.
 - **RLS is enabled on every table.** A table with RLS and no matching policy denies by default, which is the safe failure.
 - **Every Edge Function verifies the caller's identity and role from the JWT first.**
-- **Service-role reads must filter `deleted_at is null` explicitly**, because RLS does not apply to them. The only exceptions are `export-data` (a complete record) and `purge-member` (it must see soft-deleted members).
+- **Service-role reads must filter `deleted_at is null` explicitly**, because RLS does not apply to them. The only exception is `purge-member` (it must see soft-deleted members).
 - **Any new service-role RPC or internal table must `revoke ... from public, anon, authenticated` explicitly.** The older `revoke ... from public` pattern leaves it callable by signed-in users.
 - Only one permanent-delete path exists (`purge-member` / `purge_member()`). Do not add a second.
 
@@ -546,7 +539,6 @@ npm run test:db
 | Admin: Settings, Plans, Branches, Roles | `e2e/settings-admin` | Hub counts, role gating, CRUD payloads, delete guards |
 | Admin: Users, Invite | `e2e/admin-users` | Function payloads, self-protection, soft delete and restore |
 | Admin: Audit Log, Member Numbering | `e2e/admin-audit-numbering` | Filters as requests, view-only, atomic settings RPC |
-| Admin: Data Backup | `e2e/data-backup` | Export with and without audit log and photos, cancel, offline retry, server refusal, admin-only access |
 | Navigation under a slow connection | `e2e/navigation-race` | Back pressed while the next lazy screen is still loading |
 | Fonts | `e2e/fonts` | Only the Latin subsets download |
 | Phone screens for review | `e2e/screens-visual` | Screenshots attached to the report (not a gate) |
@@ -627,7 +619,6 @@ Authority is the database or function named in the last column. The UI hides wha
 | Invite, edit, deactivate and delete users; assign roles | — | ✅ | ✅ | `invite-user`, `list-users`, `update-user` |
 | View the audit log | — | ✅ | ✅ | RLS `audit_log_select_admin` |
 | Configure member numbering | — | ✅ | ✅ | RLS plus `update-member-number-sequence` |
-| Export and import data | — | ✅ | ✅ | `export-data`, `import-data` |
 | Grant or remove the `system_admin` role | — | — | ✅ | `replace_user_roles`, `invite-user` |
 | Permanently delete a member | — | — | ✅ | `purge-member` and `purge_member()` |
 
@@ -636,7 +627,7 @@ Authority is the database or function named in the last column. The UI hides wha
 | Guard | Applies to | Behaviour |
 |---|---|---|
 | `RequireAuth` | Everything except `/login` and `/reset-password` | Redirects to Login when there is no active profile |
-| `RequireAdmin` | `/settings`, `/plans`, `/branches`, `/users`, `/users/invite`, `/roles`, `/audit-log`, `/member-numbering`, `/data-backup` | Shows "Access denied" unless the profile holds `admin` |
+| `RequireAdmin` | `/settings`, `/plans`, `/branches`, `/users`, `/users/invite`, `/roles`, `/audit-log`, `/member-numbering` | Shows "Access denied" unless the profile holds `admin` |
 
 Navigation is filtered from one list (`components/nav-items.tsx`): staff see Action Center, Members and Reports; admins also see Settings. The permanent-delete button appears only when `isSystemAdmin(roles)` is true. All of this is user-experience only; a direct API call is stopped by RLS and the functions.
 
@@ -687,7 +678,6 @@ Run at least two separate environments, each with its own Supabase project and i
 - Check the link before you push: `npx supabase projects list` marks the linked project.
 - Prefer explicit targets over relying on the link: `--project-ref <ref>` on `functions deploy` and `secrets set`, and `--db-url <url>` on `db push`.
 - Run `npx supabase db push --dry-run` first to see which migrations would apply.
-- Features that write data in bulk (Merge import, and Restore once built) should be exercised on the development project first.
 - Keep secrets for each environment in gitignored local files or the platform's secret store, never in the repository, a chat or a command line.
 
 ### 10.2 Deployment order
@@ -727,7 +717,7 @@ Migrations also create the private `member-photos` storage bucket and its polici
 ```bash
 for fn in create-subscription update-subscription delete-member purge-member \
           delete-plan delete-branch delete-role invite-user list-users update-user \
-          update-member-number-sequence export-data import-data; do
+          update-member-number-sequence; do
   npx supabase functions deploy "$fn"
 done
 ```
@@ -737,7 +727,7 @@ PowerShell:
 ```powershell
 $functions = 'create-subscription','update-subscription','delete-member','purge-member',
              'delete-plan','delete-branch','delete-role','invite-user','list-users','update-user',
-             'update-member-number-sequence','export-data','import-data'
+             'update-member-number-sequence'
 foreach ($fn in $functions) { npx supabase functions deploy $fn }
 ```
 
@@ -839,7 +829,6 @@ The [spec/](spec/) folder is the source of truth. Some older spec pages still re
 | [spec/backend/auth.md](spec/backend/auth.md), [spec/frontend/auth.md](spec/frontend/auth.md) | Authentication, backend and frontend |
 | [spec/backend/domain-model.md](spec/backend/domain-model.md), [spec/backend/business-logic.md](spec/backend/business-logic.md) | Entities and business rules |
 | [spec/backend/supabase-architecture.md](spec/backend/supabase-architecture.md) | Beginner-friendly Supabase overview |
-| [spec/backend/data-export-import.md](spec/backend/data-export-import.md), [spec/backend/data-restore.md](spec/backend/data-restore.md) | Excel export, Merge import and Restore |
 | [spec/frontend/screens.md](spec/frontend/screens.md), [spec/frontend/navigation.md](spec/frontend/navigation.md), [spec/frontend/app-shell.md](spec/frontend/app-shell.md) | Screens, routes and the shell |
 | [spec/frontend/performance.md](spec/frontend/performance.md) | Code splitting and bundle strategy |
 | [spec/frontend/styling.md](spec/frontend/styling.md), [spec/frontend/colors.md](spec/frontend/colors.md), [frontend/DESIGN.md](frontend/DESIGN.md) | Design tokens and styling |

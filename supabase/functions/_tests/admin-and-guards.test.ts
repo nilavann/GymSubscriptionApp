@@ -57,6 +57,7 @@ for (const c of [
   });
   Deno.test(`${c.fn}: in-use -> 409 "used by X", nothing deleted`, async () => {
     world.reset(); adminCaller();
+    world.tables[c.target] = () => ({});
     world.tables[c.usedTable] = () => ({ count: 2 });
     const r = await call(await loadFunction(c.fn), { body: { [c.key]: 9 } });
     assertEquals(r.status, 409);
@@ -79,6 +80,7 @@ for (const c of [
   });
   Deno.test(`${c.fn}: count query failure -> 500, nothing deleted`, async () => {
     world.reset(); adminCaller();
+    world.tables[c.target] = () => ({});
     world.tables[c.usedTable] = () => ({ error: { message: 'x' } });
     assertEquals((await call(await loadFunction(c.fn), { body: { [c.key]: 9 } })).status, 500);
     assertEquals(updates().length, 0);
@@ -344,3 +346,52 @@ Deno.test('MEM-005 sequence: a misconfigured increment (0 / non-numeric) is a 50
   seqSetup([], { member_number_increment: 'abc', member_number_padding_width: '4' });
   assertEquals((await call(await loadFunction('update-member-number-sequence'), { body: { branch_id: 1, next_sequence: 5 } })).status, 500);
 });
+
+// ---- reserved system_admin role (REQ-ADMIN-010) -------------------------------------------------------------------------------
+Deno.test('ADMIN-010 delete-role: the reserved system_admin role can never be deleted (403, nothing updated)', async () => {
+  world.reset(); adminCaller();
+  world.tables['roles'] = () => ({ data: { name: 'system_admin' } });
+  world.tables['user_roles'] = () => ({ count: 0 });
+  const r = await call(await loadFunction('delete-role'), { body: { role_id: 3 } });
+  assertEquals(r.status, 403);
+  assertEquals(updates().length, 0);
+});
+function inviteSystemAdminSetup(callerIsSystemAdmin: boolean) {
+  world.reset(); adminCaller();
+  world.rpc['is_system_admin_user'] = () => ({ data: callerIsSystemAdmin });
+  world.tables['roles'] = (q) => ({ data: ((q.arg('in') ?? [])[1] as string[]).map((n) => ({ id: n === 'admin' ? 1 : n === 'staff' ? 2 : 3, name: n })) });
+  world.tables['user_roles'] = () => ({});
+}
+Deno.test('ADMIN-010 invite-user: a plain admin cannot hand out system_admin (403, no auth user created)', async () => {
+  inviteSystemAdminSetup(false);
+  let invited = false;
+  world.inviteUser = () => { invited = true; return { data: { user: { id: 'n', email: 'x' } }, error: null }; };
+  const r = await call(await loadFunction('invite-user'), { body: invitePayload({ roles: ['admin', 'system_admin'] }) });
+  assertEquals(r.status, 403);
+  assert(!invited);
+});
+Deno.test('ADMIN-010 invite-user: system_admin must come with admin (400)', async () => {
+  inviteSystemAdminSetup(true);
+  const r = await call(await loadFunction('invite-user'), { body: invitePayload({ roles: ['staff', 'system_admin'] }) });
+  assertEquals(r.status, 400);
+});
+Deno.test('ADMIN-010 invite-user: a system admin can invite another system admin', async () => {
+  inviteSystemAdminSetup(true);
+  const r = await call(await loadFunction('invite-user'), { body: invitePayload({ roles: ['admin', 'system_admin'] }) });
+  assertEquals(r.status, 201);
+});
+Deno.test('ADMIN-010 invite-user: ordinary roles never trigger the system-admin check', async () => {
+  inviteSystemAdminSetup(false);
+  await call(await loadFunction('invite-user'), { body: invitePayload({ roles: ['staff'] }) });
+  assert(!world.log.some((l) => l.name === 'is_system_admin_user'));
+});
+for (const [message, status] of [
+  ['Only a system admin can grant or remove the system_admin role', 403],
+  ['The system_admin role can only be held together with admin', 400],
+] as const) {
+  Deno.test(`ADMIN-010 update-user: replace_user_roles "${message}" -> ${status}, not a 500`, async () => {
+    world.reset(); userRpcs({ rolesError: message });
+    const r = await call(await loadFunction('update-user'), { body: { user_id: 'u2', roles: ['admin', 'staff'] } });
+    assertEquals(r.status, status);
+  });
+}

@@ -57,7 +57,6 @@ describe('isNavItemActive', () => {
     ['/settings', '/roles', true],
     ['/settings', '/audit-log', true],
     ['/settings', '/member-numbering', true],
-    ['/settings', '/data-backup', true],
     ['/settings', '/reports', false],
     ['/settings', '/planning', false],
   ])('%s is active on %s -> %s', (path, pathname, expected) => {
@@ -65,7 +64,7 @@ describe('isNavItemActive', () => {
   });
 
   it('highlights exactly one item on any route', () => {
-    for (const pathname of ['/', '/action-center', '/reports', '/settings', '/plans', '/members/3', '/users/invite', '/data-backup']) {
+    for (const pathname of ['/', '/action-center', '/reports', '/settings', '/plans', '/members/3', '/users/invite']) {
       const active = NAV_ITEMS.filter((i) => isNavItemActive(i, pathname));
       expect(active, pathname).toHaveLength(1);
     }

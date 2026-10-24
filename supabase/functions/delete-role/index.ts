@@ -63,6 +63,17 @@ Deno.serve(async (req) => {
       return jsonError('role_id is required', 400);
     }
 
+    const { data: roleRow, error: roleError } = await supabaseAdmin
+      .from('roles')
+      .select('name')
+      .eq('id', payload.role_id)
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (roleError) throw roleError;
+    if (roleRow?.name === 'system_admin') {
+      return jsonError('The system_admin role is reserved and cannot be deleted.', 403);
+    }
+
     const { count, error: countError } = await supabaseAdmin
       .from('user_roles')
       .select('user_id', { count: 'exact', head: true })

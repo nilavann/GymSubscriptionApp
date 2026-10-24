@@ -13,6 +13,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { useAuth } from '../context/auth.context';
 import { BackLink } from '../components/BackLink';
 import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import { PhotoLightbox } from '../components/PhotoLightbox';
@@ -31,6 +32,7 @@ import type { PaymentMode, Subscription, SubscriptionItem } from '../types/subsc
 import type { MemberEditDraft, MemberEditFormErrors } from '../services/member.service';
 import './MemberDetailPage.css';
 import { isNetworkError } from '../lib/network-error';
+import { isSystemAdmin } from '../lib/roles';
 
 const FETCH_TIMEOUT_MS = 10000;
 const GENDERS: Gender[] = ['Male', 'Female', 'Other'];
@@ -51,6 +53,9 @@ function Req() {
   );
 }
 
+/** What a system admin types to unlock the permanent-delete button. */
+const PURGE_CONFIRM_WORD = 'DELETE';
+
 export function MemberDetailPage() {
   const { id } = useParams();
   const memberId = Number(id);
@@ -67,6 +72,9 @@ export function MemberDetailPage() {
     memberListRepository,
     branchRepository,
   } = useServices();
+  const { currentProfile } = useAuth();
+  /** UX gate only — purge-member re-checks server-side (REQ-MEM-008). */
+  const canPurge = isSystemAdmin(currentProfile?.roles);
   /** Set by RenewSubscriptionPage on success navigation (renew-checkout-page.md §7's "toast" — no
    * app-wide toast system exists yet, so a dismissible banner fills that role here). */
   const [successMessage, setSuccessMessage] = useState<string | null>((location.state as { toast?: string } | null)?.toast ?? null);
@@ -106,6 +114,11 @@ export function MemberDetailPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [purgeConfirmOpen, setPurgeConfirmOpen] = useState(false);
+  const [purgeConfirmText, setPurgeConfirmText] = useState('');
+  const [isPurging, setIsPurging] = useState(false);
+  const [purgeError, setPurgeError] = useState<string | null>(null);
 
   const [expandedSubscriptionIds, setExpandedSubscriptionIds] = useState<Set<number>>(new Set());
   const [editingSubscriptionId, setEditingSubscriptionId] = useState<number | null>(null);
@@ -278,6 +291,33 @@ export function MemberDetailPage() {
         setDeleteError('Something went wrong deleting this member. Please try again.');
       }
       setIsDeleting(false);
+    }
+  }
+
+  function closePurgeDialog() {
+    setPurgeConfirmOpen(false);
+    setPurgeConfirmText('');
+    setPurgeError(null);
+  }
+
+  async function handleConfirmPurge() {
+    if (!member || purgeConfirmText !== PURGE_CONFIRM_WORD) return;
+    setIsPurging(true);
+    setPurgeError(null);
+    try {
+      await memberRepository.purge(member.id);
+      navigate('/', { replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (isNetworkError(message)) {
+        setPurgeError("Couldn't delete this member — check your connection and try again.");
+      } else if (message) {
+        // Includes the "Cannot purge — shared member on N other member(s) subscriptions" message verbatim.
+        setPurgeError(message);
+      } else {
+        setPurgeError('Something went wrong deleting this member. Please try again.');
+      }
+      setIsPurging(false);
     }
   }
 
@@ -484,6 +524,12 @@ export function MemberDetailPage() {
                 <Trash2 size={16} strokeWidth={2} />
                 Delete
               </button>
+              {canPurge && (
+                <button type="button" className="member-detail-delete-link" onClick={() => setPurgeConfirmOpen(true)}>
+                  <Trash2 size={16} strokeWidth={2} />
+                  Delete permanently
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -1033,6 +1079,46 @@ export function MemberDetailPage() {
               <button type="button" className="member-detail-delete-confirm" disabled={isDeleting} onClick={handleConfirmDelete}>
                 {isDeleting ? <RefreshCw size={18} strokeWidth={2} className="member-detail-spin" /> : <Trash2 size={18} strokeWidth={2} />}
                 {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {purgeConfirmOpen && (
+        <div className="member-detail-delete-backdrop">
+          <div className="member-detail-delete-dialog" role="dialog" aria-labelledby="member-detail-purge-title">
+            <h2 id="member-detail-purge-title">Delete permanently?</h2>
+            <p>
+              "{member.name}" and all of their subscriptions, payment history, change history and photos will be erased
+              for good. <strong>This cannot be undone.</strong>
+            </p>
+            <label className="member-detail-purge-label" htmlFor="member-detail-purge-input">
+              Type {PURGE_CONFIRM_WORD} to confirm
+            </label>
+            <input
+              id="member-detail-purge-input"
+              className="member-detail-purge-input"
+              value={purgeConfirmText}
+              disabled={isPurging}
+              autoComplete="off"
+              autoCapitalize="characters"
+              onChange={(e) => setPurgeConfirmText(e.target.value)}
+            />
+            {purgeError && <div className="member-detail-banner-error">{purgeError}</div>}
+            <div className="member-detail-form-actions">
+              <button type="button" className="member-detail-cancel" disabled={isPurging} onClick={closePurgeDialog}>
+                <X size={18} strokeWidth={2} />
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="member-detail-delete-confirm"
+                disabled={isPurging || purgeConfirmText !== PURGE_CONFIRM_WORD}
+                onClick={handleConfirmPurge}
+              >
+                {isPurging ? <RefreshCw size={18} strokeWidth={2} className="member-detail-spin" /> : <Trash2 size={18} strokeWidth={2} />}
+                {isPurging ? 'Deleting…' : 'Delete permanently'}
               </button>
             </div>
           </div>

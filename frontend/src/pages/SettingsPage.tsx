@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { KeyRound, LogOut, Users, Layers, Building2, UserCog, ShieldCheck, Repeat, RefreshCw, History, Hash, Download } from 'lucide-react';
+import { KeyRound, LogOut, Users, Layers, Building2, UserCog, ShieldCheck, Repeat, RefreshCw, History, Hash } from 'lucide-react';
 import { useAuth } from '../context/auth.context';
 import { useServices } from '../context/services.context';
 import { withTimeout } from '../lib/with-timeout';
@@ -185,8 +185,6 @@ export function SettingsPage() {
             to="/member-numbering"
             fetchCount={branchRepository.getCount}
           />
-          {/* A destination, not a record type — no count (spec/frontend/data-export-import.md §1). */}
-          <DataManagementCard icon={<Download size={20} strokeWidth={2} />} label="Data Backup" to="/data-backup" />
         </div>
       </section>
 

@@ -405,3 +405,13 @@
     border-bottom: 1px solid var(--color-border-card);
   }
 }
+
+/* Shown instead of Edit/Delete on the reserved system_admin role. Text, not just colour. */
+.roles-reserved {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-style: italic;
+}

@@ -148,7 +148,7 @@ reset role;
 
 -- REQ-ADMIN-004/006 user management RPCs -----------------------------------------------------------------------------------
 select t.eq('ADMIN-004 profiles_with_roles lists roles', (select roles::text from profiles_with_roles where id=t.admin_id()), '{admin}');
-select replace_user_roles(t.admin_id(), t.staff_id(), (select array_agg(id) from roles)::smallint[]);
+select replace_user_roles(t.admin_id(), t.staff_id(), (select array_agg(id) from roles where name in ('admin','staff'))::smallint[]);
 select t.eq('ADMIN-004 multi-role user lists every role', (select array_length(roles,1) from profiles_with_roles where id=t.staff_id()), 2);
 select replace_user_roles(t.admin_id(), t.staff_id(), (select array_agg(id) from roles where name='staff')::smallint[]);
 select t.eq('ADMIN-004 replace_user_roles back to staff only', (select roles::text from profiles_with_roles where id=t.staff_id()), '{staff}');
@@ -186,7 +186,7 @@ select t.ok('AUTH profile falls back to email when no full_name provided', (sele
 
 -- Privileged RPCs (service_role-only by intent) and the member-number config function --------------------------------------
 select t.as_user(t.staff_id());
-select t.known_gap_throws('SEC (GAP) staff must not be able to call replace_user_roles (self-promote to admin)', format($$ select replace_user_roles(%L, %L, (select array_agg(id) from roles where name='admin')::smallint[]) $$, t.staff_id(), t.staff_id()));
+select t.throws('SEC staff cannot call replace_user_roles (self-promote to admin)', format($$ select replace_user_roles(%L, %L, (select array_agg(id) from roles where name='admin')::smallint[]) $$, t.staff_id(), t.staff_id()), '%permission denied%');
 select t.known_gap_throws('SEC (GAP) staff must not be able to call soft_delete_profile', format($$ select soft_delete_profile(%L, %L) $$, t.staff_id(), t.admin2_id()));
 select t.known_gap_throws('SEC (GAP) staff must not be able to call update_profile_fields', format($$ select update_profile_fields(%L, %L, null, false) $$, t.staff_id(), t.admin2_id()));
 select t.as_super();

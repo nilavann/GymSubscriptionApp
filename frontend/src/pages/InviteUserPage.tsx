@@ -2,12 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Send } from 'lucide-react';
 import { useServices } from '../context/services.context';
+import { useAuth } from '../context/auth.context';
 import { AdminTabs } from '../components/AdminTabs';
 import { BackLink } from '../components/BackLink';
 import type { InviteUserDraft, InviteUserFormErrors } from '../services/user.service';
 import type { Role } from '../types/role';
 import './InviteUserPage.css';
 import { isNetworkError } from '../lib/network-error';
+import { SYSTEM_ADMIN_ROLE, isSystemAdmin } from '../lib/roles';
 
 function emptyDraft(): InviteUserDraft {
   return { email: '', full_name: '', roles: [] };
@@ -17,6 +19,9 @@ function emptyDraft(): InviteUserDraft {
 export function InviteUserPage() {
   const navigate = useNavigate();
   const { userService, roleRepository } = useServices();
+  const { currentProfile } = useAuth();
+  // Only a system admin may hand out system_admin (invite-user enforces it; this just hides the chip).
+  const canGrantSystemAdmin = isSystemAdmin(currentProfile?.roles);
 
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [form, setForm] = useState<InviteUserDraft>(emptyDraft());
@@ -100,7 +105,7 @@ export function InviteUserPage() {
           Roles<span className="invite-user-required"> *</span>
         </span>
         <div className="invite-user-chip-row" role="group" aria-label="Roles">
-          {availableRoles.map((role) => (
+          {availableRoles.filter((role) => role.name !== SYSTEM_ADMIN_ROLE || canGrantSystemAdmin).map((role) => (
             <button
               key={role.id}
               type="button"

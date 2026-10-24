@@ -22,13 +22,17 @@ export const world = {
   rpc: {} as Record<string, (args: Record<string, unknown>) => Result | Promise<Result>>,
   listUsersPages: [] as { id: string; email: string | null }[][],
   inviteUser: (_email: string, _opts: unknown): Result => ({ data: { user: { id: 'new-user', email: 'x' } }, error: null }),
-  log: [] as { kind: 'query' | 'rpc'; name: string; q?: QueryCall; args?: unknown }[],
+  storageList: (_bucket: string, _folder: string): { name: string }[] => [],
+  storageRemove: (_bucket: string, _paths: string[]): Result => ({ data: [], error: null }),
+  log: [] as { kind: 'query' | 'rpc' | 'storage'; name: string; q?: QueryCall; args?: unknown }[],
   reset() {
     this.user = { id: 'caller-1' };
     this.tables = {};
     this.rpc = {};
     this.listUsersPages = [];
     this.inviteUser = () => ({ data: { user: { id: 'new-user', email: 'x' } }, error: null });
+    this.storageList = () => [];
+    this.storageRemove = () => ({ data: [], error: null });
     this.log = [];
   },
 };
@@ -82,6 +86,18 @@ export function createClient(_url: string, _key: string, _opts?: unknown) {
       const h = world.rpc[name];
       if (!h) return Promise.reject(new Error(`unscripted rpc "${name}"`));
       return Promise.resolve(h(args)).then((r) => ({ data: r.data ?? null, error: r.error ?? null }));
+    },
+    storage: {
+      from: (bucket: string) => ({
+        list: (folder: string, opts: { limit: number; offset: number }) => {
+          world.log.push({ kind: 'storage', name: `${bucket}.list`, args: folder });
+          return Promise.resolve({ data: world.storageList(bucket, folder).slice(opts.offset, opts.offset + opts.limit), error: null });
+        },
+        remove: (paths: string[]) => {
+          world.log.push({ kind: 'storage', name: `${bucket}.remove`, args: paths });
+          return Promise.resolve(world.storageRemove(bucket, paths)).then((r) => ({ data: r.data ?? null, error: r.error ?? null }));
+        },
+      }),
     },
     auth: {
       getUser: () =>

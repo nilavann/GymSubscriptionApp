@@ -5,6 +5,7 @@ import { withTimeout } from '../lib/with-timeout';
 import { AdminTabs } from '../components/AdminTabs';
 import type { Role } from '../types/role';
 import type { RoleDraft, RoleFormErrors } from '../services/role.service';
+import { SYSTEM_ADMIN_ROLE } from '../lib/roles';
 import { useIsTabletUp } from '../lib/use-media-query';
 import './ManageRolesPage.css';
 import { isNetworkError } from '../lib/network-error';
@@ -233,6 +234,10 @@ export function ManageRolesPage() {
                     <td>{role.name}</td>
                     <td>{role.description ?? '—'}</td>
                     <td className="roles-table-actions">
+                      {role.name === SYSTEM_ADMIN_ROLE ? (
+                        <span className="roles-reserved">Reserved</span>
+                      ) : (
+                        <>
                       <button
                         type="button"
                         className="roles-edit-button"
@@ -251,6 +256,8 @@ export function ManageRolesPage() {
                         <Trash2 size={14} strokeWidth={2} />
                         Delete
                       </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -265,6 +272,10 @@ export function ManageRolesPage() {
                     {role.description && <span className="roles-card-description">{role.description}</span>}
                   </div>
                   <div className="roles-card-actions">
+                    {role.name === SYSTEM_ADMIN_ROLE ? (
+                      <span className="roles-reserved">Reserved</span>
+                    ) : (
+                      <>
                     <button
                       type="button"
                       className="roles-edit-button"
@@ -283,6 +294,8 @@ export function ManageRolesPage() {
                       <Trash2 size={14} strokeWidth={2} />
                       Delete
                     </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

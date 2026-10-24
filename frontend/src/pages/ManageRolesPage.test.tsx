@@ -148,3 +148,20 @@ describe('ManageRolesPage — add / edit / delete', () => {
     await vi.waitFor(() => expect(screen.queryByRole('heading', { name: 'Delete role?' })).not.toBeInTheDocument());
   });
 });
+
+describe('ManageRolesPage — the reserved system_admin role', () => {
+  const WITH_RESERVED = [...ROLES, buildRole({ id: 3, name: 'system_admin', description: 'Reserved' })];
+
+  it.each([
+    ['table', 1280],
+    ['cards', MOBILE_WIDTH],
+  ])('offers no Edit or Delete for it in the %s, only a Reserved label', async (_layout, viewport) => {
+    renderRoles({ roles: WITH_RESERVED, viewport });
+    await ready();
+    expect(screen.queryByRole('button', { name: 'Edit system_admin' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete system_admin' })).not.toBeInTheDocument();
+    expect(screen.getByText('Reserved', { selector: '.roles-reserved' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit staff' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete staff' })).toBeInTheDocument();
+  });
+});

@@ -210,7 +210,6 @@ test.describe('no sideways scrolling', () => {
     '/users/invite',
     '/audit-log',
     '/member-numbering',
-    '/data-backup',
   ];
 
   for (const route of routes) {

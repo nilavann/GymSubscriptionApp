@@ -11,6 +11,7 @@ import type { EditUserDraft, EditUserFormErrors } from '../services/user.service
 import { useIsTabletUp } from '../lib/use-media-query';
 import './ManageUsersPage.css';
 import { isNetworkError } from '../lib/network-error';
+import { SYSTEM_ADMIN_ROLE, isSystemAdmin } from '../lib/roles';
 
 const FETCH_TIMEOUT_MS = 10000;
 type LoadState = 'loading' | 'loaded' | 'network-error' | 'generic-error';
@@ -234,7 +235,7 @@ export function ManageUsersPage() {
 
           <span className="users-chip-label">Roles</span>
           <div className="users-chip-row" role="group" aria-label="Roles">
-            {availableRoles.map((role) => (
+            {availableRoles.filter((role) => role.name !== SYSTEM_ADMIN_ROLE || isSystemAdmin(currentProfile?.roles)).map((role) => (
               <button
                 key={role.id}
                 type="button"

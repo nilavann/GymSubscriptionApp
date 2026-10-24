@@ -76,6 +76,18 @@ Deno.serve(async (req) => {
       return jsonError('One or more roles do not exist or are not active', 400);
     }
 
+    // system_admin is the reserved permanent-delete role — only an existing system admin may hand it out.
+    if (roleRows.some((r) => r.name === 'system_admin')) {
+      const { data: isSystemAdmin, error: isSystemAdminError } = await supabaseAdmin.rpc('is_system_admin_user', { p_user_id: callerId });
+      if (isSystemAdminError) throw isSystemAdminError;
+      if (!isSystemAdmin) {
+        return jsonError('Only a system admin can grant the system_admin role.', 403);
+      }
+      if (!roleRows.some((r) => r.name === 'admin')) {
+        return jsonError('The system_admin role can only be held together with admin.', 400);
+      }
+    }
+
     // handle_new_auth_user() (database.md) reads full_name/invited_by from
     // raw_user_meta_data and creates the matching `profiles` row automatically.
     const { data: invited, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(payload.email, {

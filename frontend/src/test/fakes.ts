@@ -40,8 +40,6 @@ const SERVICE_KEYS = {
   auditLogRepository: true,
   memberNumberingRepository: true,
   memberNumberingService: true,
-  dataTransferRepository: true,
-  dataExportService: true,
 } satisfies Record<keyof Services, true>;
 
 export type ServiceOverrides = { [K in keyof Services]?: Partial<Services[K]> };

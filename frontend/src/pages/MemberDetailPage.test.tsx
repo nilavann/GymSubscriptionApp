@@ -79,6 +79,8 @@ function renderDetail(
     updateMember?: ReturnType<typeof vi.fn>;
     uploadPhoto?: ReturnType<typeof vi.fn>;
     remove?: ReturnType<typeof vi.fn>;
+    purge?: ReturnType<typeof vi.fn>;
+    roles?: string[];
     updateSubscription?: ReturnType<typeof vi.fn>;
   } = {}
 ) {
@@ -93,6 +95,8 @@ function renderDetail(
     updateMember = vi.fn().mockResolvedValue({ name: 'Neha J.' }),
     uploadPhoto = vi.fn().mockResolvedValue(undefined),
     remove = vi.fn().mockResolvedValue(undefined),
+    purge = vi.fn().mockResolvedValue({ photosRemoved: true }),
+    roles,
     updateSubscription = vi.fn().mockResolvedValue(undefined),
   } = options;
   const utils = renderRoutes(
@@ -105,8 +109,9 @@ function renderDetail(
     {
       route,
       routeState,
+      ...(roles ? { auth: { currentProfile: buildProfile({ roles }) } } : {}),
       services: fakeServices({
-        memberRepository: { getById, delete: remove },
+        memberRepository: { getById, delete: remove, purge },
         memberService: { ...realMemberService, updateMember, uploadPhoto },
         subscriptionRepository: {
           getCurrentItemsForMember: vi.fn().mockResolvedValue(items),
@@ -121,7 +126,7 @@ function renderDetail(
       }),
     }
   );
-  return { ...utils, getById, updateMember, uploadPhoto, remove, updateSubscription };
+  return { ...utils, getById, updateMember, uploadPhoto, remove, purge, updateSubscription };
 }
 
 const ready = () => screen.findByText('Neha Joshi', { selector: '.member-detail-name' });
@@ -428,6 +433,88 @@ describe('MemberDetailPage — deleting', () => {
     await user.click(within(dialog()).getByRole('button', { name: 'Delete' }));
     expect(await screen.findByText(message)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Delete member?' })).toBeInTheDocument();
+  });
+});
+
+describe('MemberDetailPage — deleting permanently (system admin only)', () => {
+  const SYSTEM_ADMIN = ['admin', 'system_admin'];
+  const dialog = () => document.querySelector('.member-detail-delete-dialog') as HTMLElement;
+  const confirm = () => within(dialog()).getByRole('button', { name: 'Delete permanently' });
+
+  it.each([
+    ['staff', ['staff']],
+    ['an ordinary admin', ['admin']],
+    ['system_admin without admin', ['system_admin']],
+  ])('is not offered to %s', async (_who, roles) => {
+    renderDetail({ roles });
+    await ready();
+    expect(screen.queryByRole('button', { name: 'Delete permanently' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+  });
+
+  it('is offered to a system admin next to the ordinary soft delete', async () => {
+    renderDetail({ roles: SYSTEM_ADMIN });
+    await ready();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete permanently' })).toBeInTheDocument();
+  });
+
+  it('warns, names the member and keeps the button disabled until DELETE is typed exactly', async () => {
+    const { user, purge } = renderDetail({ roles: SYSTEM_ADMIN });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    expect(screen.getByRole('heading', { name: 'Delete permanently?' })).toBeInTheDocument();
+    expect(within(dialog()).getByText(/"Neha Joshi" and all of their subscriptions/)).toBeInTheDocument();
+    expect(within(dialog()).getByText('This cannot be undone.')).toBeInTheDocument();
+
+    expect(confirm()).toBeDisabled();
+    const input = within(dialog()).getByLabelText('Type DELETE to confirm');
+    await user.type(input, 'delete');
+    expect(confirm()).toBeDisabled();
+    await user.clear(input);
+    await user.type(input, 'DELETE');
+    expect(confirm()).toBeEnabled();
+    expect(purge).not.toHaveBeenCalled();
+  });
+
+  it('purges and returns to the list', async () => {
+    const { user, purge, remove, router } = renderDetail({ roles: SYSTEM_ADMIN });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await user.type(within(dialog()).getByLabelText('Type DELETE to confirm'), 'DELETE');
+    await user.click(confirm());
+    expect(purge).toHaveBeenCalledWith(12);
+    expect(remove).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(router.state.historyAction).toBe('REPLACE');
+  });
+
+  it('Cancel purges nothing and forgets what was typed', async () => {
+    const { user, purge } = renderDetail({ roles: SYSTEM_ADMIN });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await user.type(within(dialog()).getByLabelText('Type DELETE to confirm'), 'DELETE');
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancel' }));
+    expect(purge).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Delete permanently?' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    expect(within(dialog()).getByLabelText('Type DELETE to confirm')).toHaveValue('');
+  });
+
+  it.each([
+    ['the server’s own refusal, verbatim', new Error('Cannot purge — this member is the shared member on 1 other member(s) subscriptions'), 'Cannot purge — this member is the shared member on 1 other member(s) subscriptions'],
+    ['being offline', new Error('Failed to fetch'), "Couldn't delete this member — check your connection and try again."],
+    ['an empty error', new Error(''), 'Something went wrong deleting this member. Please try again.'],
+  ])('shows %s and keeps the dialog open', async (_label, error, message) => {
+    const { user } = renderDetail({ roles: SYSTEM_ADMIN, purge: vi.fn().mockRejectedValue(error) });
+    await ready();
+    await user.click(screen.getByRole('button', { name: 'Delete permanently' }));
+    await user.type(within(dialog()).getByLabelText('Type DELETE to confirm'), 'DELETE');
+    await user.click(confirm());
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Delete permanently?' })).toBeInTheDocument();
+    expect(confirm()).toBeEnabled();
   });
 });
 

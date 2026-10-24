@@ -363,16 +363,15 @@ List every distinct type of user/system that interacts with the app, and what th
 | REQ-ADMIN-003 | **Branch Management**: admin can view a list of all branches and create/edit them (name, code). | admin | Should |
 | REQ-ADMIN-004 | **User Management**: admin can view a list of all staff/admin accounts (name, email, role, active status) and edit role/active-status/full name, and invite new users. | admin | Should |
 | REQ-ADMIN-005 | **Audit Log overview**: admin can view a filterable/searchable list of AuditLog entries (by table, record, date range, changed-by) — view-only, no edit or delete capability. | admin | Could |
+| REQ-MEM-008 | A **system admin** can permanently delete a member — the one hard delete in the app. The member, their subscriptions, line items, change history and photo files are erased for good; staff and ordinary admins keep only the soft delete of REQ-MEM-007. |
+| REQ-ADMIN-010 | The reserved **`system_admin`** role: an admin who can also permanently delete a member and grant or remove this role. Seeded, never editable, renamed or deletable, and only ever held together with `admin`. |
 | REQ-ADMIN-006 | Admin can delete a user account — a separate, more severe action than the existing active/inactive toggle (REQ-ADMIN-004). A deleted user is fully hidden from User Management's list, same soft-delete convention as every other entity (Section 11). An admin can never delete their own account. | admin | Should |
-| REQ-ADMIN-007 | **Data export**: admin can export all data to one Excel workbook (`.xlsx`) — branches, plans, roles, members, subscriptions, subscription items, user accounts (no passwords), configuration, member-number counters and the audit log, **including soft-deleted rows (flagged)** — plus a separate `.zip` of member photos. Because the Supabase Free plan has no managed backups, this is the in-app way to keep an off-site copy. See [backend/data-export-import.md](./backend/data-export-import.md). | admin | Should |
-| REQ-ADMIN-008 | **Data import (merge)**: admin can import an Excel workbook (optionally with the photos `.zip`) into the live app. Import **merges** — it adds new branches, plans, members and subscriptions (and, only if the admin opts in, updates existing branches/plans/members) through the app's normal write rules; this is **Merge mode**: ids, member numbers and audit stamps are regenerated and it never deletes data. Users, roles, configuration and the audit log are ignored by Merge. A preview runs first. Full-fidelity restore is REQ-ADMIN-009. | admin | Should |
-| REQ-ADMIN-009 | **Data restore**: admin can restore a workbook produced by REQ-ADMIN-007 (and, optionally, its photo zip) into a project that holds no member, subscription or item data, **preserving every id, `member_number`, `created_by`/`created_at`/`changed_*`, soft-delete state, user account and role grant, member-number counter, configuration value and the audit log itself** — "a complete record". The only gates are sanity checks and the existing validations (database constraints are errors, app-level format rules are warnings). All-or-nothing, previewed first, confirmed by typing `RESTORE`. See [backend/data-restore.md](./backend/data-restore.md). | admin | Should |
 
 ### 9.2 Acceptance Criteria
 
 **REQ-ADMIN-001**
 - Given admin navigates the app, when looking for any entity's data, then there is always a screen where they can see a list of all records of that type and edit one — no entity is a dead end reachable only via direct database access.
-- Given staff (not admin), when they try to reach any of REQ-ADMIN-002 through 009, then access is denied — these screens are admin-only, consistent with the existing role model (see Section 1).
+- Given staff (not admin), when they try to reach any of REQ-ADMIN-002 through 006, then access is denied — these screens are admin-only, consistent with the existing role model (see Section 1).
 
 **REQ-ADMIN-002**
 - Given admin opens Plan Management, when the list loads, then it shows every catalog item (name, category, duration_days, price, max_members), both membership plans and add-ons together, filterable by category.
@@ -395,44 +394,25 @@ List every distinct type of user/system that interacts with the app, and what th
 - Given admin opens the Audit Log overview, when it loads, then entries can be filtered by table name, record id, date range, and who made the change.
 - Given any AuditLog entry, when viewed, then there is no edit or delete action available anywhere in the UI for it — the log is strictly append-only and read-only from every screen.
 
+**REQ-MEM-008**
+- Given a system admin on a member's detail screen, when they choose "Delete permanently", then a dialog names the member, warns it cannot be undone, and enables the button only once `DELETE` is typed exactly.
+- Given the purge succeeds, then the member, all their subscriptions and items, their audit history and their photo files are gone; nothing is written to the audit log for the purge itself.
+- Given staff, an ordinary admin, or a user who holds `system_admin` without `admin`, then the button is not shown and both `purge-member` and `purge_member()` refuse the call.
+- Given the member is the shared (couple) member on another member's subscription item, then the purge is refused with a message and nothing is changed — items are immutable.
+- Given the purge fails at any point in the database, then nothing is deleted. If only the photo files fail to delete, the rows stay erased and the failure is logged.
+
+**REQ-ADMIN-010**
+- Given an ordinary admin, when they try to grant or remove `system_admin` (Manage Users, Invite User or the API), then it is refused; editing a system admin's other roles is allowed while `system_admin` stays in the list.
+- Given `system_admin` is requested without `admin`, then it is refused.
+- Given the `system_admin` role, then it cannot be edited, renamed or deleted, and Manage Roles shows "Reserved" instead of Edit/Delete.
+- Given a system admin is deactivated or loses `admin`, then they lose the purge power at once.
+
 **REQ-ADMIN-006**
 - Given admin deletes a user account, when confirmed, then that profile's `deleted_at`/`deleted_by` are set — the row is never physically removed, and the user immediately loses all access (same enforcement as the existing `is_active = false` rule, extended to also cover `deleted_at`).
 - Given admin tries to delete their own account, then it's blocked — same self-protection pattern as the existing "cannot deactivate/demote own account" rule.
 - Given a deleted user, when User Management's list loads, then that user is excluded by default, same as any other soft-deleted entity (Section 11).
 - Deleting a user is distinct from deactivating one (`is_active = false`): deactivation is a reversible toggle still visible in the list; deletion hides the account entirely.
 
-**REQ-ADMIN-007**
-- Given an admin on the Data Backup screen, when they run an export, then they receive a workbook with one sheet per entity (Branches, Plans, Roles, Members, Subscriptions, SubscriptionItems, Users, UserRoles, Configuration, MemberNumberSequences, AuditLog) holding **every column of every table** (so it can feed Restore, REQ-ADMIN-009), plus a README sheet stating the schema version, export time and row counts.
-- Given soft-deleted rows exist, when exporting, then they are included with their `deleted_at`/`deleted_by` values so they are distinguishable from live rows.
-- Given the workbook, then it never contains a password, password hash, token or provider identity, and every phone, Aadhaar, pincode and member-number value is a text cell (leading zeros preserved).
-- Given members with photos, when "Include member photos" is on, then a separate `.zip` contains each original photo and the Members sheet's `photo_file` names its entry; one unreadable photo is reported as a warning and does not fail the export.
-- Given the audit log is large, when "Include audit log" is turned off, then the workbook omits that sheet.
-- Given a staff (non-admin) user, when they try to open the screen or call the export function directly, then access is denied (route guard and a 403 from the function).
-- Given the device goes offline mid-export, then the screen shows the offline state with Retry, never a partial file presented as complete.
-
-**REQ-ADMIN-008**
-- Given an admin chooses a workbook, when they press Check file, then nothing is written, and a preview shows per sheet how many rows would be created, updated, skipped (already exists / deleted) or rejected, with Excel row numbers and a message for every rejected row.
-- Given a row whose natural key (branch `code`, plan `name`, member `phone`, subscription item member+plan+start date) already exists among live rows, when imported with default options, then it is skipped and reported, never duplicated; importing the same file twice creates nothing the second time.
-- Given "update existing" is on, then only non-blank cells of matched branches/plans/members are applied, a blank cell never overwrites a value, and `member_number`, `branch_id`, photos and subscriptions are never changed.
-- Given any invalid row and "Skip invalid rows" off, when the admin imports, then nothing at all is committed ("Nothing was imported"); with it on, the valid rows are committed and the rest reported.
-- Given imported members, then each gets a newly generated member number, the importing admin as `created_by`, and normal audit-log entries; the workbook's ids, member numbers, audit columns and `end_date` are ignored (`end_date` is recomputed server-side).
-- Given a subscription whose member already holds the same indefinite plan (REQ-SUB-007), then that subscription is rejected with the usual message and the rest of the file is unaffected (under "Skip invalid rows").
-- Given the workbook contains Users, Roles, Configuration, AuditLog or soft-deleted rows, then they are ignored (reported as skipped), never imported.
-- Given the photos `.zip` is supplied, when the import commits, then photos are added only for newly created members whose `photo_file` matches an entry; a missing, non-image or over-5 MB photo is a warning and the member is kept.
-- Given a file over 10 MB, over the row cap, with an unsupported schema version, no importable sheet, or a missing required column, then it is rejected before any request with a message naming the problem.
-- Given a staff user, then both the screen and the import function are denied.
-
-**REQ-ADMIN-009**
-- Given a fresh project (migrations applied, first admin created with the id it had in the backup) and a workbook from REQ-ADMIN-007, when the admin runs Restore, then every restored member, subscription, item, plan, branch, role, user grant and audit-log row has **the same id and the same `created_by`/`created_at`/`changed_by`/`changed_at`/`deleted_at`/`deleted_by` as in the file**, and members keep their original `member_number`.
-- Given the audit log is in the file, then it is restored verbatim (same ids, `changed_by`, `changed_at`) and the restore itself adds **no duplicate or extra audit rows** for the restored data; audit rows already in the target are kept, re-numbered after the restored ones.
-- Given the target already has any member, subscription or item that the file does not contain identically, then Restore is refused with "use Merge" and nothing is written; re-running the same restore on an already-restored project changes nothing.
-- Given any sanity check fails (unsupported schema version, missing sheet, row counts differing from the README, duplicate ids, a reference to a row not in the file, no active admin in the file, the restoring admin missing from the file, an account conflict), then nothing is written and the preview names the check and the Excel row.
-- Given a row violates a database constraint (NOT NULL, CHECK, foreign key, unique), then the restore is blocked with a row-numbered message; given a row only violates an app-level format rule (e.g. a 9-digit phone), then it is shown as a **warning** and restored.
-- Given a user account that does not exist in the target, then it is created with its original id and **no password**, banned until the restore commits, and unbanned afterwards only if it was active and not deleted in the backup; its owner signs in via *Forgot password* or Google.
-- Given the restore succeeds, then the next member registered gets `max(id)+1` and the next member number after the highest restored one for that branch.
-- Given a photo zip, then each photo is uploaded to the exact path stored in its member's `photo_url` and a thumbnail to `photo_thumbnail_url`; a missing or unusable photo is reported and never fails the restore.
-- Given the preview or the commit fails at any point inside the transaction, then the database is unchanged (including trigger state); the commit only runs when the admin types `RESTORE`.
-- Given a staff user, then the screen and every restore action are denied.
 
 ### 9.3 Data touched
 
@@ -441,10 +421,9 @@ List every distinct type of user/system that interacts with the app, and what th
 
 ### 9.4 Business rules specific to this area
 
-- Every screen in this area (REQ-ADMIN-002 through 009) is admin-only — staff get no access, not even read-only, consistent with your explicit "admin can get..." framing (unlike Plans' existing RLS, which already grants staff *read* access at the data layer; the UI screen itself is still admin-gated here).
+- Every screen in this area (REQ-ADMIN-002 through 006) is admin-only — staff get no access, not even read-only, consistent with your explicit "admin can get..." framing (unlike Plans' existing RLS, which already grants staff *read* access at the data layer; the UI screen itself is still admin-gated here).
 - REQ-ADMIN-001 doesn't introduce new business rules of its own for Member/Subscription/SubscriptionItem — it just confirms their existing screens (Member Management, Member List/Home Page, Subscription Management) are sufficient and no redundant admin-only duplicate is built for them; catalog management (Plan + the old Add-on Management) is covered by REQ-ADMIN-002 alone.
-- The Audit Log is never editable or deletable from any UI, by any role — this is absolute, since an editable audit trail defeats its own purpose. REQ-ADMIN-007's export only *reads* it; REQ-ADMIN-008 (Merge) never imports it; **REQ-ADMIN-009 (Restore) is the one documented exception** — it inserts the exported rows verbatim into a project with no member data, never alters or removes an existing audit row, and is reachable only through a service-role RPC ([backend/data-restore.md §2](./backend/data-restore.md#2-invariants-this-mode-deliberately-overrides--and-why-it-is-acceptable)).
-- REQ-ADMIN-007/008/009 add no new business entity or field (they read and write existing ones), but they add two admin-only Edge Functions (`export-data`, `import-data`), service-role RPCs (`import_workbook`, `restore_from_staging`) and one internal staging table (`restore_staging`, no policies, purged after use). REQ-ADMIN-009 deliberately bypasses the audit/number/id triggers inside that one RPC (see above). `export-data` is the single documented exception to the "service-role reads exclude `deleted_at`" convention ([backend/rules.md rule 21](./backend/rules.md)). Merge is additive and never deletes; Restore never deletes business rows either (rules 19–20 still hold: the client never sets audit/soft-delete columns — Restore writes them server-side from the file — and no hard delete of a business row; `user_roles` replacement is the existing documented exception).
+- The Audit Log is never editable or deletable from any UI, by any role — this is absolute, since an editable audit trail defeats its own purpose.
 - User deletion (REQ-ADMIN-006) and user deactivation (`is_active`, REQ-ADMIN-004) are two distinct, independent actions — deleting a user does not require deactivating them first, and an inactive user can still be deleted. Both share the same self-protection rule: an admin can never apply either action to their own account.
 
 ---
@@ -489,7 +468,6 @@ Explicitly list what this round of requirements does **not** cover, so it isn't 
 - Branch-specific reporting or member-list filtering (no "filter by branch" control exists in Reports or the Member List).
 - True multi-tenant support (multiple independent gym businesses sharing one deployment/database).
 - Age-range member filtering — considered for REQ-LIST-004, explicitly removed from scope for now.
-- Data export/import/restore (REQ-ADMIN-007/008/009): scheduled or automatic exports, cloud destinations, workbook encryption or signing, restoring password hashes/sessions/OAuth identities, restoring into a project that already has member data (use Merge), Merge importing users/roles/configuration/audit history, updating existing subscriptions via Merge, importing photos for existing members via Merge. (Restoring original ids, member numbers, audit stamps and the audit log **is** in scope — REQ-ADMIN-009.)
 
 ---
 
@@ -502,7 +480,6 @@ Anything you're unsure about — don't guess, resolve before moving to the domai
 - **New, from the header/line-item redesign**: cancellation, refunds, and overlap-warning checks (the old REQ-SUB-005/008/010/011) are entirely deferred — there is no way to cancel a `SubscriptionItem`, issue a refund, or warn about overlapping dates in this revision. Needs a follow-up design pass; see [domain-model.md §Open items](./backend/domain-model.md#open-items-not-blocking-but-worth-resolving-before-implementation-begins).
 - **New**: `SubscriptionItem.shared_member_id` can only be set at creation time (REQ-SUB-004) — the previous design's "add/change/clear the secondary member later" edit path has no equivalent yet. Is that an acceptable gap for now, or does it need its own edit function before this ships?
 - **New**: payment mode moved from per-item (old `SubscriptionAddOn.payment_mode`, independent of the parent subscription) to per-checkout (`Subscription.payment_mode`, one value shared by every item in it — REQ-SUB-002/004.4). This is a real capability regression: a member paying for their membership by card and an add-on by cash *in the same checkout* can no longer be recorded that way — they'd need two separate checkouts. Confirm this tradeoff is acceptable.
-- **New (REQ-ADMIN-007/008/009)**: export/import/restore has open items — whether export/restore events need a durable audit record (today only Edge Function logs), measured limits (request size, function wall-clock, statement timeout, trigger-disable lock time, rows per import), whether Excel should ever be able to clear a field, and whether a restore file should be signed against tampering. Tracked in [backend/data-export-import.md §13](./backend/data-export-import.md#13-open-questions) and [backend/data-restore.md §13](./backend/data-restore.md#13-open-questions).
 - ~~**New**: "member's current status"...~~ **Resolved.** Status derives from the member's `category = 'membership'` item(s) via `member_current_items`, using whichever has the latest `end_date` (an indefinite/NULL-`end_date` item outranks any dated one, and is treated as always-Active) — implemented as `member_list_view`. See [backend/member-management.md §5](./backend/member-management.md#5-member_list_view--resolving-the-member-status-open-question) for the view definition and [§6](./backend/member-management.md#6-status-derivation-client-side-unchanged-authority--see-business-logicmd) for the derivation logic. REQ-LIST-001/003/004 and their acceptance criteria have been updated to match.
 
 ---

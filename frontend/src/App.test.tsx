@@ -41,7 +41,6 @@ describe('route map (navigation.md)', () => {
         '/action-center',
         '/audit-log',
         '/branches',
-        '/data-backup',
         '/login',
         '/member-numbering',
         '/members/:id',
@@ -97,7 +96,6 @@ describe('admin-only routes are guarded by RequireAdmin (UX only — RLS is the 
     '/roles',
     '/audit-log',
     '/member-numbering',
-    '/data-backup',
   ])('%s', (path) => {
     expect(elementType(path)).toBe(RequireAdmin);
   });

@@ -925,6 +925,24 @@
   color: var(--color-text-secondary);
 }
 
+.member-detail-purge-label {
+  display: block;
+  margin: 1rem 0 0.4rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.member-detail-purge-input {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-status-danger-border);
+  border-radius: var(--radius-el);
+  background: var(--color-neutral-0);
+  color: var(--color-text-primary);
+}
+
 /* Phone layout (design_handoff_flexhub_mobile README, "Member Detail"). Pure styling on the same markup — it
    must stay at the END of this file so it overrides the desktop rules above at equal specificity. Below 760px
    (the same cut-off as the two-column grid): */

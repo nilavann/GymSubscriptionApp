@@ -31,6 +31,7 @@ function renderUsers(
     update?: ReturnType<typeof vi.fn>;
     remove?: ReturnType<typeof vi.fn>;
     restore?: ReturnType<typeof vi.fn>;
+    roleNames?: string[];
   } = {}
 ) {
   const {
@@ -39,9 +40,10 @@ function renderUsers(
     update = vi.fn().mockResolvedValue(RAVI),
     remove = vi.fn().mockResolvedValue(undefined),
     restore = vi.fn().mockResolvedValue(undefined),
+    roleNames = ['admin', 'staff'],
     ...rest
   } = options;
-  const getAllActive = vi.fn().mockResolvedValue([buildRole({ id: 1, name: 'admin' }), buildRole({ id: 2, name: 'staff' })]);
+  const getAllActive = vi.fn().mockResolvedValue(roleNames.map((name, i) => buildRole({ id: i + 1, name })));
   const utils = renderWithProviders(<ManageUsersPage />, {
     auth: { currentProfile: buildAdminProfile({ id: 'me', full_name: 'Anita Admin' }) },
     ...rest,
@@ -140,6 +142,24 @@ describe('ManageUsersPage — editing', () => {
     await u.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(update).toHaveBeenCalledWith('u-ravi', { full_name: 'Ravi K', roles: ['staff', 'admin'] });
+  });
+
+  it('hides the reserved system_admin role from an ordinary admin, shows it to a system admin', async () => {
+    const roleNames = ['admin', 'staff', 'system_admin'];
+    const first = renderUsers({ viewport: 1280, roleNames });
+    await ready();
+    await first.user.click(screen.getByRole('button', { name: 'Edit Ravi Kumar' }));
+    expect(within(screen.getByRole('group', { name: 'Roles' })).queryByRole('button', { name: 'system_admin' })).not.toBeInTheDocument();
+    first.unmount();
+
+    const second = renderUsers({
+      viewport: 1280,
+      roleNames,
+      auth: { currentProfile: buildAdminProfile({ id: 'me', full_name: 'Anita Admin', roles: ['admin', 'system_admin'] }) },
+    });
+    await ready();
+    await second.user.click(screen.getByRole('button', { name: 'Edit Ravi Kumar' }));
+    expect(within(screen.getByRole('group', { name: 'Roles' })).getByRole('button', { name: 'system_admin' })).toBeInTheDocument();
   });
 
   it('editing YOURSELF locks the role chips and sends only the name (update-user rejects the rest)', async () => {

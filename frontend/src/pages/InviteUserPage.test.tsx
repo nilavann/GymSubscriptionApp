@@ -6,8 +6,11 @@ import { fakeServices } from '../test/fakes';
 import { renderRoutes } from '../test/render';
 import { buildAdminProfile, buildRole } from '../test/builders';
 
-function renderInvite(options: { invite?: ReturnType<typeof vi.fn>; getAllActive?: ReturnType<typeof vi.fn> } = {}) {
+function renderInvite(
+  options: { invite?: ReturnType<typeof vi.fn>; getAllActive?: ReturnType<typeof vi.fn>; profileRoles?: string[] } = {}
+) {
   const {
+    profileRoles = ['admin'],
     invite = vi.fn().mockResolvedValue(undefined),
     getAllActive = vi.fn().mockResolvedValue([buildRole({ id: 1, name: 'admin' }), buildRole({ id: 2, name: 'staff' })]),
   } = options;
@@ -18,7 +21,7 @@ function renderInvite(options: { invite?: ReturnType<typeof vi.fn>; getAllActive
     ],
     {
       route: '/users/invite',
-      auth: { currentProfile: buildAdminProfile() },
+      auth: { currentProfile: buildAdminProfile({ roles: profileRoles }) },
       services: fakeServices({
         roleRepository: { getAllActive },
         userService: { ...realUserService, invite },
@@ -35,6 +38,22 @@ describe('InviteUserPage', () => {
     renderInvite();
     expect(await roles().findByRole('button', { name: 'admin' })).toBeInTheDocument();
     expect(roles().getByRole('button', { name: 'staff' })).toBeInTheDocument();
+  });
+
+  describe('the reserved system_admin role', () => {
+    const withSystemAdmin = () =>
+      vi.fn().mockResolvedValue([buildRole({ id: 1, name: 'admin' }), buildRole({ id: 2, name: 'staff' }), buildRole({ id: 3, name: 'system_admin' })]);
+
+    it('is hidden from an ordinary admin', async () => {
+      renderInvite({ getAllActive: withSystemAdmin() });
+      expect(await roles().findByRole('button', { name: 'staff' })).toBeInTheDocument();
+      expect(roles().queryByRole('button', { name: 'system_admin' })).not.toBeInTheDocument();
+    });
+
+    it('is offered to a system admin', async () => {
+      renderInvite({ getAllActive: withSystemAdmin(), profileRoles: ['admin', 'system_admin'] });
+      expect(await roles().findByRole('button', { name: 'system_admin' })).toBeInTheDocument();
+    });
   });
 
   it('still shows the form when the role list fails to load (just no chips)', async () => {

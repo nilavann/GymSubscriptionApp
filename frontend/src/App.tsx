@@ -38,7 +38,6 @@ const AuditLogPage = lazy(() => import('./pages/AuditLogPage').then((m) => ({ de
 const MemberNumberingPage = lazy(() =>
   import('./pages/MemberNumberingPage').then((m) => ({ default: m.MemberNumberingPage }))
 );
-const DataBackupPage = lazy(() => import('./pages/DataBackupPage').then((m) => ({ default: m.DataBackupPage })));
 
 // Drill-in screens (a member's detail / renew / edit, and Add Member) hide the mobile bottom tab bar
 // and show a back link instead; AppShell reads this with useMatches() (CLAUDE.md "Responsive
@@ -132,14 +131,6 @@ export const routes: RouteObject[] = [
         element: (
           <RequireAdmin>
             <MemberNumberingPage />
-          </RequireAdmin>
-        ),
-      },
-      {
-        path: '/data-backup',
-        element: (
-          <RequireAdmin>
-            <DataBackupPage />
           </RequireAdmin>
         ),
       },

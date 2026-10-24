@@ -52,6 +52,18 @@ export const memberRepository = {
     const { error } = await supabase.functions.invoke('delete-member', { body: { member_id: id } });
     if (error) throw new Error(await extractFunctionErrorMessage(error));
   },
+
+  /**
+   * Permanent delete (REQ-MEM-008) — the one real DELETE in the app, system admin only.
+   * Erases the member, their subscriptions, items, audit history and photo files; cannot be
+   * undone. `purge-member` re-checks the caller server-side, so the UI gate is UX only.
+   * Resolves `photosRemoved: false` when the rows are gone but the files could not be removed.
+   */
+  async purge(id: number): Promise<{ photosRemoved: boolean }> {
+    const { data, error } = await supabase.functions.invoke('purge-member', { body: { member_id: id } });
+    if (error) throw new Error(await extractFunctionErrorMessage(error));
+    return { photosRemoved: data?.photos_removed !== false };
+  },
 };
 
 export type MemberRepository = typeof memberRepository;

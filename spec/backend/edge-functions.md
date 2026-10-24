@@ -147,18 +147,13 @@ Read-only, admin-only, no Edge Function needed — `audit_log_select_admin` (dat
 
 ---
 
-## 7.1 Data Export / Import (REQ-ADMIN-007/008/009)
+## 7.1 Permanent member delete (REQ-MEM-008) and the reserved `system_admin` role (REQ-ADMIN-010)
 
-Full contract, workbook format and security notes: [data-export-import.md](./data-export-import.md). Summary of the two functions (both admin-only via `is_admin_user`, both service role internally). **`export-data` is implemented; `import-data` is specification only.**
+### `purge-member`
+`supabase/functions/purge-member/index.ts`; tests `_tests/purge-member.test.ts`. Body `{ member_id }` (positive integer). Order: valid JWT → `is_system_admin_user(caller)` (403 otherwise) → `purge_member(caller, member_id)` → remove the returned photo paths **and every file under the member's `<member_id>/` folder** from the `member-photos` bucket (replaced photos leave old files behind). Errors: 404 member not found, 409 "Cannot purge — …" (shared member on another member's subscription), 500 otherwise. A storage failure after the purge still returns 200 with `photos_removed: false` (rows are already gone; retrying would only 404) and is logged with the paths.
 
-### `export-data` — implemented
-`supabase/functions/export-data/index.ts`; tests `supabase/functions/_tests/export-data.test.ts` (55). Returns one page of a **whitelisted** table (`branches, plans, roles, members, subscriptions, subscription_items, configuration, member_number_sequences, audit_log, users`), keyset-paginated on `id`, ≤ 1,000 rows. **Includes soft-deleted rows on purpose** — the one documented exception to the "service-role reads filter `deleted_at is null`" convention (rules.md rule 21; data-export-import.md §4.3). `users` pages `auth.admin.listUsers` like `list-users` and never returns hashes/tokens. The `.xlsx` and photo `.zip` are assembled in the browser; photo bytes never pass through a function.
-
-### `import-data` — `merge` mode implemented; `restore` mode specified, not yet implemented
-Two modes, selected by the request's `mode`; both validate input built from the uploaded workbook (untrusted), run one atomic RPC (with `dry_run` doing the same work and rolling back), and report data problems as per-row outcomes inside a 200, never as HTTP errors.
-
-- **`mode: "merge"`** (implemented: `supabase/functions/import-data/`; tests `_tests/import-data.test.ts` (27) and `_tests/merge-validation.test.ts` (106)) — one call to `import_workbook` (database.md §Import RPC): inserts, plus opt-in updates of non-blank fields on matched branches/plans/members; regenerates ids, member numbers and audit stamps; never deletes, never edits subscription line items, never imports users/roles/configuration/audit history.
-- **`mode: "restore"`** — full-fidelity, id-preserving restore into a project with no member data ([data-restore.md](./data-restore.md)). Actions: `stage` (chunked upload into `restore_staging`), `check` (sanity checks R1–R15), `accounts` (create missing auth users with their original ids, banned until commit), `run` (calls `restore_from_staging`; `dry_run` or committed; commit requires `confirm: "RESTORE"`), `cleanup`. Preserves every id, `created_by`/`changed_by`, `member_number`, soft-delete state and the audit log.
+### Reserved-role guards in existing functions
+`invite-user` refuses `system_admin` unless the caller is a system admin, and requires `admin` alongside it. `delete-role` refuses the `system_admin` role (403). `update-user` maps `replace_user_roles()`'s reserved-role errors to 403 / 400.
 
 ---
 
@@ -182,10 +177,7 @@ Two modes, selected by the request's `mode`; both validate input built from the 
 | Other users' emails require the Admin API (service role), not a `profiles` column | `list-users` | REQ-ADMIN-004 |
 | Google sign-in invite-only, no auto-created profile | `AuthContext` post-OAuth check | REQ-AUTH-003 |
 | Password reset, non-leaking, works for Google-only accounts too | Supabase Auth client SDK, no Edge Function | REQ-AUTH-005 |
-| Export/import are admin-only; the import RPC is unreachable from `anon`/`authenticated` | `export-data` / `import-data` (`is_admin_user`) + explicit `revoke … from public, anon, authenticated` on `import_workbook` | REQ-ADMIN-007/008 |
-| Export reads only whitelisted tables and never returns credentials; includes soft-deleted rows (documented exception) | `export-data` | REQ-ADMIN-007 |
-| Merge import is additive and idempotent; workbook values are re-validated server-side; `end_date` recomputed; REQ-SUB-007 still enforced | `import-data` (`merge`) + `import_workbook` (→ `create_subscription_with_items`) | REQ-ADMIN-008 |
-| Restore only into a project with no member/subscription/item data (or an identical re-run); all-or-nothing; commit needs the literal `RESTORE`; audit rows never altered; accounts created banned until commit; the trigger-disabling DDL exists only inside the service-role-only `restore_from_staging` | `import-data` (`restore`) + `restore_from_staging` + `restore_staging` (data-restore.md) | REQ-ADMIN-009 |
-| No hard delete, ever | `prevent_hard_delete()` trigger, all tables | — |
+| Only a system admin can purge a member; `system_admin` cannot be granted/removed by an ordinary admin, edited or deleted | `purge-member`, `purge_member()`, `replace_user_roles()`, `invite-user`, `delete-role`, `protect_system_admin_role()` | REQ-MEM-008, REQ-ADMIN-010 |
+| No hard delete, ever — the single exception is `purge_member()` | `prevent_hard_delete()` trigger, all tables; bypassed only by the transaction-local `app.purge_member` flag that `purge_member()` sets, and only on the four tables it erases | REQ-MEM-008 |
 | Soft-deleted rows excluded from every read | RLS `deleted_at is null` + query convention | — |
 | **Deferred**: overlap warnings, quantity reduction, cancellation/refund | Not implemented — see domain-model.md §Open items | REQ-SUB-005/008/010/011 |

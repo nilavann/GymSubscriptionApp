@@ -33,7 +33,6 @@ Uses **React Router** (createBrowserRouter). Do not hand-roll routing or use fil
 
 /audit-log                 →  Audit Log (view-only)     [admin only]
 /member-numbering          →  Member Numbering          [admin only]
-/data-backup               →  Data Backup (Excel export / import, WSCR-17)  [admin only]
 ```
 
 Unlike the mobile app's separate "modal" screens (`member/add`, `member/[id]/renew`, `member/[id]/edit` as modals), the web app renders these as regular routed pages. On desktop they may be presented as a centered dialog/panel over the previous page for continuity, but the URL always changes and the browser back button always works — a modal implementation must not break deep-linking or the back button.
@@ -68,7 +67,6 @@ Session state comes from `useAuth()` (see [app-shell.md](./app-shell.md)) — th
 | `/roles`           | `admin` role only |
 | `/audit-log`       | `admin` role only, view-only (REQ-ADMIN-005) |
 | `/member-numbering` | `admin` role only |
-| `/data-backup`     | `admin` role only (REQ-ADMIN-007/008); `export-data` / `import-data` re-check server-side |
 
 **Client-side route guards are UX only** — they prevent a staff user from *seeing* an admin page and give a fast redirect, but they are not the security boundary. The actual data protection is Supabase RLS (see [database.md](../backend/database.md)); even if a route guard were buggy, the underlying `plans`/`profiles` writes would still be rejected server-side for a non-admin.
 
@@ -114,7 +112,7 @@ Staff users see 3 nav items. Admin users see 4.
 Nav bar/sidebar background: `var(--color-neutral-0)` (white) for both the desktop sidebar and the mobile bottom tab bar — see [colors.md](./colors.md) for the current token set; this app has no dark nav chrome.
 Inactive icon + label: `var(--color-text-secondary)`.
 Active: `var(--tint-ink)` text + icon on the mobile tab bar (no pill); `var(--tint-on-pill)` on a `var(--tint-pill-bg)` row in the desktop sidebar. Never `--tint-accent` — that is decorative-fill only and fails AA as text (colors.md §2.1).
-**Active is per section, not per exact path** (`isNavItemActive()` in `components/nav-items.tsx`): Members stays active on `/members/*`, Settings on `/plans /branches /users /roles /audit-log /member-numbering /data-backup`.
+**Active is per section, not per exact path** (`isNavItemActive()` in `components/nav-items.tsx`): Members stays active on `/members/*`, Settings on `/plans /branches /users /roles /audit-log /member-numbering`.
 
 ### Tab bar visibility (mobile)
 

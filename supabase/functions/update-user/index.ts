@@ -144,8 +144,12 @@ Deno.serve(async (req) => {
         p_role_ids: roleRows.map((r) => r.id),
       });
       if (rolesError) {
-        const isLastAdmin = rolesError.message?.toLowerCase().includes('last active admin');
-        return jsonError(isLastAdmin ? 'Cannot remove — this is the last active admin.' : rolesError.message, isLastAdmin ? 409 : 500);
+        const message = rolesError.message?.toLowerCase() ?? '';
+        if (message.includes('last active admin')) return jsonError('Cannot remove — this is the last active admin.', 409);
+        // Reserved-role rules from replace_user_roles(): surface them as the caller's mistake, not a 500.
+        if (message.includes('only a system admin')) return jsonError('Only a system admin can grant or remove the system_admin role.', 403);
+        if (message.includes('held together with admin')) return jsonError('The system_admin role can only be held together with admin.', 400);
+        return jsonError(rolesError.message, 500);
       }
     }
 

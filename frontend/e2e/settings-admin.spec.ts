@@ -49,7 +49,7 @@ test.describe('Settings hub', () => {
   test('staff are told the admin screens are admin-only, and nothing is fetched for them', async ({ page, supabase, signedInAs }) => {
     seedListScreens(supabase);
     await signedInAs('staff');
-    for (const route of ['/settings', '/plans', '/branches', '/roles', '/users', '/audit-log', '/member-numbering', '/data-backup']) {
+    for (const route of ['/settings', '/plans', '/branches', '/roles', '/users', '/audit-log', '/member-numbering']) {
       await page.goto(route);
       await expect(page.getByText('Access denied — this page is admin-only.'), route).toBeVisible();
     }
