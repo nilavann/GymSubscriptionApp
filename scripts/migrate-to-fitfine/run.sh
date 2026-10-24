@@ -5,6 +5,7 @@
 set -euo pipefail
 MIG_DIR=$(cd "$(dirname "$0")" && pwd)
 . "$MIG_DIR/lib/common.sh"
+. "$MIG_DIR/lib/schema.sh"
 
 usage() {
   cat <<'EOF'
@@ -56,8 +57,8 @@ if [ $do_photos = 1 ] || [ $do_validate = 1 ]; then need_storage=1; fi
 preflight "$need_storage"
 
 not_yet() { refuse "step $1 is not implemented yet ($2)"; }
-[ $do_reset = 0 ]    || not_yet --reset MIG-1.3
-[ $do_create = 0 ]   || not_yet --create MIG-1.3
+[ $do_reset = 0 ]    || step_reset "$confirm_target"
+[ $do_create = 0 ]   || step_create
 [ $do_load = 0 ]     || not_yet --load MIG-1.4
 [ $do_photos = 0 ]   || not_yet --photos MIG-1.6a
 [ $do_validate = 0 ] || not_yet --validate MIG-1.5
