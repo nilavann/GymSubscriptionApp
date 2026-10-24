@@ -1,0 +1,13 @@
+# The 11 tables copied from source public to target TARGET_SCHEMA, used by load and validate.
+# Order does not matter: keys and FKs are added only after every table is loaded.
+profiles
+branches
+plans
+configuration
+roles
+user_roles
+members
+member_number_sequences
+subscriptions
+subscription_items
+audit_log

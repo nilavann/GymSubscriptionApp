@@ -43,7 +43,7 @@ npx supabase functions deploy <function-name>      # e.g. create-subscription, u
 npx supabase secrets set SOME_SECRET=value
 ```
 
-Local env: copy `frontend/.env.example` to `frontend/.env.local` and fill in `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (anon key only — never the service role key).
+Local env: copy `frontend/.env.example` to `frontend/.env.local` and fill in `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (anon key only — never the service role key). The one exception anywhere in the repo is `scripts/migrate-to-fitfine/.env` (git-ignored, never read by `frontend/` or any app test), which holds the source/target service-role keys for the Phase 1 migration script's photo copy.
 
 ## Architecture
 

@@ -93,7 +93,7 @@ scripts/migrate-to-fitfine/
   out/                  git-ignored: source fingerprint and photo manifest of the last load
 ```
 
-Flags on `run.sh`: `--create`, `--load`, `--photos`, `--validate` (each can run alone), `--all` (= create, load, photos, validate), and `--reset --confirm-target <target-ref>` (section 6). There is no "sample" mode: every check always covers every row and every file.
+Flags on `run.sh`: `--preflight` (checks only), `--create`, `--load`, `--photos`, `--validate` (each can run alone), `--all` (= create, load, photos, validate), and `--reset --confirm-target <target-ref>` (section 6). There is no "sample" mode: every check always covers every row and every file.
 
 Exit codes: `0` all checks ok (warnings allowed), `1` at least one `FAIL`, `2` preflight refused (nothing done), `3` the source changed since the load. Every failure prints one line `FAIL <check-id> <table-or-path> <detail>` so the tests can assert exactly which check fired.
 
@@ -186,22 +186,28 @@ How it runs:
 | U4 | Schema-prefix normalisation used by `structure` (`public.x` and `fitfine.x` compare equal; `auth.uid()` untouched) |
 | U5 | Column-list comparison rules: identical → ok; source-only → stop; target-only nullable or with default → allowed (auth only); target-only NOT NULL without default → stop; any difference on the 11 tables → stop |
 | U6 | `FAIL` line format and exit-code mapping |
+| U7 | Env file parsing: comments, quotes, inline comments, `export` prefix, URL values intact, a shell value wins over the file |
+| U8 | `TARGET_SCHEMA` allow-list: plain lowercase names only; `public`, `auth`, `storage`, other Supabase/system schemas and `pg_*` refused (it is dropped with `CASCADE` by `--reset`) |
 
 ### 8.2 Preflight and safety (each must stop before changing anything; target object list compared before/after)
 
 | Id | Setup | Expected |
 |---|---|---|
+| P0 | No step, an unknown argument, `--help`; and a clean `--preflight` against the real source + scratch target | exit 2 / 2 / 0; clean run exit 0, "preflight ok" |
 | P1 | One required variable unset | exit 2, names the variable |
 | P2 | `TARGET_DB_URL` = `SOURCE_DB_URL` | exit 2, "same project" |
 | P3 | Target = source's session-pooler URL (same project, different spelling) | exit 2, "same project" |
 | P4 | `TARGET_SUPABASE_URL` ref ≠ `TARGET_DB_URL` ref | exit 2, names the side |
 | P5 | Port 6543 | exit 2, "transaction pooler" |
 | P6 | Unreachable host | exit 2, names the side |
-| P7 | `pg_dump` stub on `PATH` reporting major 15 | exit 2, found and needed versions |
+| P7 | `pg_dump` stub on `PATH` reporting an older major than the source (14) | exit 2, found and needed versions |
 | P8 | Source session write probe (`create temp table`) through the source wrapper | the database refuses it (read-only) |
 | P9 | `--create` with `fitfine` present | exit 2 |
 | P10 | `--reset` without `--confirm-target`, and with a wrong ref | exit 2, nothing dropped |
 | P11 | Target has a user (made with the admin API) with a source user's email and a different id | exit 2, both ids printed |
+| P12 | `TARGET_SCHEMA` set to `public` / `auth` | exit 2 before connecting |
+
+Every P test that prints a message also asserts that no password or key appears in the output.
 
 ### 8.3 Step behaviour
 

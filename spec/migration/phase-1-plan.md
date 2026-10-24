@@ -47,16 +47,16 @@ Size: **S** under an hour, **M** a few hours, **L** most of a day. Test ids refe
   - keep tables, defaults, NOT NULL, CHECK and identity columns in pre-data, and keys and indexes in post-data;
   - remove triggers, policies, functions, views, RLS statements, grants and the bucket row;
   - strip `SET transaction_timeout` and the `\restrict` / `\unrestrict` lines.
-- Write `sql/tables.txt`.
 - *Check:* both files apply in order to the scratch target with no errors and create exactly the 11 tables; a case-insensitive grep for `trigger`, `policy`, `function`, `view`, `grant`, `\restrict`, `transaction_timeout` returns nothing; then the scratch schema is dropped again.
 
 **MIG-1.2 — Script skeleton, safety, unit tests** · M
 - `run.sh`, `lib/common.sh`, `.env.example`, `README.md` (stub), `tests/unit.sh`, `tests/run-all.sh` (with the `MIG_TEST_TARGET_REF` guard).
-- Flags parsed: `--create --load --photos --validate --all --reset --confirm-target`. Exit codes and the `FAIL` line format per spec §5.
+- `sql/tables.txt` (the 11 names, used by preflight sizes, load and validate).
+- Flags parsed: `--preflight --create --load --photos --validate --all --reset --confirm-target`. Exit codes and the `FAIL` line format per spec §5.
 - Preflight per spec §6.
 - Add `scripts/migrate-to-fitfine/out/` to `.gitignore`.
 - Add the one-line service-role note to CLAUDE.md.
-- *Tests:* U1–U4, U6, P1–P8.
+- *Tests:* U1–U4, U6–U8, P0–P8, P12.
 
 **MIG-1.3 — Create and reset (`--create`, `--reset`)** · S
 - `--create` applies `01-pre-data.sql` in one transaction.
@@ -135,7 +135,7 @@ MIG-1.1 and MIG-1.2 are independent of each other. MIG-1.6a only needs the prefl
 ## 8. Checklist
 
 - [ ] MIG-1.1 Pre-data / post-data DDL from the real schema
-- [ ] MIG-1.2 Skeleton, preflight, unit tests (U1–U4, U6, P1–P8)
+- [ ] MIG-1.2 Skeleton, preflight, unit tests (U1–U4, U6–U8, P0–P8, P12)
 - [ ] MIG-1.3 `--create` / `--reset` (S1, P9, P10)
 - [ ] MIG-1.4a Snapshot, column lists, 11 tables in one transaction (U5, S3–S5)
 - [ ] MIG-1.4b Auth users and identities (S2, P11)
