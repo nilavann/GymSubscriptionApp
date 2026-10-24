@@ -396,14 +396,34 @@ export function MemberDetailPage() {
 
   if (!member) return null;
 
+  const planById = new Map(plans.map((p) => [p.id, p]));
+  // member_current_items drops ended items, so a lapsed member has no "current" membership
+  // there. Fall back to their latest ended membership from the purchase history so the page
+  // reads "Expired" (not "No plans"); only a member who never had a membership is "No plans".
+  const currentMembershipItem: MemberCurrentItem | null =
+    currentItems.find((i) => i.category === 'membership') ??
+    historyItems
+      .filter((i) => i.member_id === member.id && planById.get(i.plan_id)?.category === 'membership')
+      .sort((a, b) => (b.end_date ?? '9999-12-31').localeCompare(a.end_date ?? '9999-12-31'))
+      .map((i) => ({
+        subscription_item_id: i.id,
+        subscription_id: i.subscription_id,
+        plan_id: i.plan_id,
+        plan_name: planById.get(i.plan_id)?.name ?? 'Unknown plan',
+        category: 'membership' as const,
+        member_id: i.member_id,
+        start_date: i.start_date,
+        end_date: i.end_date,
+        quantity: i.quantity,
+        amount_paid: i.amount_paid,
+      }))[0] ??
+    null;
   const status = deriveStatus({
-    current_membership_plan_id: currentItems.find((i) => i.category === 'membership')?.plan_id ?? null,
-    current_membership_end_date: currentItems.find((i) => i.category === 'membership')?.end_date ?? null,
+    current_membership_plan_id: currentMembershipItem?.plan_id ?? null,
+    current_membership_end_date: currentMembershipItem?.end_date ?? null,
   });
-  const currentMembershipItem = currentItems.find((i) => i.category === 'membership') ?? null;
   const currentAddonItems = currentItems.filter((i) => i.category === 'addon');
 
-  const planById = new Map(plans.map((p) => [p.id, p]));
   const profileById = new Map(allProfiles.map((p) => [p.id, p]));
   const branchById = new Map(branches.map((b) => [b.id, b]));
   const memberNameById = new Map(memberRows.map((m) => [m.id, m.name]));

@@ -216,6 +216,8 @@ left join lateral (
 where m.deleted_at is null;
 ```
 
+> **Amended by `20261024000000_member_list_view_latest_membership.sql`:** the `current_membership_*` columns now come from the member's latest non-deleted `membership` item (own or shared) **including ended ones**, instead of `member_current_items`. So `NULL` means the member never had a membership (client status "No plans"), and a past `end_date` means "Expired". Add-on ids are still current-only. The SQL above shows the original definition.
+
 A plain view (no `security definer`) — like `member_current_items`, it inherits and enforces the querying user's own RLS against `members`/`subscription_items`/`plans` automatically; it adds no new permission surface.
 
 **`photo_url`** (added `20260721000000_member_list_view_photo_url.sql`, alongside the original `photo_thumbnail_url`) feeds the Members List's photo lightbox ([frontend/member-management.md §3.4](../frontend/member-management.md#34-members-list)): clicking a row's thumbnail avatar enlarges the *original*, uncompressed photo, not the thumbnail already on screen. Cheap to include for every row — it's a URL string, not image bytes; the browser only fetches the actual original image when the lightbox opens and the `<img>` element's `src` is set.

@@ -22,7 +22,7 @@ export function summarize(rows: MemberListRow[]): ReportSummary {
     const status = deriveStatus(row);
     if (status === 'active') active += 1;
     else if (status === 'expiring') expiring += 1;
-    else expired += 1;
+    else if (status === 'expired') expired += 1;
   }
   return { total: rows.length, active, expiring, expired };
 }

@@ -187,7 +187,7 @@ export function MembersListPage() {
             </div>
 
             <div className="members-pill-row" role="group" aria-label="Status filter">
-              {(['all', 'active', 'expiring', 'expired'] as StatusPill[]).map((pill) => (
+              {(['all', 'active', 'expiring', 'expired', 'no-plan'] as StatusPill[]).map((pill) => (
                 <button
                   key={pill}
                   type="button"

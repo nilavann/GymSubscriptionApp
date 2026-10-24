@@ -56,9 +56,9 @@ describe('summarize', () => {
       buildMemberListRow({ current_membership_end_date: null }), // indefinite -> active
       buildMemberListRow({ current_membership_end_date: '2026-07-02' }), // expiring
       buildMemberListRow({ current_membership_end_date: '2026-06-01' }), // expired
-      buildMemberListRow({ current_membership_plan_id: null, current_membership_end_date: null }), // no plan -> expired
+      buildMemberListRow({ current_membership_plan_id: null, current_membership_end_date: null }), // no plan -> counted in total only
     ];
-    expect(summarize(rows)).toEqual({ total: 5, active: 2, expiring: 1, expired: 2 });
+    expect(summarize(rows)).toEqual({ total: 5, active: 2, expiring: 1, expired: 1 });
   });
 
   it('is all zeros for no members', () => {

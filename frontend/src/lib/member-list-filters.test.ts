@@ -54,16 +54,17 @@ describe('Member list: search / pills / filters / sort (REQ-LIST-001..004)', () 
       memberRow({ id: 2, current_membership_plan_id: 1, current_membership_end_date: null }), // indefinite -> active
       memberRow({ id: 3, current_membership_plan_id: 1, current_membership_end_date: '2026-07-22' }), // 7d -> expiring
       memberRow({ id: 4, current_membership_plan_id: 1, current_membership_end_date: '2026-07-15' }), // today -> expiring
-      memberRow({ id: 5, current_membership_plan_id: null, current_membership_end_date: null }), // none -> expired
+      memberRow({ id: 5, current_membership_plan_id: null, current_membership_end_date: null }), // none -> no-plan
       memberRow({ id: 6, current_membership_plan_id: 1, current_membership_end_date: '2026-07-14' }), // ended -> expired
     ];
     it('All applies no status filter', () => expect(applyStatusPill(rows, 'all')).toHaveLength(6));
     it('Active', () => expect(applyStatusPill(rows, 'active').map((r) => r.id)).toEqual([1, 2]));
     it('Expiring (within 7 days inclusive)', () => expect(applyStatusPill(rows, 'expiring').map((r) => r.id)).toEqual([3, 4]));
-    it('Expired (ended, or no current membership at all)', () => expect(applyStatusPill(rows, 'expired').map((r) => r.id)).toEqual([5, 6]));
+    it('Expired (ended)', () => expect(applyStatusPill(rows, 'expired').map((r) => r.id)).toEqual([6]));
+    it('No plans (no current membership at all)', () => expect(applyStatusPill(rows, 'no-plan').map((r) => r.id)).toEqual([5]));
     it('pill counts honour the other active filters and sum to the total', () => {
-      expect(statusPillCounts(rows)).toEqual({ all: 6, active: 2, expiring: 2, expired: 2 });
-      expect(statusPillCounts([])).toEqual({ all: 0, active: 0, expiring: 0, expired: 0 });
+      expect(statusPillCounts(rows)).toEqual({ all: 6, active: 2, expiring: 2, expired: 1, 'no-plan': 1 });
+      expect(statusPillCounts([])).toEqual({ all: 0, active: 0, expiring: 0, expired: 0, 'no-plan': 0 });
     });
     it('empty list stays empty for every pill', () => {
       expect(applyStatusPill([], 'active')).toEqual([]);

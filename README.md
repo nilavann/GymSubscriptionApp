@@ -154,7 +154,7 @@ At the time of writing (see [TODO.md](TODO.md) for the live list):
 
 | Tool | Needed for | Notes |
 |---|---|---|
-| **Node.js 20 LTS or newer** and npm | Everything | The project is developed on Node 24 |
+| **Node.js 20 LTS or newer** and npm | Everything | `.nvmrc` pins Node 22 (`nvm use`) |
 | **Git** | Everything | On Windows, Git Bash is also needed to run `npm run test:db` |
 | **A Supabase project for development** | Running the app | Free tier is enough. Use a dedicated project, never production |
 | **Supabase CLI** | Migrations and function deploys | Installed by `npm install`; run it as `npx supabase ...` |

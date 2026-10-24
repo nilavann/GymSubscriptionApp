@@ -36,6 +36,11 @@
   color: var(--color-status-danger-text);
 }
 
+.status-badge-no-plan {
+  background: var(--color-status-neutral-bg);
+  color: var(--color-status-neutral-text);
+}
+
 /* Inline status-coloured text (e.g. a member card's expiry line). */
 .status-text-active {
   color: var(--color-text-muted);
@@ -47,4 +52,8 @@
 
 .status-text-expired {
   color: var(--color-status-danger-text);
+}
+
+.status-text-no-plan {
+  color: var(--color-text-muted);
 }

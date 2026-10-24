@@ -65,14 +65,18 @@ test.describe('Members list', () => {
     await expect(group.getByRole('button', { name: /^All/ })).toContainText('4');
     await expect(group.getByRole('button', { name: /^Active/ })).toContainText('1');
     await expect(group.getByRole('button', { name: /^Expiring/ })).toContainText('1');
-    await expect(group.getByRole('button', { name: /^Expired/ })).toContainText('2'); // expired + never subscribed
+    await expect(group.getByRole('button', { name: /^Expired/ })).toContainText('1'); // expired
+    await expect(group.getByRole('button', { name: /^No plans/ })).toContainText('1'); // never subscribed
 
     await group.getByRole('button', { name: /^Expiring/ }).click();
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText('Bharat Rao');
 
     await group.getByRole('button', { name: /^Expired/ }).click();
-    await expect(rows(page)).toHaveCount(2);
+    await expect(rows(page)).toHaveCount(1);
+
+    await group.getByRole('button', { name: /^No plans/ }).click();
+    await expect(rows(page)).toHaveCount(1);
   });
 
   test('the Filters drawer narrows by gender and can be cleared', async ({ page }) => {

@@ -19,8 +19,8 @@ describe('deriveStatus', () => {
     current_membership_end_date,
   });
 
-  it('treats a member with no membership plan as expired (current behavior: there is no "no plan" state yet)', () => {
-    expect(deriveStatus({ current_membership_plan_id: null, current_membership_end_date: null })).toBe('expired');
+  it('gives a member with no membership plan their own "no-plan" status, not expired', () => {
+    expect(deriveStatus({ current_membership_plan_id: null, current_membership_end_date: null })).toBe('no-plan');
   });
 
   it('treats an indefinite membership (no end date) as active', () => {
@@ -53,11 +53,12 @@ describe('deriveStatus', () => {
 
 describe('status presentation maps', () => {
   it('has a label and a badge class for every status', () => {
-    expect(STATUS_LABEL).toEqual({ active: 'Active', expiring: 'Expiring', expired: 'Expired' });
+    expect(STATUS_LABEL).toEqual({ active: 'Active', expiring: 'Expiring', expired: 'Expired', 'no-plan': 'No plans' });
     expect(STATUS_BADGE_CLASS).toEqual({
       active: 'status-badge-active',
       expiring: 'status-badge-expiring',
       expired: 'status-badge-expired',
+      'no-plan': 'status-badge-no-plan',
     });
   });
 });

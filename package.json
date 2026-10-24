@@ -1,6 +1,9 @@
 {
   "name": "gym-subscription-app",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "frontend"
   ],

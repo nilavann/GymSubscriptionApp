@@ -275,11 +275,12 @@ describe('search, status pills and sort', () => {
     await ready();
     const group = screen.getByRole('group', { name: 'Status filter' });
 
-    // "No plan" is derived as expired (deriveStatus), so Expired = Chitra + Dev.
+    // A member with no plan is "No plans" (deriveStatus), not Expired: Expired = Chitra, No plans = Dev.
     expect(within(group).getByRole('button', { name: /^All/ })).toHaveTextContent('4');
     expect(within(group).getByRole('button', { name: /^Active/ })).toHaveTextContent('1');
     expect(within(group).getByRole('button', { name: /^Expiring/ })).toHaveTextContent('1');
-    expect(within(group).getByRole('button', { name: /^Expired/ })).toHaveTextContent('2');
+    expect(within(group).getByRole('button', { name: /^Expired/ })).toHaveTextContent('1');
+    expect(within(group).getByRole('button', { name: /^No plans/ })).toHaveTextContent('1');
 
     await user.click(within(group).getByRole('button', { name: /^Expiring/ }));
     expect(names()).toEqual(['Bharat Rao']);

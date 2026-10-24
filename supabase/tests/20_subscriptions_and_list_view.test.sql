@@ -120,8 +120,14 @@ select t.eq('LIST current: item ending TODAY is still current (inclusive)', (sel
 select t.eq('LIST view: end_date today -> end_date = today', (select current_membership_end_date from member_list_view where id=:edge), current_date);
 
 -- member_list_view -------------------------------------------------------------------------------------------------
+select t.member('9100000013', null, 'Lapsed') as lapsed \gset
+select t.checkout(t.staff_id(), :lapsed, jsonb_build_array(
+  jsonb_build_object('plan_id',:monthly,'member_id',:lapsed,'start_date',current_date-60,'end_date',current_date-31,'quantity',1,'amount_paid',1)));
+select t.eq('LIST-003 member whose only plan lapsed keeps it, with the past end_date (client derives Expired)',
+  (select current_membership_end_date from member_list_view where id=:lapsed), current_date-31);
+select t.eq('LIST-003 ...and still its plan', (select current_membership_plan_id from member_list_view where id=:lapsed), :monthly::bigint);
 select t.member('9100000011', null, 'NoSub') as nosub \gset
-select t.ok('LIST-003 member with no subscription: NULL current plan (client derives Expired)', (select current_membership_plan_id is null from member_list_view where id=:nosub));
+select t.ok('LIST-003 member with no subscription: NULL current plan (client derives No plans)', (select current_membership_plan_id is null from member_list_view where id=:nosub));
 select t.eq('LIST-004 member with no add-ons: empty array', (select current_addon_plan_ids::text from member_list_view where id=:nosub), '{}');
 select t.eq('LIST-004 add-on plan ids reflect current add-ons only', (select current_addon_plan_ids::text from member_list_view where id=:alice), '{' || :zumba || '}');
 select t.eq('LIST-004 membership plan never leaks into add-on ids', (select :monthly = any(current_addon_plan_ids) from member_list_view where id=:alice)::int, 0);

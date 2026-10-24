@@ -50,7 +50,7 @@ export function applyStatusPill(rows: MemberListRow[], pill: StatusPill): Member
 }
 
 export function statusPillCounts(rowsBeforeStatusFilter: MemberListRow[]): Record<StatusPill, number> {
-  const counts: Record<StatusPill, number> = { all: rowsBeforeStatusFilter.length, active: 0, expiring: 0, expired: 0 };
+  const counts: Record<StatusPill, number> = { all: rowsBeforeStatusFilter.length, active: 0, expiring: 0, expired: 0, 'no-plan': 0 };
   for (const row of rowsBeforeStatusFilter) {
     counts[deriveStatus(row)] += 1;
   }

@@ -21,4 +21,4 @@ export interface MemberListRow {
   current_addon_plan_ids: number[];
 }
 
-export type MemberStatus = 'active' | 'expiring' | 'expired';
+export type MemberStatus = 'active' | 'expiring' | 'expired' | 'no-plan';

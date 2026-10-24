@@ -201,7 +201,7 @@ describe('MemberDetailPage — membership strip', () => {
     await ready();
     expect(within(strip()).getByText('No active membership')).toBeInTheDocument();
     expect(within(strip()).getByRole('link', { name: 'Add membership' })).toHaveAttribute('href', '/members/12/renew');
-    expect(screen.getByText('Expired', { selector: '.status-badge' })).toBeInTheDocument();
+    expect(screen.getByText('No plans', { selector: '.status-badge' })).toHaveClass('status-badge-no-plan');
   });
 
   it('active: shows the plan, its period, the amount, days remaining and a Renew link — and an Active pill', async () => {
@@ -224,6 +224,19 @@ describe('MemberDetailPage — membership strip', () => {
     expect(within(strip()).getByRole('link', { name: 'Renew now' })).toHaveAttribute('href', '/members/12/renew');
     expect(within(strip()).getByText('Entry blocked at the gate')).toBeInTheDocument();
     expect(screen.getByText('Expired', { selector: '.status-badge' })).toHaveClass('status-badge-expired');
+  });
+
+  it('expired when the current-items view is empty but the history holds an ended membership (not "No plans")', async () => {
+    renderDetail({
+      items: [],
+      history: [{ id: 7, member_id: 12, payment_mode: 'Cash', notes: null, created_at: '2026-01-01T00:00:00Z' }],
+      historyItems: [historyItem({ subscription_id: 7, plan_id: 1, start_date: inDays(-40), end_date: inDays(-10) })],
+    });
+    await ready();
+    expect(strip()).toHaveClass('member-detail-membership-strip-expired');
+    expect(within(strip()).getByText('Monthly')).toBeInTheDocument();
+    expect(screen.getByText('Expired', { selector: '.status-badge' })).toHaveClass('status-badge-expired');
+    expect(screen.queryByText('No plans', { selector: '.status-badge' })).not.toBeInTheDocument();
   });
 
   it('the header pill and the strip never disagree (both come from the same status)', async () => {

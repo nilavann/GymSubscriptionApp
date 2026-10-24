@@ -22,7 +22,7 @@ export function deriveStatus(row: {
   current_membership_plan_id: number | null;
   current_membership_end_date: string | null;
 }): MemberStatus {
-  if (row.current_membership_plan_id === null) return 'expired';
+  if (row.current_membership_plan_id === null) return 'no-plan';
   if (row.current_membership_end_date === null) return 'active';
 
   const daysRemaining = daysBetween(todayDate(), row.current_membership_end_date);
@@ -35,12 +35,14 @@ export const STATUS_LABEL: Record<MemberStatus, string> = {
   active: 'Active',
   expiring: 'Expiring',
   expired: 'Expired',
+  'no-plan': 'No plans',
 };
 
 export const STATUS_BADGE_CLASS: Record<MemberStatus, string> = {
   active: 'status-badge-active',
   expiring: 'status-badge-expiring',
   expired: 'status-badge-expired',
+  'no-plan': 'status-badge-no-plan',
 };
 
 export function getMemberListRowStatus(row: MemberListRow): MemberStatus {
