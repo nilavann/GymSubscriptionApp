@@ -20,6 +20,7 @@ suite unit.sh
 suite preflight.sh --online
 suite ddl.sh
 suite create.sh
+suite load.sh
 
 [ $rc = 0 ] && echo "ALL MIGRATION TESTS PASSED" || echo "MIGRATION TESTS FAILED"
 exit $rc

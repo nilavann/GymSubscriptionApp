@@ -2,6 +2,7 @@
 # Unit tests for lib/common.sh. No database, no network.
 set -u
 . "$(dirname "$0")/lib.sh"
+. "$MIG_DIR/lib/columns.sh"
 
 # U1 — version comparison
 assert_eq    "U1 version_of pg_dump banner" 17.11 "$(version_of 'pg_dump (PostgreSQL) 17.11 (Homebrew)')"
@@ -95,5 +96,18 @@ assert_true  "U8 fitfine_scratch allowed" valid_target_schema fitfine_scratch
 for s in public auth storage extensions realtime vault pg_catalog pg_temp information_schema Fitfine fit-fine '' '1abc'; do
   assert_false "U8 '$s' refused" valid_target_schema "$s"
 done
+
+# U5 — column-list comparison rules
+A=$'id|uuid|no|false\nname|text|no|false'
+cmp() { compare_columns "$@" 2>/dev/null; }
+assert_eq   "U5 strict identical -> quoted copy list" '"id","name"' "$(cmp 1 "$A" "$A")"
+assert_false "U5 strict source-only column stops"  cmp 1 "$A" 'id|uuid|no|false'
+assert_false "U5 strict target-only column stops"  cmp 1 'id|uuid|no|false' "$A"
+assert_false "U5 strict type difference stops"     cmp 1 "$A" $'id|uuid|no|false\nname|integer|no|false'
+assert_eq   "U5 auth identical"                    '"id","name"' "$(cmp 0 "$A" "$A")"
+assert_false "U5 auth source-only column stops"    cmp 0 "$A" 'id|uuid|no|false'
+assert_eq   "U5 auth target-only nullable allowed" '"id","name"' "$(cmp 0 "$A" "$A"$'\nextra|text|yes|false')"
+assert_eq   "U5 auth target-only default allowed"  '"id","name"' "$(cmp 0 "$A" "$A"$'\nextra|text|no|true')"
+assert_false "U5 auth target-only NOT NULL stops"  cmp 0 "$A" "$A"$'\nextra|text|no|false'
 
 t_summary unit
