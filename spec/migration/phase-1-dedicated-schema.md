@@ -176,6 +176,13 @@ How it runs:
 - One test hook exists, `MIG_TEST_FAIL_AT=post-data`. It raises an error just before the load commits and is inert unless set.
 - The suite prints one `PASS`/`FAIL` line per test id. Its full output is pasted verbatim into the README's "Last verified" section.
 
+### 8.0 Generated SQL (`tests/ddl.sh`)
+
+| Id | Asserts |
+|---|---|
+| D1 | `sql/01-pre-data.sql` / `02-post-data.sql` contain no trigger, policy, function, view, grant, RLS, `transaction_timeout` or `\restrict` lines and no `public.` qualifier; pre-data has the 11 `CREATE TABLE`s (same names as `tables.txt`) and no keys or indexes |
+| D2 | Applied in order to the scratch target inside a rolled-back transaction: exactly 11 tables, their 7 identity sequences and the file's indexes, the file's primary and foreign keys (all validated), zero triggers / policies / functions / RLS; afterwards the target has no `TARGET_SCHEMA` |
+
 ### 8.1 Unit (`tests/unit.sh`, no database)
 
 | Id | Asserts |

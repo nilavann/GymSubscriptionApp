@@ -47,7 +47,8 @@ Size: **S** under an hour, **M** a few hours, **L** most of a day. Test ids refe
   - keep tables, defaults, NOT NULL, CHECK and identity columns in pre-data, and keys and indexes in post-data;
   - remove triggers, policies, functions, views, RLS statements, grants and the bucket row;
   - strip `SET transaction_timeout` and the `\restrict` / `\unrestrict` lines.
-- *Check:* both files apply in order to the scratch target with no errors and create exactly the 11 tables; a case-insensitive grep for `trigger`, `policy`, `function`, `view`, `grant`, `\restrict`, `transaction_timeout` returns nothing; then the scratch schema is dropped again.
+- The conversion is the re-runnable `sql/generate.sh` (read-only on the source), not a hand edit; it stops on any dump entry type it neither keeps nor knowingly drops.
+- *Tests:* D1, D2 (`tests/ddl.sh`: applied to the scratch target in a rolled-back transaction).
 
 **MIG-1.2 — Script skeleton, safety, unit tests** · M
 - `run.sh`, `lib/common.sh`, `.env.example`, `README.md` (stub), `tests/unit.sh`, `tests/run-all.sh` (with the `MIG_TEST_TARGET_REF` guard).
@@ -134,8 +135,8 @@ MIG-1.1 and MIG-1.2 are independent of each other. MIG-1.6a only needs the prefl
 
 ## 8. Checklist
 
-- [ ] MIG-1.1 Pre-data / post-data DDL from the real schema
-- [ ] MIG-1.2 Skeleton, preflight, unit tests (U1–U4, U6–U8, P0–P8, P12)
+- [x] MIG-1.1 Pre-data / post-data DDL from the real schema (D1, D2)
+- [x] MIG-1.2 Skeleton, preflight, unit tests (U1–U4, U6–U8, P0–P8, P12)
 - [ ] MIG-1.3 `--create` / `--reset` (S1, P9, P10)
 - [ ] MIG-1.4a Snapshot, column lists, 11 tables in one transaction (U5, S3–S5)
 - [ ] MIG-1.4b Auth users and identities (S2, P11)
