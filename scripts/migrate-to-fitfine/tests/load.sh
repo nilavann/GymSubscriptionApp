@@ -38,7 +38,7 @@ assert_eq "S2 auth.identities count" "$(psql_source -c 'select count(*) from aut
 assert_eq "S2 generated confirmed_at populated like the source" \
   "$(psql_source -c 'select count(*) from auth.users where confirmed_at is not null')" \
   "$(psql_target -c "select count(*) from auth.users where confirmed_at is not null and id = any(string_to_array('$(src_ids)', ',')::uuid[])")"
-assert_true "S2 source fingerprint written" test -s "$MIG_DIR/out/source-fingerprint.json"
+assert_true "S2 source fingerprint written" test -s "${MIG_OUT_DIR:-$MIG_DIR/out}/source-fingerprint.json"
 
 # S3 — a second load is refused and writes nothing
 before=$(total_rows)
