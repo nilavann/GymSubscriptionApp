@@ -18,6 +18,10 @@ assert_eq() {
   if [ "$2" = "$3" ]; then t_ok "$1"; else t_bad "$1" "expected: $2"$'\n'"actual:   $3"; fi
 }
 
+# The scratch target's project ref (MIG_TEST_LOCAL_REF lets a developer point the suite at a local
+# throwaway Postgres instead of a Supabase project).
+target_ref() { printf '%s' "${MIG_TEST_LOCAL_REF:-$(db_url_ref "$TARGET_DB_URL")}"; }
+
 # assert_true ID cmd...  /  assert_false ID cmd...
 assert_true()  { local id=$1; shift; if "$@"; then t_ok "$id"; else t_bad "$id" "command failed: $*"; fi; }
 assert_false() { local id=$1; shift; if "$@"; then t_bad "$id" "command succeeded: $*"; else t_ok "$id"; fi; }
@@ -38,6 +42,8 @@ expect_run() {
 
 # mig_run ENVFILE [VAR=VALUE ...] -- ARGS...: runs run.sh with nothing inherited from this shell
 # except PATH and HOME. VAR=VALUE pairs are set in the shell, so they win over ENVFILE.
+# (A caller may define its own mig_run before sourcing this file; the repo's tests never do.)
+if ! type mig_run >/dev/null 2>&1; then
 mig_run() {
   local envf=$1; shift
   local -a vars=()
@@ -46,6 +52,7 @@ mig_run() {
   env -i PATH="$PATH" HOME="$HOME" PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-5}" MIG_ENV_FILE="$envf" \
     ${vars[@]+"${vars[@]}"} bash "$MIG_DIR/run.sh" "$@"
 }
+fi
 
 t_summary() {
   printf '%s: %d passed, %d failed\n' "$1" "$T_PASS" "$T_FAIL"

@@ -8,6 +8,9 @@ MIG_DIR=$(cd "$(dirname "$0")" && pwd)
 . "$MIG_DIR/lib/schema.sh"
 . "$MIG_DIR/lib/columns.sh"
 . "$MIG_DIR/lib/load.sh"
+. "$MIG_DIR/lib/storage.sh"
+. "$MIG_DIR/lib/photos.sh"
+. "$MIG_DIR/lib/validate.sh"
 
 usage() {
   cat <<'EOF'
@@ -58,10 +61,11 @@ need_storage=0
 if [ $do_photos = 1 ] || [ $do_validate = 1 ]; then need_storage=1; fi
 preflight "$need_storage"
 
-not_yet() { refuse "step $1 is not implemented yet ($2)"; }
 [ $do_reset = 0 ]    || step_reset "$confirm_target"
 [ $do_create = 0 ]   || step_create
 [ $do_load = 0 ]     || step_load
-[ $do_photos = 0 ]   || not_yet --photos MIG-1.6a
-[ $do_validate = 0 ] || not_yet --validate MIG-1.5
-exit "$EXIT_OK"
+rc=0
+[ $do_photos = 0 ]   || step_photos || rc=$?
+[ $rc = 0 ] || exit "$rc"
+[ $do_validate = 0 ] || step_validate || rc=$?
+exit "$rc"

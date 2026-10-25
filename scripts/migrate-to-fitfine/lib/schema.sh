@@ -27,4 +27,9 @@ select count(*) from gone;
 SQL
 ) || die "--reset failed; the transaction was rolled back, nothing was removed"
   log "reset   dropped schema $TARGET_SCHEMA (if present), removed $n source auth user(s) from the target"
+  if [ -n "${PHOTO_BUCKET-}" ] && [ -n "${TARGET_SUPABASE_URL-}" ] && [ -n "${TARGET_SERVICE_ROLE_KEY-}" ]; then
+    reset_photos
+  else
+    warn "reset: PHOTO_BUCKET / TARGET_SUPABASE_URL / TARGET_SERVICE_ROLE_KEY not set, so target photos were not removed"
+  fi
 }

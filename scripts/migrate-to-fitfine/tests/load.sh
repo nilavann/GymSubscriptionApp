@@ -5,7 +5,7 @@ set -u
 . "$(dirname "$0")/lib.sh"
 envf=${MIG_ENV_FILE:-$MIG_DIR/.env}
 load_env "$envf"
-ref=$(db_url_ref "$TARGET_DB_URL")
+ref=$(target_ref)
 schema=$TARGET_SCHEMA
 
 fresh() { mig_run "$envf" -- --reset --confirm-target "$ref" --create >/dev/null 2>&1; }
